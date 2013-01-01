@@ -1,6 +1,20 @@
 # http://www.gnu.org/software/automake
 
 Makefile.in
+Makefile
+.libs/
+cscope.out
+*.l[oa]
+config.h
+config.h.in*
+config.log
+config.status
+*.o
+*.swp
+pam_test_client
+.deps
+.dirstamp
+stamp-h1
 
 # http://www.gnu.org/software/autoconf
 
