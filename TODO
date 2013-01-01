@@ -1,0 +1,13 @@
+MUST:
+-----
+* sasl bind
+
+SHOULD:
+-------
+* handle multiple URIs
+* SRV records
+* devel mode that
+  -- would not check perms on config file
+  -- would print even authtok
+  -- would be enabled at build time
+* unit tests

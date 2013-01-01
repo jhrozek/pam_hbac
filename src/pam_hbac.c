@@ -17,11 +17,11 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-
 #include <syslog.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
+#include <sys/time.h>
 
 #include <security/_pam_macros.h>
 #include <security/pam_ext.h>
@@ -88,7 +88,6 @@ parse_args(const pam_handle_t *pamh, int argc, const char **argv)
     return ctrl;
 }
 
-
 static int
 pam_hbac_get_items(pam_handle_t *pamh, struct pam_items *pi)
 {
@@ -147,7 +146,14 @@ print_pam_items(struct pam_items *pi, int args)
 static struct pam_hbac_ctx *
 ph_init(void)
 {
-    return calloc(1, sizeof(struct pam_hbac_ctx));
+    struct pam_hbac_ctx *pc;
+
+    pc = calloc(1, sizeof(struct pam_hbac_ctx));
+    if(!pc) return NULL;
+
+    /* Initialize searches */
+
+    return pc;
 }
 
 static LDAP *
@@ -155,11 +161,22 @@ ph_connect(struct pam_hbac_config *pc)
 {
     int ret;
     LDAP *ld;
+    struct berval password = {0, NULL};
 
-    /* FIXME - detect with configure? */
+    /* FIXME - detect availability with configure? */
     ret = ldap_initialize(&ld, pc->uri);
     if (ret != LDAP_SUCCESS) {
         D(("ldap_initialize failed [%d]: %s\n", ret, ldap_err2string(ret)));
+        return NULL;
+    }
+
+    password.bv_len = strlen(pc->bind_pw);
+    password.bv_val = pc->bind_pw;
+
+    ret = ldap_sasl_bind_s(ld, pc->bind_dn, LDAP_SASL_SIMPLE, &password,
+                           NULL, NULL, NULL);
+    if (ret != LDAP_SUCCESS) {
+        D(("ldap_simple_bind_s failed [%d]: %s\n", ret, ldap_err2string(ret)));
         return NULL;
     }
 
@@ -167,16 +184,33 @@ ph_connect(struct pam_hbac_config *pc)
 }
 
 static void
-ph_cleanup(struct pam_hbac_ctx *ctx)
+ph_disconnect(struct pam_hbac_ctx *ctx)
 {
-    ph_cleanup_config(ctx->pc);
+    int ret;
+
+    if (!ctx || !ctx->ld) return;
+
+    ret = ldap_unbind_ext(ctx->ld, NULL, NULL);
+    if (ret != LDAP_SUCCESS) {
+        D(("ldap_unbind_ext failed [%d]: %s\n", ret, ldap_err2string(ret)));
+    }
 }
 
+static void
+ph_cleanup(struct pam_hbac_ctx *ctx)
+{
+    ph_disconnect(ctx);
+    ph_cleanup_config(ctx->pc);
+    free(ctx);
+}
+
+/* FIXME - return more sensible return codes */
 static int
 pam_hbac(enum pam_hbac_actions action, pam_handle_t *pamh,
          int pam_flags, int argc, const char **argv)
 {
     int ret;
+    int pam_ret;
     int args;
     struct pam_items pi;
     struct pam_hbac_ctx *ctx;
@@ -195,7 +229,7 @@ pam_hbac(enum pam_hbac_actions action, pam_handle_t *pamh,
 
     ret = pam_hbac_get_items(pamh, &pi);
     if (ret != PAM_SUCCESS) {
-        D(("pam_hbac_get_items returned error: %s", pam_strerror(pamh,ret)));
+        D(("pam_hbac_get_items returned error: %s", strerror(ret)));
         goto fail;
     }
     D(("pam_hbac_get_items: OK"));
@@ -205,22 +239,47 @@ pam_hbac(enum pam_hbac_actions action, pam_handle_t *pamh,
         D(("ph_init failed\n"));
         goto fail;
     }
+    D(("ph_init: OK"));
 
     ret = ph_read_dfl_config(&ctx->pc);
     if (ret != 0) {
-        D(("ph_read_dfl_config returned error: %s", pam_strerror(pamh,ret)));
+        D(("ph_read_dfl_config returned error: %s", strerror(ret)));
         goto fail;
     }
     D(("ph_read_dfl_config: OK"));
 
     ctx->ld = ph_connect(ctx->pc);
     if (ctx->ld == NULL) {
-        D(("ph_read_dfl_config returned error: %s", pam_strerror(pamh,ret)));
+        D(("ph_connect returned error: %s", strerror(ret)));
+        pam_ret = PAM_AUTHINFO_UNAVAIL;
+        goto done;
+    }
+    D(("ph_connect: OK"));
+
+    print_pam_items(&pi, args);
+
+    ret = ph_search_user(ctx->ld, ctx->pc, pi.pam_user, &ctx->user_obj);
+    if (ret == ENOENT) {
+        D(("User unknown\n"));
+        pam_ret = PAM_USER_UNKNOWN;
+        goto done;
+    } else if (ret) {
+        D(("ph_search_user returned error: %s", strerror(ret)));
         goto fail;
     }
 
-    print_pam_items(&pi, args);
-    ret = PAM_SUCCESS;
+#if 0
+    ret = ph_search_rules(ctx->ld, ctx->pc, ctx->pc->hostname);
+    if (ret) {
+        D(("ph_search_user returned error: %s", strerror(ret)));
+        goto fail;
+    }
+#endif
+
+    pam_ret = PAM_SUCCESS;
+done:
+    ph_cleanup(ctx);
+    return pam_ret;
 
 fail:
     ph_cleanup(ctx);

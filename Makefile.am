@@ -23,9 +23,12 @@ AM_CPPFLAGS = \
 pamlib_LTLIBRARIES = pam_hbac.la
 pam_hbac_la_SOURCES = \
 		     src/pam_hbac.c \
+		     src/pam_hbac_search.c \
+		     src/pam_hbac_ipa.c \
 		     src/pam_hbac_config.c
 
 pam_hbac_la_LDFLAGS = \
+		     -lldap \
 		     -lpam \
 		     -module \
 		     -avoid-version \
