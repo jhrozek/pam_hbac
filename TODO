@@ -10,4 +10,6 @@ SHOULD:
   -- would not check perms on config file
   -- would print even authtok
   -- would be enabled at build time
-* unit tests
+* more unit tests
+* trim attributes to download based on what we really need. The current set is copied from IPA
+* parallelize lookups where possible

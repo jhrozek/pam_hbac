@@ -84,6 +84,7 @@
 
 enum pam_hbac_objects {
     PH_OBJ_USER,
+    PH_OBJ_HOST,
     PH_OBJ_RULE,
     /* Sentinel */
     PH_OBJ_NUM_OBJECTS

@@ -60,11 +60,25 @@ static const char *ph_rule_attrs[] = { PAM_HBAC_ATTR_OC, "cn", "ipaUniqueID",
                                        "externalHost", "memberHost",
                                        "hostCategory", NULL };
 
+enum ph_host_attrmap {
+    PH_MAP_HOST_OC,
+    PH_MAP_HOST_NAME,
+    PH_MAP_HOST_FQDN,
+    PH_MAP_HOST_MEMBEROF,
+    PH_MAP_HOST_END
+};
+static const char *ph_host_attrs[] = { PAM_HBAC_ATTR_OC, "cn", "fqdn",
+                                       "memberOf", NULL };
+
 static struct ph_search_ctx ph_search_objs[] = {
     { .sub_base = "cn=users,cn=accounts", .oc = "posixAccount",
       .attrs = ph_user_attrs, .num_attrs = PH_MAP_USER_END },
 
-    { .sub_base = "cn=hbac", .oc = "ipaHbacRule", .attrs = ph_rule_attrs  },
+    { .sub_base = "cn=hbac", .oc = "ipaHbacRule",
+      .attrs = ph_rule_attrs  },
+
+    { .sub_base = "cn=computers,cn=accounts", .oc = "ipaHost",
+      .attrs = ph_host_attrs, .num_attrs = PH_MAP_HOST_END },
 
     { .sub_base = NULL, .oc = NULL }
 };
@@ -286,6 +300,7 @@ ph_search_user(LDAP *ld, struct pam_hbac_config *conf,
         return EINVAL;
     }
 
+    /* FIXME - do not call ldap functions directly */
     if (ldap_count_values_len(vals) != 1) {
         D(("Expected 1 user name, got %d\n", ldap_count_values_len(vals)));
         ph_entry_free(user_entry);
@@ -303,7 +318,7 @@ ph_search_user(LDAP *ld, struct pam_hbac_config *conf,
 
     ph_member_obj_debug(user_obj);
 
-    /* extract memberof */
+    /* FIXME - extract memberof */
 
     ldap_msgfree(msg);
     return 0;
@@ -313,15 +328,76 @@ int
 ph_search_host(LDAP *ld, struct pam_hbac_config *conf,
                const char *hostname, struct ph_member_obj **_host_obj)
 {
+    LDAPMessage *msg;
+    size_t num;
     int ret;
     char *host_filter;
+    struct ph_entry *host_entry;
+    struct ph_member_obj *host_obj;
+    struct berval **vals;
 
     if (!hostname) return EINVAL;
 
-    ret = asprintf(&user_filter, "%s=%s", conf->map->user_key, username);
+    ret = asprintf(&host_filter, "%s=%s",
+                   ph_host_attrs[PH_MAP_HOST_FQDN], hostname);
     if (ret < 0) {
         return ENOMEM;
     }
+
+    /* FIXME - combine search and parse_message into one function to avoid
+     * leaking LDAPMessage into this module completely */
+    ret = ph_search(ld, conf, &ph_search_objs[PH_OBJ_HOST], host_filter, &msg);
+    free(host_filter);
+    if (ret != 0) {
+        return ret;
+    }
+
+    ret = ph_parse_message(ld, msg, &ph_search_objs[PH_OBJ_HOST], &host_entry);
+    if (ret != 0) {
+        ldap_msgfree(msg);
+        return ret;
+    }
+
+    num = ph_num_entries(host_entry);
+    if (num == 0) {
+        D(("No such host %s\n", hostname));
+        return ENOENT;
+    } else if (num > 1) {
+        D(("Got more than one host entry\n"));
+        return EINVAL;
+    }
+
+    /* extract hostname */
+    vals = ph_entry_get_attr_val(host_entry, PH_MAP_HOST_FQDN);
+    if (!vals) {
+        D(("User has no name\n"));
+        ph_entry_free(host_entry);
+        ldap_msgfree(msg);
+        return EINVAL;
+    }
+
+    /* FIXME - do not call ldap functions directly */
+    if (ldap_count_values_len(vals) != 1) {
+        D(("Expected 1 host name, got %d\n", ldap_count_values_len(vals)));
+        ph_entry_free(host_entry);
+        ldap_msgfree(msg);
+        return EINVAL;
+    }
+
+    host_obj = ph_member_obj_new(vals[0]->bv_val);
+    if (!host_obj) {
+        D(("User has no name\n"));
+        ph_entry_free(host_entry);
+        ldap_msgfree(msg);
+        return ENOMEM;
+    }
+
+    ph_member_obj_debug(host_obj);
+
+    /* FIXME - extract memberof */
+
+    ldap_msgfree(msg);
+    return 0;
 }
 
 
