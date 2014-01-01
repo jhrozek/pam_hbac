@@ -43,11 +43,11 @@ config_tests_SOURCES = \
 		      src/pam_hbac_config.c
 config_tests_CFLAGS = \
 		      $(AM_CFLAGS) \
-		      $(CHECK_CFLAGS)
+		      $(CMOCKA_CFLAGS)
 config_tests_LDADD = \
-	             $(CHECK_LIBS)
+		     $(CMOCKA_LIBS)
 
-if HAVE_CHECK
+if HAVE_CMOCKA
     check_PROGRAMS = config-tests
 endif
 

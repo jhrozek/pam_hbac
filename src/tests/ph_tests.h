@@ -18,19 +18,11 @@
 #ifndef _PH_TESTS_H_
 #define _PH_TESTS_H_
 
-#define quit_if(expr, ...) do {         \
-    fail_if(expr, ## __VA_ARGS__);      \
-    if (expr) {                         \
-        return;                         \
-    }                                   \
+#define quit_if(expr, ...) do {              \
+    assert_false(expr, ## __VA_ARGS__);      \
+    if (expr) {                              \
+        return;                              \
+    }                                        \
 } while(0)
-
-#define fail_if_strneq(s1, s2, ...) do {                            \
-    fail_if(strcmp(s1, s2) != 0, ## __VA_ARGS__);                   \
-    if (strcmp(s1, s2) != 0) {                                      \
-        fprintf(stderr, "String comparison failed\n");              \
-        fprintf(stderr, #s1" is [%s], "#s2" is [%s]\n", s1, s2);    \
-    }                                                               \
-} while(0)                                                          \
 
 #endif /* _PH_TESTS_H_ */

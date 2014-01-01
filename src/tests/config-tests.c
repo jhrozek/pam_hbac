@@ -18,6 +18,10 @@
 #include <stdlib.h>
 #include <check.h>
 #include <stdio.h>
+#include <string.h>
+#include <stddef.h>
+#include <setjmp.h>
+#include <cmocka.h>
 
 #include "pam_hbac.h"
 #include "tests/ph_tests.h"
@@ -29,8 +33,8 @@ read_test_config(const char *filename)
     struct pam_hbac_config *conf = NULL;
 
     ret = ph_read_config(filename, &conf);
-    fail_if(conf == NULL, "Could not read the config file [%d]: %s\n",
-            ret, strerror(ret));
+    assert_int_equal(ret, 0);
+    assert_non_null(conf);
 
     return conf;
 }
@@ -38,6 +42,8 @@ read_test_config(const char *filename)
 static void
 _print_config(struct pam_hbac_config *conf, const char *test)
 {
+    assert_non_null(conf);
+
     printf("In unit test [%s]\n", test);
     printf("uri -> [%s]\n", conf->uri);
     printf("base -> [%s]\n", conf->search_base);
@@ -48,86 +54,68 @@ _print_config(struct pam_hbac_config *conf, const char *test)
 #define EXAMPLE_URI     "ldap://example.com"
 #define EXAMPLE_BASE    "dc=example,dc=com"
 
-#define CHECK_EXAMPLE_RESULT(c) do {                 \
-    fail_if_strneq(c->uri, EXAMPLE_URI);             \
-    fail_if_strneq(c->search_base, EXAMPLE_BASE);    \
-} while(0);                                          \
+#define check_example_result(c) do {                      \
+    assert_string_equal(c->uri, EXAMPLE_URI);             \
+    assert_string_equal(c->search_base, EXAMPLE_BASE);    \
+} while(0);                                               \
 
 /* ------------- the tests themselves ------------- */
-START_TEST(test_good_config)
+void test_good_config(void **state)
 {
     struct pam_hbac_config *conf;
+
+    (void) state; /* unused */
 
     conf = read_test_config("src/tests/good1.conf");
-    quit_if(conf == NULL, "Could not read the config file\n");
     print_config(conf);
-    CHECK_EXAMPLE_RESULT(conf);
+    check_example_result(conf);
     ph_cleanup_config(conf);
 }
-END_TEST
 
-START_TEST(test_whitespace_around_equal_sign)
+void test_whitespace_around_equal_sign(void **state)
 {
     struct pam_hbac_config *conf;
+
+    (void) state; /* unused */
 
     conf = read_test_config("src/tests/eqwsp.conf");
-    quit_if(conf == NULL, "Could not read the config file\n");
     print_config(conf);
-    CHECK_EXAMPLE_RESULT(conf);
+    check_example_result(conf);
     ph_cleanup_config(conf);
 }
-END_TEST
 
-START_TEST(test_leading_whitespace)
+void test_leading_whitespace(void **state)
 {
     struct pam_hbac_config *conf;
+
+    (void) state; /* unused */
 
     conf = read_test_config("src/tests/lwsp.conf");
-    quit_if(conf == NULL, "Could not read the config file\n");
     print_config(conf);
-    CHECK_EXAMPLE_RESULT(conf);
+    check_example_result(conf);
     ph_cleanup_config(conf);
 }
-END_TEST
 
-START_TEST(test_trailing_whitespace)
+void test_trailing_whitespace(void **state)
 {
     struct pam_hbac_config *conf;
 
+    (void) state; /* unused */
+
     conf = read_test_config("src/tests/twsp.conf");
-    quit_if(conf == NULL, "Could not read the config file\n");
     print_config(conf);
-    CHECK_EXAMPLE_RESULT(conf);
+    check_example_result(conf);
     ph_cleanup_config(conf);
-}
-END_TEST
-
-Suite *config_suite(void)
-{
-    Suite *s;
-    TCase *tc_config_suite;
-    
-    s = suite_create("config_suite");
-    tc_config_suite = tcase_create("basic_config");
-
-    tcase_add_test(tc_config_suite, test_good_config);
-    tcase_add_test(tc_config_suite, test_whitespace_around_equal_sign);
-    tcase_add_test(tc_config_suite, test_leading_whitespace);
-    tcase_add_test(tc_config_suite, test_trailing_whitespace);
-    suite_add_tcase(s, tc_config_suite);
-
-    return s;
 }
 
 int main(void)
 {
-    int number_failed;
+    const UnitTest tests[] = {
+        unit_test(test_good_config),
+        unit_test(test_whitespace_around_equal_sign),
+        unit_test(test_leading_whitespace),
+        unit_test(test_trailing_whitespace),
+    };
 
-    Suite *s = config_suite();
-    SRunner *sr = srunner_create(s);
-    /* If CK_VERBOSITY is set, use that, otherwise it defaults to CK_NORMAL */
-    srunner_run_all(sr, CK_ENV);
-    number_failed = srunner_ntests_failed(sr);
-    srunner_free(sr);
-    return (number_failed == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
+    return run_tests(tests);
 }

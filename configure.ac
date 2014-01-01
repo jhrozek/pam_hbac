@@ -2,6 +2,7 @@ AC_PREREQ(2.59)
 
 m4_include([version.m4])
 m4_include([external/attribute.m4])
+m4_include([external/libcmocka.m4])
 
 AC_INIT([libpam_hbac],
         VERSION_NUMBER,
@@ -42,14 +43,8 @@ AC_ARG_ENABLE([pammoddir], [AS_HELP_STRING([--enable-pammoddir],
               [pammoddir=$libdir/security])
 AC_SUBST(pammoddir)
 
-# Unit tests
-PKG_CHECK_MODULES([CHECK], [check >= 0.9.5], [have_check=1], [have_check=])
-if test x$have_check = x; then
-    AC_MSG_WARN([Without the 'CHECK' libraries, you will be unable to run all tests in the 'make check' suite])
-else
-    AC_CHECK_HEADERS([check.h],,AC_MSG_ERROR([Could not find CHECK headers]))
-fi
-AM_CONDITIONAL([HAVE_CHECK], [test x$have_check != x])
+# Optional build dependencies - Unit tests
+AM_CHECK_CMOCKA
 
 AC_CONFIG_HEADER(config.h)
 AC_CONFIG_FILES([Makefile])
