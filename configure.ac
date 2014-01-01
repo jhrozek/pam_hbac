@@ -23,12 +23,8 @@ m4_pattern_allow([AM_SILENT_RULES])
 AM_SILENT_RULES
 
 AM_CONDITIONAL([HAVE_GCC], [test "$ac_cv_prog_gcc" = yes])
-AC_CACHE_CHECK([whether compiler supports __attribute__((unused))],
-                pam_hbac_cv_attribute_unused,
-                [AC_COMPILE_IFELSE(
-                    [AC_LANG_SOURCE([__attribute__((unused)) static void cleanup(void) { }])],
-                    pam_hbac_cv_attribute_unused=yes)
-                ])
+CC_ATTRIBUTE_NONNULL
+CC_ATTRIBUTE_UNUSED
 
 #Check for PAM headers
 AC_CHECK_HEADERS([security/pam_ext.h security/pam_modules.h],
