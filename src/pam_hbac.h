@@ -40,6 +40,14 @@
     }                            \
 } while(0);
 
+#define CHECK_PTR_LRET(ptr, l) do { \
+    if(ptr == NULL) {            \
+        ret = ENOMEM;            \
+        goto l;                  \
+    }                            \
+} while(0);
+
+
 #define free_const(ptr) free(discard_const(ptr))
 
 #define CHECK_PTR(ptr) CHECK_PTR_L(ptr, fail)

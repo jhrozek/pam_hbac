@@ -171,7 +171,7 @@ ph_connect(struct pam_hbac_config *pc)
     }
 
     password.bv_len = strlen(pc->bind_pw);
-    password.bv_val = pc->bind_pw;
+    password.bv_val = discard_const(pc->bind_pw);
 
     ret = ldap_sasl_bind_s(ld, pc->bind_dn, LDAP_SASL_SIMPLE, &password,
                            NULL, NULL, NULL);
@@ -213,7 +213,7 @@ pam_hbac(enum pam_hbac_actions action, pam_handle_t *pamh,
     int pam_ret;
     int args;
     struct pam_items pi;
-    struct pam_hbac_ctx *ctx;
+    struct pam_hbac_ctx *ctx = NULL;
 
     /* Check supported actions */
     switch (action) {

@@ -237,7 +237,7 @@ ph_read_config(const char *config_file, struct pam_hbac_config **_conf)
 
     errno = 0;
     fp = fopen(config_file, "r");
-    if (!fp) {
+    if (fp == NULL) {
         /* According to PAM Documentation, such an error in a config file
          * SHOULD be logged at LOG_ALERT level
          */
@@ -248,7 +248,7 @@ ph_read_config(const char *config_file, struct pam_hbac_config **_conf)
     }
 
     conf = calloc(1, sizeof(struct pam_hbac_config));
-    CHECK_PTR_L(conf, done);
+    CHECK_PTR_LRET(conf, done);
 
     ret = ph_create_attrmap(&conf->map);
     if (ret) goto done;
@@ -264,10 +264,8 @@ ph_read_config(const char *config_file, struct pam_hbac_config **_conf)
     }
 
     /* Set all values that were not set explicitly */
-    if ((conf = default_config(conf)) == NULL) {
-        ret = ENOMEM;
-        goto done;
-    }
+    conf = default_config(conf);
+    CHECK_PTR_LRET(conf, done);
 
     ret = 0;
     *_conf = conf;
