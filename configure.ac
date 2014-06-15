@@ -26,10 +26,23 @@ CC_ATTRIBUTE_NONNULL
 CC_ATTRIBUTE_UNUSED
 
 #Check for PAM headers
-AC_CHECK_HEADERS([security/pam_ext.h security/pam_modules.h],
-                 [AC_CHECK_LIB(pam, pam_get_item, [ PAM_LIBS="-lpam" ], [AC_MSG_ERROR([PAM must support pam_get_item])])],
-                 [AC_MSG_ERROR([PAM development libraries not installed])]
-                )
+AC_CHECK_HEADERS([security/pam_appl.h security/pam_modules.h],
+    [AC_CHECK_LIB([pam], [pam_get_item],
+        [PAM_LIBS="-lpam"],
+        [AC_MSG_ERROR([PAM must support pam_get_item])])],
+    [AC_MSG_ERROR([PAM development libraries not installed])]
+)
+
+AC_CHECK_HEADERS([security/pam_ext.h security/pam_modutil.h])
+AC_CHECK_HEADERS([security/pam_misc.h security/_pam_macros.h])
+AC_CHECK_HEADERS([security/openpam.h],,,[
+      #ifdef HAVE_SECURITY_PAM_APPL_H
+      #include <security/pam_appl.h>
+      #endif
+    ])
+
+AC_CHECK_LIB([pam_misc], [misc_conv],
+    [PAM_MISC_LIBS="-lpam_misc"])
 
 #Set the PAM module install path
 AC_ARG_ENABLE([pammoddir], [AS_HELP_STRING([--enable-pammoddir],
