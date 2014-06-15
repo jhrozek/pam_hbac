@@ -22,8 +22,6 @@
 #include <stdio.h>
 #include <sys/time.h>
 
-#include <security/_pam_macros.h>
-
 #include "pam_hbac.h"
 #include "config.h"
 

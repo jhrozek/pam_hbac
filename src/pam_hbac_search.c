@@ -19,8 +19,6 @@
 #include <stdlib.h>
 #include <errno.h>
 
-#include <security/_pam_macros.h>
-
 #include "dlinklist.h"
 #include "pam_hbac.h"
 

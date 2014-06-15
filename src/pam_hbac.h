@@ -21,8 +21,11 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <errno.h>
 
 #include <ldap.h>
+
+#include "pam_hbac_compat.h"
 
 /* various utilities */
 /* taken from sources of SSSD - http://fedorahosted.org/sssd */

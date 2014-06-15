@@ -22,8 +22,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <limits.h>
-
-#include <security/_pam_macros.h>
+#include <unistd.h>
 
 #include "pam_hbac.h"
 #include "config.h"
