@@ -31,8 +31,11 @@ pam_hbac_la_LDFLAGS = \
 		     -lldap \
 		     -lpam \
 		     -module \
-		     -avoid-version \
-		     -Wl,--version-script,$(srcdir)/src/pam_hbac.exports
+		     -avoid-version
+#if GNU_LD
+#pam_hbac_la_LDFLAGS += \
+#		     -Wl,--version-script,$(srcdir)/src/pam_hbac.exports
+#endif
 
 dist_noinst_HEADERS = \
 		      src/pam_hbac.h
