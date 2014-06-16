@@ -54,19 +54,6 @@ struct pam_items {
     size_t pam_rhost_size;
 };
 
-static const char *
-action2str(enum pam_hbac_actions action)
-{
-    switch(action) {
-        case PAM_HBAC_ACCOUNT:
-            return "Account";
-        case PAM_HBAC_SENTINEL:
-            return "Sentinel - this should never happen!";
-    }
-
-    return "unknown";
-}
-
 static int
 parse_args(const pam_handle_t *pamh, int argc, const char **argv)
 {
