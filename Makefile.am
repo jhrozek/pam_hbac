@@ -7,6 +7,7 @@ AM_CFLAGS += -Wall -Wshadow -Wstrict-prototypes -Wpointer-arith \
 	     -Wcast-qual -Wcast-align -Wwrite-strings \
 	     -Werror-implicit-function-declaration
 endif
+PAM_MISC_LIBS=@PAM_MISC_LIBS@
 
 ACLOCAL_AMFLAGS = -I m4 -I .
 ###############################
@@ -59,7 +60,7 @@ TESTS = config-tests
 ### Interactive test program
 noinst_PROGRAMS = pam_test_client
 pam_test_client_SOURCES = src/tests/pam_test_client.c
-pam_test_client_LDFLAGS = -lpam -lpam_misc
+pam_test_client_LDFLAGS = -lpam $(PAM_MISC_LIBS)
 
 ### Targets
 tests: all $(check_PROGRAMS)

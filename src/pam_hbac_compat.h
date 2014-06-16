@@ -55,6 +55,10 @@ do {                             \
 # include <security/pam_ext.h>
 #endif /* HAVE_SECURITY_PAM_EXT_H */
 
+#ifdef HAVE_SECURITY_OPENPAM_H
+# include <security/openpam.h>
+#endif /* HAVE_SECURITY_OPENPAM_H */
+
 #ifndef HAVE_PAM_VSYSLOG
 #define pam_vsyslog(pamh, priority, fmt, vargs) \
     vsyslog((priority), (fmt), (vargs))
