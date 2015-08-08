@@ -1,7 +1,7 @@
 /*
-    Copyright (C) 2012 Jakub Hrozek <jakub.hrozek@gmail.com>
+    Copyright (C) 2015 Jakub Hrozek <jakub.hrozek@posteo.se>
 
-    Based on pam_sss by Sumit Bose <sbose@redhat.com>
+    Module structure based on pam_sss by Sumit Bose <sbose@redhat.com>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -55,7 +55,7 @@ struct pam_items {
 };
 
 static int
-parse_args(const pam_handle_t *pamh, int argc, const char **argv)
+parse_args(int argc, const char **argv)
 {
     int ctrl = 0;
 
@@ -134,8 +134,8 @@ ph_init(void)
 {
     struct pam_hbac_ctx *pc;
 
-    pc = calloc(1, sizeof(struct pam_hbac_ctx));
-    if(!pc) return NULL;
+    pc = (struct pam_hbac_ctx *) calloc(1, sizeof(struct pam_hbac_ctx));
+    if (pc == NULL) return NULL;
 
     /* Initialize searches */
 
@@ -211,7 +211,7 @@ pam_hbac(enum pam_hbac_actions action, pam_handle_t *pamh,
 
     D(("Hello pam_hbac: %s", action2str(action)));
 
-    args = parse_args(pamh, argc, argv);
+    args = parse_args(argc, argv);
 
     ret = pam_hbac_get_items(pamh, &pi);
     if (ret != PAM_SUCCESS) {
@@ -244,6 +244,17 @@ pam_hbac(enum pam_hbac_actions action, pam_handle_t *pamh,
 
     print_pam_items(&pi, args);
 
+    // transform PAM items into eval req
+    ret = ph_get_ipa_eval_req(ctx->pc, pi, &eval_req);
+    if (ret != 0) {
+        D(("ph_search_user returned error: %s", strerror(ret)));
+    }
+
+    ret = ph_get_ipa_rules(ctx->pc, pi, &hbac_rules);
+    if (ret != 0) {
+        D(("ph_search_user returned error: %s", strerror(ret)));
+    }
+
     ret = ph_search_user(ctx->ld, ctx->pc, pi.pam_user, &ctx->user_obj);
     if (ret == ENOENT) {
         D(("User unknown\n"));
@@ -261,6 +272,8 @@ pam_hbac(enum pam_hbac_actions action, pam_handle_t *pamh,
         goto fail;
     }
 #endif
+
+    hbac_eval_result = hbac_evaluate(rules, eval_req, &info);
 
     pam_ret = PAM_SUCCESS;
 done:

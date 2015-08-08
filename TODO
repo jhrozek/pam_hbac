@@ -4,6 +4,7 @@ MUST:
 
 SHOULD:
 -------
+* external libhbac library
 * handle multiple URIs
 * SRV records
 * devel mode that
