@@ -155,6 +155,8 @@ struct hbac_request_element {
      *  - Users:    usernames
      *  - Hosts:    hostnames
      *  - Services: PAM service names
+     * FIXME - const is a bad choice if this is supposed to
+     * be freed by the caller
      */
     const char *name;
 

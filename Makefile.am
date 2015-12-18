@@ -26,7 +26,9 @@ pam_hbac_la_SOURCES = \
 		     src/pam_hbac.c \
 		     src/pam_hbac_search.c \
 		     src/pam_hbac_ipa.c \
-		     src/pam_hbac_config.c
+		     src/pam_hbac_config.c \
+		     src/pam_hbac_libipa_wrap.c \
+		     $(NULL)
 
 pam_hbac_la_LDFLAGS = \
 		     -lldap \
@@ -51,8 +53,24 @@ config_tests_CFLAGS = \
 config_tests_LDADD = \
 		     $(CMOCKA_LIBS)
 
+libipa_wrap_tests_SOURCES = \
+	src/tests/libipa_wrap_tests.c \
+	src/pam_hbac_libipa_wrap.c \
+	$(NULL)
+libipa_wrap_tests_CFLAGS = \
+	$(AM_CFLAGS) \
+	$(CMOCKA_CFLAGS) \
+	$(NULL)
+libipa_wrap_tests_LDADD = \
+	-lldap \
+	$(CMOCKA_LIBS) \
+	$(NULL)
+
 if HAVE_CMOCKA
-    check_PROGRAMS = config-tests
+    check_PROGRAMS = \
+	config-tests \
+	libipa-wrap-tests \
+	$(NULL)
 endif
 
 TESTS = config-tests
