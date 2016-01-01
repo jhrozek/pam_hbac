@@ -229,7 +229,7 @@ pam_hbac(enum pam_hbac_actions action, pam_handle_t *pamh,
         goto done;
     }
 
-    /* Search hosts for fqdn = hostname. Make the hostname configurable in the
+    /* Search hosts for fqdn = hostname. FIXME - Make the hostname configurable in the
      * future.
      */
     ret = ph_get_host(ctx, pi.pam_rhost, &targethost);

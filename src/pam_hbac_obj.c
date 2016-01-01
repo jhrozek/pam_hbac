@@ -22,6 +22,11 @@
 #include <ctype.h>
 #include <errno.h>
 #include <sys/time.h>
+#include <sys/types.h>
+#include <pwd.h>
+#include <grp.h>
+#include <unistd.h>
+#include <uuid/uuid.h>
 
 #include "pam_hbac.h"
 #include "pam_hbac_compat.h"
@@ -31,10 +36,98 @@
 #include "pam_hbac_obj_int.h"
 #include "config.h"
 
+static char *
+getgroupname(gid_t gid)
+{
+    int bufsize;
+    struct group grp;
+    struct group *result = NULL;
+
+    bufsize = sysconf(_SC_GETGR_R_SIZE_MAX);
+    if (bufsize == -1) {
+        return NULL;
+    }
+
+    int ret;
+    char buffer[bufsize];
+
+    ret = getgrgid_r(gid, &grp, buffer, bufsize, &result);
+    if (ret != 0 || result == NULL) {
+        return NULL;
+    }
+
+    return strdup(grp.gr_name);
+}
+
+struct ph_user *
+get_user_names(struct passwd *pwd,
+               int *gidlist,
+               size_t maxgroups)
+{
+    struct ph_user *user;
+    size_t i;
+
+    user = malloc(sizeof(struct ph_user));
+    if (user == NULL) {
+        return NULL;
+    }
+
+    user->name = strdup(pwd->pw_name);
+    if (user->name == NULL) {
+        free(user);
+        return NULL;
+    }
+
+    user->group_names = calloc(maxgroups + 1, sizeof(char *));
+    if (user->group_names == NULL) {
+        ph_free_user(user);
+        return NULL;
+    }
+
+    for (i = 0; i < maxgroups; i++) {
+        user->group_names[i] = getgroupname(gidlist[i]);
+        if (user->group_names[i] == NULL) {
+            ph_free_user(user);
+            return NULL;
+        }
+    }
+
+    return user;
+}
+
 struct ph_user *
 ph_get_user(const char *username)
 {
-    return NULL;
+    int bufsize;
+    int maxgroups;
+
+    bufsize = sysconf(_SC_GETPW_R_SIZE_MAX);
+    if (bufsize == -1) {
+        return NULL;
+    }
+
+    maxgroups = sysconf(_SC_NGROUPS_MAX);
+    if (maxgroups == -1) {
+        return NULL;
+    }
+
+    int ret;
+    char buffer[bufsize];
+    int gidlist[maxgroups];
+    struct passwd pwd;
+    struct passwd *result = NULL;
+
+    ret = getpwnam_r(username, &pwd, buffer, bufsize, &result);
+    if (ret != 0 || result == NULL) {
+        return NULL;
+    }
+
+    ret = getgrouplist(pwd.pw_name, pwd.pw_gid, gidlist, &maxgroups);
+    if (ret != 0) {
+        return NULL;
+    }
+
+    return get_user_names(&pwd, gidlist, maxgroups);
 }
 
 void
@@ -43,6 +136,10 @@ ph_free_user(struct ph_user *user)
     if (user == NULL) {
         return;
     }
+
+    free_string_list(user->group_names);
+    free(user->name);
+    free(user);
 }
 
 static const char *ph_host_attrs[] = { PAM_HBAC_ATTR_OC,
