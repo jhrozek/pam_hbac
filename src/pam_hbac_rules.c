@@ -1,8 +1,6 @@
 /*
     Copyright (C) 2015 Jakub Hrozek <jakub.hrozek@posteo.se>
 
-    Module structure based on pam_sss by Sumit Bose <sbose@redhat.com>
-
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
     the Free Software Foundation; either version 3 of the License, or
@@ -35,29 +33,14 @@
 
 #define RULE_NAME_FALLBACK  "unknown rule name"
 
-/* Should this be utility function? */
-static void free_string_list(const char **list)
-{
-    size_t i;
-
-    if (list == NULL) {
-        return;
-    }
-
-    for (i = 0; list[i]; i++) {
-        free_const(list[i]);
-    }
-    free(list);
-}
-
 static void free_hbac_rule_element(struct hbac_rule_element *el)
 {
     if (el == NULL) {
         return;
     }
 
-    free_string_list(el->names);
-    free_string_list(el->groups);
+    free_string_clist(el->names);
+    free_string_clist(el->groups);
     free(el);
 }
 
