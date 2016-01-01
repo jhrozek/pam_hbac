@@ -110,7 +110,7 @@ static int eval_req_test_teardown(void **state)
     struct eval_req_test_ctx *test_ctx = *state;
 
     if (test_ctx != NULL) {
-        ph_free_eval_req(test_ctx->req);
+        ph_free_hbac_eval_req(test_ctx->req);
         free(test_ctx);
     }
     return 0;

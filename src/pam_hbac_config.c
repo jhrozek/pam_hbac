@@ -25,10 +25,26 @@
 #include <unistd.h>
 
 #include "pam_hbac.h"
+#include "pam_hbac_compat.h"
 #include "config.h"
 
 #define MAX_LINE    1024
 #define SEPARATOR   '='
+
+#define CHECK_PTR_L(ptr, l) do { \
+    if(ptr == NULL) {            \
+        goto l;                  \
+    }                            \
+} while(0);
+
+#define CHECK_PTR_LRET(ptr, l) do { \
+    if(ptr == NULL) {            \
+        ret = ENOMEM;            \
+        goto l;                  \
+    }                            \
+} while(0);
+
+#define CHECK_PTR(ptr) CHECK_PTR_L(ptr, fail)
 
 #define SET_DEFAULT_STRING(k, def) do {              \
     if (k == NULL) {                                 \
@@ -38,39 +54,15 @@
 } while(0);                                          \
 
 void
-ph_cleanup_attrmap(struct pam_hbac_attrmap *map)
-{
-    if (!map) return;
-
-    free(map->user_key);
-
-    free(map);
-}
-
-void
 ph_cleanup_config(struct pam_hbac_config *conf)
 {
     if (!conf) return;
-
-    ph_cleanup_attrmap(conf->map);
 
     free_const(conf->uri);
     free_const(conf->search_base);
     free(conf->hostname);
 
     free(conf);
-}
-
-static struct pam_hbac_attrmap *
-default_attrmap(struct pam_hbac_attrmap *map)
-{
-    SET_DEFAULT_STRING(map->user_key, PAM_HBAC_ATTR_USER);
-
-    return map;
-
-fail:
-    ph_cleanup_attrmap(map);
-    return NULL;
 }
 
 static struct pam_hbac_config *
@@ -132,7 +124,9 @@ get_key_value(const char *line,
 
     sep = strchr(line, SEPARATOR);
     if (!sep) {
+#if 0
         D(("Malformed line; no separator\n"));
+#endif
         return EINVAL;
     }
 
@@ -178,10 +172,14 @@ read_config_line(const char *line, struct pam_hbac_config *conf)
 
     if (strcasecmp(key, PAM_HBAC_CONFIG_URI) == 0) {
         conf->uri = value;
+#if 0
         D(("URI: %s", conf->uri));
+#endif
     } else if (strcasecmp(key, PAM_HBAC_CONFIG_BIND_DN) == 0) {
         conf->bind_dn = value;
+#if 0
         D(("bind dn: %s", conf->bind_dn));
+#endif
     } else if (strcasecmp(key, PAM_HBAC_CONFIG_BIND_PW) == 0) {
         conf->bind_pw = value;
 #if 0
@@ -189,10 +187,14 @@ read_config_line(const char *line, struct pam_hbac_config *conf)
 #endif
     } else if (strcasecmp(key, PAM_HBAC_CONFIG_SEARCH_BASE) == 0) {
         conf->search_base = value;
+#if 0
         D(("search base: %s", conf->search_base));
+#endif
     } else if (strcasecmp(key, PAM_HBAC_CONFIG_HOST_NAME) == 0) {
         conf->hostname = discard_const(value);
+#if 0
         D(("host name: %s", conf->hostname));
+#endif
     } else {
         /* Skip unknown key/values */
         free_const(value);
@@ -202,26 +204,12 @@ read_config_line(const char *line, struct pam_hbac_config *conf)
     return 0;
 
 done:
+#if 0
     D(("cannot read config [%d]: %s\n", ret, strerror(ret)));
+#endif
     free_const(key);
     free_const(value);
     return ret;
-}
-
-int
-ph_create_attrmap(struct pam_hbac_attrmap **_map)
-{
-    struct pam_hbac_attrmap *map;
-
-    map = calloc(1, sizeof(struct pam_hbac_attrmap));
-    if (!map) return ENOMEM;
-
-    /* Only defaults for now */
-    map = default_attrmap(map);
-    if (!map) return ENOMEM;
-
-    *_map = map;
-    return 0;
 }
 
 int
@@ -232,7 +220,9 @@ ph_read_config(const char *config_file, struct pam_hbac_config **_conf)
     char line[MAX_LINE];
     struct pam_hbac_config *conf;
 
+#if 0
     D(("config file: %s", config_file));
+#endif
 
     errno = 0;
     fp = fopen(config_file, "r");
@@ -248,9 +238,6 @@ ph_read_config(const char *config_file, struct pam_hbac_config **_conf)
 
     conf = calloc(1, sizeof(struct pam_hbac_config));
     CHECK_PTR_LRET(conf, done);
-
-    ret = ph_create_attrmap(&conf->map);
-    if (ret) goto done;
 
     while (fgets(line, sizeof(line), fp) != NULL) {
         /* Try to parse a line */
