@@ -21,15 +21,14 @@
 #include <ctype.h>
 #include <errno.h>
 
-#include "pam_hbac.h"
-#include "libhbac/ipa_hbac.h"
 #include "config.h"
 
-enum req_el_type {
-    REQ_EL_USER,
-    REQ_EL_HOST,
-    REQ_EL_SVC,
-};
+#include "pam_hbac.h"
+#include "pam_hbac_entry.h"
+#include "pam_hbac_dnparse.h"
+#include "pam_hbac_obj_int.h"
+
+#include "libhbac/ipa_hbac.h"
 
 static void
 free_request_element(struct hbac_request_element *el)
@@ -42,22 +41,32 @@ free_request_element(struct hbac_request_element *el)
 
     if (el->groups != NULL) {
         for (i=0; el->groups[i]; i++) {
-            free(discard_const(el->groups[i]));
+            free_const(el->groups[i]);
         }
     }
 
     free(el);
 }
 
+/* FIXME - split to utils? */
+static size_t
+null_string_array_size(char *arr[])
+{
+    size_t nelem;
+
+    if (arr == NULL) {
+        return 0;
+    }
+
+    for (nelem = 0; arr[nelem] != NULL; nelem++);
+
+    return nelem;
+}
+
 static struct hbac_request_element *
-new_request_element(struct ph_member_obj *obj)
+new_sized_request_element(size_t ngroups)
 {
     struct hbac_request_element *el;
-    size_t nmem = 0;
-
-    if (obj->memberofs) {
-        for (; obj->memberofs[nmem]; nmem++);
-    }
 
     el = malloc(sizeof(struct hbac_request_element));
     if (el == NULL) {
@@ -65,7 +74,7 @@ new_request_element(struct ph_member_obj *obj)
     }
 
     /* Add sentinel. This also handles objects with no memberships */
-    el->groups = calloc(nmem + 1, sizeof(const char *));
+    el->groups = calloc(ngroups + 1, sizeof(const char *));
     if (el->groups == NULL) {
         free(el);
         return NULL;
@@ -74,236 +83,33 @@ new_request_element(struct ph_member_obj *obj)
     return el;
 }
 
-static const char *rdn_get_val(char **exploded_rdn, const char *attr)
-{
-    size_t i;
-    size_t j;
-    int attr_len;
-
-    attr_len = strlen(attr);
-
-    if (exploded_rdn == NULL) {
-        return NULL;
-    }
-
-    for (i = 0; exploded_rdn[i]; i++) {
-        if (strncasecmp(exploded_rdn[i], attr, attr_len) != 0) {
-            continue;
-        }
-
-        for (j = attr_len; isspace(exploded_rdn[i][j]); j++);
-
-        if (exploded_rdn[i][j] != '=') {
-            continue;
-        }
-        j++;
-
-        while (isspace(exploded_rdn[i][j])) j++;
-
-        if (exploded_rdn[i][j] == '\0') {
-            continue;
-        }
-
-        return exploded_rdn[i] + j;
-    }
-
-    return NULL;
-}
-
-/* if val is NULL, only key is checked */
-static bool
-rdn_keyval_matches(const char *rdn, const char *key, const char *val)
-{
-    char **exploded_rdn;
-    const char *rdn_val;
-    bool ret = false;
-
-    exploded_rdn = ldap_explode_rdn(rdn, 0);
-    if (exploded_rdn == NULL) {
-        return false;
-    }
-
-    rdn_val = rdn_get_val(exploded_rdn, key);
-    if ((rdn_val != NULL) && ((val == NULL || strcmp(val, rdn_val) == 0))) {
-            ret = true;
-    }
-    ldap_value_free(exploded_rdn);
-
-    return ret;
-}
-
-static char *
-rdn_check_and_getval(const char *rdn, const char *key)
-{
-    char **exploded_rdn;
-    const char *rdn_val = NULL;
-    char *ret;
-
-    exploded_rdn = ldap_explode_rdn(rdn, 0);
-    if (exploded_rdn == NULL) {
-        return false;
-    }
-
-    rdn_val = rdn_get_val(exploded_rdn, key);
-    if (rdn_val) {
-        ret = strdup(rdn_val);
-    } else {
-        ret = NULL;
-    }
-    ldap_value_free(exploded_rdn);
-
-    return ret;
-}
-
-static bool
-container_matches(char * const *dn_parts, const char ***kvs)
-{
-    size_t idx;
-    bool match;
-
-    if (dn_parts == NULL || dn_parts[0] == NULL || kvs == NULL) {
-        return false;
-    }
-
-    for (idx = 0; kvs[idx]; idx++) {
-        /* +1 because we don't care about RDN */
-        if (dn_parts[idx+1] == NULL) {
-            /* Short DN.. */
-            return false;
-        }
-
-        match = rdn_keyval_matches(dn_parts[idx+1], kvs[idx][0], kvs[idx][1]);
-        if (match == false) {
-            return false;
-        }
-    }
-
-    /* There must be at least one more for basedn */
-    /* FIXME - should we check explicitly?? */
-    if (dn_parts[idx+1] == NULL) {
-        return false;
-    }
-    return true;
-}
-
-static int
-container_check_and_get_rdn(char * const *dn_parts,
-                            const char ***container_kvs,
-                            const char **_rdn_val)
-{
-    bool ok;
-
-    ok = container_matches(dn_parts, container_kvs);
-    if (!ok) {
-        return EINVAL;
-    }
-
-    if (dn_parts[0] == NULL) {
-        return ERANGE;
-    }
-    *_rdn_val = rdn_check_and_getval(dn_parts[0], "cn");
-    if (*_rdn_val == NULL) {
-        return EINVAL;
-    }
-
-    return 0;
-}
-
-static int
-group_container_rdn(char * const *dn_parts,
-                    const char **_rdn_val)
-{
-    const char *cn1[] = { "cn", "groups" };
-    const char *cn2[] = { "cn", "accounts" };
-    const char **group_container[] = {
-        cn1, cn2, NULL
-    };
-
-    return container_check_and_get_rdn(dn_parts, group_container, _rdn_val);
-}
-
-static int
-svc_container_rdn(char * const *dn_parts,
-                  const char **_rdn_val)
-{
-    const char *cn1[] = { "cn", "hbacservicegroups" };
-    const char *cn2[] = { "cn", "hbac" };
-    const char **svc_container[] = {
-        cn1, cn2, NULL
-    };
-
-    return container_check_and_get_rdn(dn_parts, svc_container, _rdn_val);
-}
-
-static int
-host_container_rdn(char * const *dn_parts,
-                   const char **_rdn_val)
-{
-    const char *cn1[] = { "cn", "hostgroups" };
-    const char *cn2[] = { "cn", "accounts" };
-    const char **host_container[] = {
-        cn1, cn2, NULL
-    };
-
-    return container_check_and_get_rdn(dn_parts, host_container, _rdn_val);
-}
-
-static int
-name_from_dn(const char *dn, enum req_el_type el_type, const char **_name)
-{
-    /* Extract NAME from cn=NAME,cn=groups,cn=accounts */
-    char **dn_parts;
-    int ret;
-
-    dn_parts = ldap_explode_dn(dn, 0);
-    if (dn_parts == NULL) {
-        return EINVAL; /* FIXME - better error code */
-    }
-
-    switch (el_type) {
-    case REQ_EL_USER:
-        ret = group_container_rdn(dn_parts, _name);
-        break;
-    case REQ_EL_SVC:
-        ret = svc_container_rdn(dn_parts, _name);
-        break;
-    case REQ_EL_HOST:
-        ret = host_container_rdn(dn_parts, _name);
-        break;
-    default:
-        ret = EINVAL;
-        break;
-    }
-
-    ldap_value_free(dn_parts);
-    return ret;
-}
-
 static struct hbac_request_element *
-member_obj_to_eval_req_el(struct ph_member_obj *obj,
-                          enum req_el_type el_type)
+entry_to_eval_req_el(struct ph_attr *name,
+                     struct ph_attr *memberof,
+                     enum member_el_type el_type)
 {
     struct hbac_request_element *el;
     size_t i, gi;
     int ret;
 
-    el = new_request_element(obj);
-    if (el == NULL) {
+    /* Name can only have one value */
+    if (name->nvals != 1) {
         return NULL;
     }
 
-    /* No need to copy objname */
-    el->name = obj->name;
-
-    if (obj->memberofs == NULL) {
-        return el;
+    el = new_sized_request_element(memberof->nvals);
+    if (el == NULL) {
+        return NULL;
     }
+    el->name = (const char *) name->vals[0]->bv_val;
 
     /* Iterate over all memberof attribute values and copy out the
      * groupname */
     gi = 0;
-    for (i=0; obj->memberofs[i]; i++) {
-        ret = name_from_dn(obj->memberofs[i], el_type, &el->groups[gi]);
+    for (i=0; i < memberof->nvals; i++) {
+        ret = group_name_from_dn((const char *) memberof->vals[i]->bv_val,
+                                 el_type,
+                                 &el->groups[gi]);
         switch (ret) {
             case 0:
                 break;
@@ -324,21 +130,54 @@ member_obj_to_eval_req_el(struct ph_member_obj *obj,
 }
 
 static struct hbac_request_element *
-user_to_eval_req_el(struct ph_member_obj *user)
+user_to_eval_req_el(struct ph_user *user)
 {
-    return member_obj_to_eval_req_el(user, REQ_EL_USER);
+    struct hbac_request_element *el;
+    size_t ngroups;
+    size_t i;
+
+    ngroups = null_string_array_size(user->group_names);
+
+    el = new_sized_request_element(ngroups);
+    if (el == NULL) {
+        return NULL;
+    }
+
+    /* No need to copy objname */
+    el->name = user->name;
+
+    if (ngroups == 0) {
+        return el;
+    }
+
+    /* Iterate over all memberof attribute values and copy out the
+     * groupname */
+    for (i=0; user->group_names[i]; i++) {
+        el->groups[i] = user->group_names[i];
+    }
+
+    return el;
 }
 
 static struct hbac_request_element *
-svc_to_eval_req_el(struct ph_member_obj *svc)
+svc_to_eval_req_el(struct ph_entry *svc)
 {
-    return member_obj_to_eval_req_el(svc, REQ_EL_SVC);
+    struct ph_attr *svcname = NULL;
+    struct ph_attr *hostgroups = NULL;
+
+    return entry_to_eval_req_el(svcname, hostgroups, REQ_EL_SVC);
 }
 
 static struct hbac_request_element *
-tgt_host_to_eval_req_el(struct ph_member_obj *svc)
+tgt_host_to_eval_req_el(struct ph_entry *host)
 {
-    return member_obj_to_eval_req_el(svc, REQ_EL_HOST);
+    struct ph_attr *fqdn;
+    struct ph_attr *hostgroups;
+
+    fqdn = ph_entry_get_attr_val(host, PH_MAP_HOST_FQDN);
+    hostgroups = ph_entry_get_attr_val(host, PH_MAP_HOST_MEMBEROF);
+
+    return entry_to_eval_req_el(fqdn, hostgroups, REQ_EL_HOST);
 }
 
 void
@@ -354,16 +193,15 @@ ph_free_eval_req(struct hbac_eval_req *req)
     free(req);
 }
 
-int
-ph_create_hbac_eval_req(struct ph_member_obj *user,
-                        struct ph_member_obj *tgthost,
-                        struct ph_member_obj *service,
-                        struct hbac_eval_req **_req)
+int ph_create_hbac_eval_req(struct ph_user *user,
+                            struct ph_entry *targethost,
+                            struct ph_entry *service,
+                            struct hbac_eval_req **_req)
 {
     int ret;
     struct hbac_eval_req *req;
 
-    if (user == NULL || tgthost == NULL || service == NULL
+    if (user == NULL || targethost == NULL || service == NULL
             || _req == NULL) {
         return EINVAL;
     }
@@ -385,7 +223,7 @@ ph_create_hbac_eval_req(struct ph_member_obj *user,
         goto fail;
     }
 
-    req->targethost = tgt_host_to_eval_req_el(tgthost);
+    req->targethost = tgt_host_to_eval_req_el(targethost);
     if (req->targethost == NULL) {
         ret = ENOMEM;
         goto fail;

@@ -24,10 +24,13 @@ AM_CPPFLAGS = \
 pamlib_LTLIBRARIES = pam_hbac.la
 pam_hbac_la_SOURCES = \
 		     src/pam_hbac.c \
-		     src/pam_hbac_search.c \
-		     src/pam_hbac_ipa.c \
+		     src/pam_hbac_obj.c \
 		     src/pam_hbac_config.c \
-		     src/pam_hbac_libipa_wrap.c \
+		     src/pam_hbac_entry.c \
+		     src/pam_hbac_rules.c \
+		     src/pam_hbac_ldap.c \
+		     src/pam_hbac_eval_req.c \
+		     src/pam_hbac_dnparse.c \
 		     $(NULL)
 
 pam_hbac_la_LDFLAGS = \

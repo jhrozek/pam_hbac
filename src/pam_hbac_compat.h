@@ -18,6 +18,8 @@
 #ifndef __PAM_HBAC_COMPAT_H__
 #define __PAM_HBAC_COMPAT_H__
 
+#include <security/pam_appl.h>
+
 #ifdef HAVE_SECURITY__PAM_MACROS_H
 # include <security/_pam_macros.h>
 #endif /* HAVE_SECURITY__PAM_MACROS_H */
