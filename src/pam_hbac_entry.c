@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2012 Jakub Hrozek <jakub.hrozek@gmail.com>
+    Copyright (C) 2015 Jakub Hrozek <jakub.hrozek@posteo.se>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -19,68 +19,21 @@
 #include <stdlib.h>
 #include <errno.h>
 
-#include "dlinklist.h"
 #include "pam_hbac.h"
-
-/* Helper functions */
-bool
-ph_ldap_entry_has_oc(LDAP *ld, LDAPMessage *entry, const char *oc)
-{
-    int i;
-    struct berval **vals;
-
-    vals = ldap_get_values_len(ld, entry, PAM_HBAC_ATTR_OC);
-    if (vals == NULL) {
-        D(("No objectclass? Corrupt entry\n"));
-        return false;
-    }
-
-    for (i = 0; vals[i] != NULL; i++) {
-        if (strcmp(vals[i]->bv_val, oc) == 0) {
-            break;
-        }
-    }
-    ldap_value_free_len(vals);
-
-    if (vals[i] == NULL) {
-        /* Could not find the expected objectclass */
-        D(("Could not find objectclass %s\n", oc));
-        return false;
-    }
-
-    return true;
-}
-
-int
-ph_want_attr(const char *attr, struct ph_search_ctx *obj)
-{
-    int i;
-
-    for (i = 0; i < obj->num_attrs; i++) {
-        if (strcmp(obj->attrs[i], attr) == 0) {
-            return i;
-        }
-    }
-
-    return -1;
-}
+#include "pam_hbac_entry.h"
 
 /* entry attribute */
-struct ph_attr {
-    char *name;
-    struct berval **vals;
-    size_t nvals;
-};
-
 struct ph_attr *
 ph_attr_new(char *name, struct berval **vals)
 {
     struct ph_attr *a;
 
     a = malloc(sizeof(struct ph_attr));
-    if (!a) return NULL;
+    if (a == NULL) {
+        return NULL;
+    }
 
-    /* FIXME - should we deepcopy? */
+    /* FIXME - Do we need the name? */
     a->name = name;
     a->vals = vals;
     a->nvals = ldap_count_values_len(a->vals);
@@ -88,22 +41,24 @@ ph_attr_new(char *name, struct berval **vals)
     return a;
 }
 
-void
-ph_attr_debug(struct ph_attr *a)
+struct berval **
+ph_attr_get_vals(struct ph_attr *a)
 {
-    size_t i;
+    return a->vals;
+}
 
-    if (!a || a->vals == NULL || a->nvals == 0) return;
-
-    for (i = 0; i < a->nvals; i++) {
-        D(("%s: %s\n", a->name, a->vals[i]->bv_val));
-    }
+size_t
+ph_attr_get_num_vals(struct ph_attr *a)
+{
+    return a->nvals;
 }
 
 void
 ph_attr_free(struct ph_attr *a)
 {
-    if (!a) return;
+    if (a == NULL) {
+        return;
+    }
 
     ldap_value_free_len(a->vals);
     ldap_memfree(a->name);
@@ -112,156 +67,137 @@ ph_attr_free(struct ph_attr *a)
 
 /* search entry */
 struct ph_entry {
-    struct ph_entry *next;
-    struct ph_entry *prev;
-
-    struct ph_search_ctx *obj;
     struct ph_attr **attrs;
+    size_t num_attrs;
 };
 
+static int
+ph_entry_init(struct ph_entry *e,
+              size_t num_attrs)
+{
+    e->num_attrs = num_attrs;
+    e->attrs = calloc(num_attrs, sizeof(struct ph_attr *));
+    if (e->attrs == NULL) {
+        return ENOMEM;
+    }
+
+    return 0;
+}
+
 struct ph_entry *
-ph_entry_new(struct ph_search_ctx *obj)
+ph_entry_array_new(size_t num_entry_attrs,
+                   size_t num_entries)
 {
     struct ph_entry *e;
+    size_t i;
+    int ret;
 
-    e = calloc(1, sizeof(struct ph_entry));
-    if (!e) return NULL;
-
-    e->obj = obj;
-    e->attrs = calloc(e->obj->num_attrs, sizeof(struct ph_attr *));
-    if (e->attrs == NULL) {
-        free(e);
+    e = calloc(num_entries + 1, sizeof(struct ph_entry));
+    if (e == NULL) {
         return NULL;
+    }
+
+    for (i = 0; i < num_entries; i++) {
+        /* FIXME - would e+i be more readable? */
+        ret = ph_entry_init(&e[i], num_entry_attrs);
+        if (ret != 0) {
+            ph_entry_array_free(e);
+            return NULL;
+        }
     }
 
     return e;
 }
 
-void
-ph_entry_debug(struct ph_entry *e)
+struct ph_entry *
+ph_entry_array_el(struct ph_entry *head,
+                  size_t entry_idx)
 {
-    int i;
-
-    if (!e || !e->attrs || !e->obj) return;
-
-    for (i = 0; i < e->obj->num_attrs; i++) {
-        ph_attr_debug(e->attrs[i]);
-    }
+    return head + entry_idx;
 }
 
 int
-ph_entry_set_attr(struct ph_entry *e, struct ph_attr *a, int index)
+ph_entry_set_attr(struct ph_entry *e,
+                  struct ph_attr *a,
+                  size_t attr_index)
 {
-    if (!e || !e->attrs) return EINVAL;
+    if (e == NULL || e->attrs == NULL) {
+        return EINVAL;
+    }
 
-    e->attrs[index] = a;
+    if (attr_index >= e->num_attrs) {
+        return EINVAL;
+    }
+
+    e->attrs[attr_index] = a;
     return 0;
-}
-
-void
-ph_entry_add(struct ph_entry **head, struct ph_entry *e)
-{
-    DLIST_ADD(*head, e);
 }
 
 size_t
 ph_num_entries(struct ph_entry *head)
 {
     size_t num = 0;
-    struct ph_entry *e;
 
-    for (e = head; e != NULL; e = e->next) num++;
+    if (head == NULL) {
+        return 0;
+    }
+
+    for (num = 0; &head[num]; num++) ;
 
     return num;
 }
 
-struct berval **
-ph_entry_get_attr_val(struct ph_entry *e, int attr)
+/* FIXME - rename to get_attr */
+struct ph_attr *
+ph_entry_get_attr_val(struct ph_entry *e,
+                      size_t attr_index)
 {
     struct ph_attr *a;
-    if (!e || !e->attrs) return NULL;
 
-    /* FIXME - split to a separate func? */
-    a = e->attrs[attr];
-    if (!a) return NULL;
+    if (e == NULL || e->attrs == NULL) {
+        return NULL;
+    }
 
-    return a->vals;
+    if (attr_index >= e->num_attrs) {
+        return NULL;
+    }
+
+    a = e->attrs[attr_index];
+    if (a == NULL) {
+        return NULL;
+    }
+
+    return a;
 }
 
-void
+static void
 ph_entry_free(struct ph_entry *e)
 {
     size_t i;
 
-    if (!e) return;
-
-    if (e->obj == NULL || e->attrs == NULL) {
-        /* Corrupt entry? Shouldn't happen */
-        free(e);
+    if (e == NULL) {
         return;
     }
 
-    for (i=0; i < e->obj->num_attrs; i++) {
-        ph_attr_free(e->attrs[i]);
+    if (e->attrs) {
+        for (i=0; i < e->num_attrs; i++) {
+            ph_attr_free(e->attrs[i]);
+        }
     }
 
     free(e->attrs);
     free(e);
 }
 
-/* This is what we build the request from */
-struct ph_member_obj {
-    char *name;
-    char **memberofs;
-};
-
-struct ph_member_obj *
-ph_member_obj_new(char *name)
+void ph_entry_array_free(struct ph_entry *head)
 {
-    struct ph_member_obj *o;
+    size_t i;
 
-    o = calloc(1, sizeof(struct ph_member_obj));
-    if (!o) return NULL;
-
-    o->name = name;
-    o->memberofs = calloc(1, sizeof(const char *));
-    if (!o->memberofs) {
-        free(o);
-        return NULL;
+    if (head == NULL) {
+        return;
     }
 
-    return o;
-}
-
-void
-ph_member_obj_debug(struct ph_member_obj *o)
-{
-    int i;
-
-    if (!o || !o->name) return;
-
-    if (!o->memberofs || o->memberofs[0] == NULL) {
-        D(("%s is not a member of any groups\n", o->name));
-    } else {
-        for (i = 0; o->memberofs[i]; i++) {
-            D(("%s is a member of %s\n", o->name, o->memberofs[i]));
-        }
+    for (i = 0; head + i != NULL; i++) {
+        ph_entry_free(head + i);
     }
-}
-
-void
-ph_member_obj_free(struct ph_member_obj *o)
-{
-    int i;
-
-    if (!o) return;
-
-    if (o->memberofs) {
-        for (i = 0; o->memberofs[i]; i++) {
-            free(o->memberofs[i]);
-        }
-    }
-
-    free(o->memberofs);
-    free(o);
 }
