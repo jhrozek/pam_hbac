@@ -218,7 +218,7 @@ el_fill_category(struct ph_entry *rule_entry,
     }
 
     bv = cat_attr->vals[0];
-    if (strncasecmp(bv->bv_val, "all", bv->bv_len) != 0) {
+    if (strncasecmp(bv->bv_val, PAM_HBAC_ALL_VALUE, bv->bv_len) != 0) {
         return EINVAL;
     }
 
@@ -308,9 +308,9 @@ fill_rule_enabled(struct ph_entry *rule_entry,
     }
 
     bv = enabled_attr->vals[0];
-    if (strncasecmp(bv->bv_val, "true", bv->bv_len) == 0) {
+    if (strncasecmp(bv->bv_val, PAM_HBAC_TRUE_VALUE, bv->bv_len) == 0) {
         rule->enabled = true;
-    } else if (strncasecmp(bv->bv_val, "false", bv->bv_len) == 0) {
+    } else if (strncasecmp(bv->bv_val, PAM_HBAC_FALSE_VALUE, bv->bv_len) == 0) {
         rule->enabled = false;
     } else {
         return EINVAL;
