@@ -42,29 +42,17 @@
 
 #define PAM_HBAC_CONFIG                PAM_HBAC_CONF_DIR"/"PAM_HBAC_CONFIG_FILE_NAME
 
-/* attribute maps */
-#define IPA_HOST                        "ipaHost"
-
-/* search bases */
-#define HOST_BASE_PREFIX                "cn=accounts"
-
 /* config defaults */
 #define PAM_HBAC_DEFAULT_URI            "ldap://localhost:389"
 #define PAM_HBAC_DEFAULT_SEARCH_BASE    "dc=localhost,dc=com"
 #define PAM_HBAC_DEFAULT_TIMEOUT        5
 
-#if 0
-"[(&(objectClass=ipaHost)(fqdn=vm-087.idm.lab.bos.redhat.com))][cn=accounts,dc=idm,dc=lab,dc=bos,dc=redhat,dc=com]"
-#endif
-
 /* default attributes */
 #define PAM_HBAC_ATTR_OC                "objectClass"
 #define PAM_HBAC_TRUE_VALUE             "TRUE"
+#define PAM_HBAC_FALSE_VALUE            "FALSE"
 #define PAM_HBAC_ALLOW_VALUE            "allow"
 #define PAM_HBAC_ALL_VALUE              "all"
-
-#define PAM_HBAC_ATTR_USER              "uid"
-#define PAM_HBAC_ATTR_MEMBEROF          "memberOf"
 
 /* config keys  */
 #define PAM_HBAC_CONFIG_URI             "URI"
