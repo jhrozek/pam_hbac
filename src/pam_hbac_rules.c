@@ -164,13 +164,13 @@ el_member_attr(struct ph_entry *rule_entry,
                enum member_el_type el_type)
 {
     switch (el_type) {
-    case REQ_EL_USER:
+    case DN_TYPE_USER:
         return ph_entry_get_attr(rule_entry,
                                      PH_MAP_RULE_MEMBER_USER);
-    case REQ_EL_HOST:
+    case DN_TYPE_HOST:
         return ph_entry_get_attr(rule_entry,
                                      PH_MAP_RULE_MEMBER_HOST);
-    case REQ_EL_SVC:
+    case DN_TYPE_SVC:
         return ph_entry_get_attr(rule_entry,
                                      PH_MAP_RULE_MEMBER_SVC);
     default:
@@ -185,13 +185,13 @@ el_category_attr(struct ph_entry *rule_entry,
                  enum member_el_type el_type)
 {
     switch (el_type) {
-    case REQ_EL_USER:
+    case DN_TYPE_USER:
         return ph_entry_get_attr(rule_entry,
                                      PH_MAP_RULE_USER_CAT);
-    case REQ_EL_HOST:
+    case DN_TYPE_HOST:
         return ph_entry_get_attr(rule_entry,
                                      PH_MAP_RULE_HOST_CAT);
-    case REQ_EL_SVC:
+    case DN_TYPE_SVC:
         return ph_entry_get_attr(rule_entry,
                                      PH_MAP_RULE_SVC_CAT);
     default:
@@ -372,19 +372,19 @@ entry_to_hbac_rule(struct ph_entry *rule_entry,
         return ret;
     }
 
-    ret = attr_to_rule_element(rule_entry, REQ_EL_USER, &rule->users);
+    ret = attr_to_rule_element(rule_entry, DN_TYPE_USER, &rule->users);
     if (ret != 0) {
         free_hbac_rule(rule);
         return ret;
     }
 
-    ret = attr_to_rule_element(rule_entry, REQ_EL_SVC, &rule->services);
+    ret = attr_to_rule_element(rule_entry, DN_TYPE_SVC, &rule->services);
     if (ret != 0) {
         free_hbac_rule(rule);
         return ret;
     }
 
-    ret = attr_to_rule_element(rule_entry, REQ_EL_HOST, &rule->targethosts);
+    ret = attr_to_rule_element(rule_entry, DN_TYPE_HOST, &rule->targethosts);
     if (ret != 0) {
         free_hbac_rule(rule);
         return ret;
