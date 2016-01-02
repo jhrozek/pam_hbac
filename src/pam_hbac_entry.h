@@ -25,7 +25,6 @@
 /* This is a header that should be included in modules that deal with
  * entries from LDAP before their conversion to 'native' HBAC structures.
  */
-/* FIXME - should we make this struct opaque? */
 struct ph_attr {
     char *name;
     struct berval **vals;
@@ -35,13 +34,19 @@ struct ph_attr {
 struct ph_attr *ph_attr_new(char *name, struct berval **vals);
 void ph_attr_free(struct ph_attr *a);
 
-struct ph_entry;
+/* The order of attrs in ph_entry is always the same as ph_search_ctx
+ * specified, allowing for fast access
+ */
+struct ph_entry {
+    struct ph_attr **attrs;
+    size_t num_attrs;
+};
 
-struct ph_entry *ph_entry_array_new(size_t num_entry_attrs, size_t num_entries);
-struct ph_entry *ph_entry_array_el(struct ph_entry *head, size_t entry_idx);
-size_t ph_num_entries(struct ph_entry *head);
+struct ph_entry **ph_entry_array_alloc(size_t num_entry_attrs,
+                                       size_t num_entries);
+size_t ph_num_entries(struct ph_entry **entry_list);
 int ph_entry_set_attr(struct ph_entry *e, struct ph_attr *a, size_t index);
-struct ph_attr *ph_entry_get_attr_val(struct ph_entry *e, size_t attr_index);
-void ph_entry_array_free(struct ph_entry *head);
+struct ph_attr *ph_entry_get_attr(struct ph_entry *e, size_t attr_index);
+void ph_entry_array_free(struct ph_entry **entry_list);
 
 #endif /* __PAM_HBAC_ENTRY_H__ */

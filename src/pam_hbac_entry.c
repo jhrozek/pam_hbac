@@ -28,29 +28,20 @@ ph_attr_new(char *name, struct berval **vals)
 {
     struct ph_attr *a;
 
+    if (name == NULL || vals == NULL) {
+        return NULL;
+    }
+
     a = malloc(sizeof(struct ph_attr));
     if (a == NULL) {
         return NULL;
     }
 
-    /* FIXME - Do we need the name? */
     a->name = name;
     a->vals = vals;
     a->nvals = ldap_count_values_len(a->vals);
 
     return a;
-}
-
-struct berval **
-ph_attr_get_vals(struct ph_attr *a)
-{
-    return a->vals;
-}
-
-size_t
-ph_attr_get_num_vals(struct ph_attr *a)
-{
-    return a->nvals;
 }
 
 void
@@ -66,108 +57,24 @@ ph_attr_free(struct ph_attr *a)
 }
 
 /* search entry */
-struct ph_entry {
-    struct ph_attr **attrs;
-    size_t num_attrs;
-};
-
-static int
-ph_entry_init(struct ph_entry *e,
-              size_t num_attrs)
-{
-    e->num_attrs = num_attrs;
-    e->attrs = calloc(num_attrs, sizeof(struct ph_attr *));
-    if (e->attrs == NULL) {
-        return ENOMEM;
-    }
-
-    return 0;
-}
-
-struct ph_entry *
-ph_entry_array_new(size_t num_entry_attrs,
-                   size_t num_entries)
+static struct ph_entry *
+ph_entry_alloc(size_t num_attrs)
 {
     struct ph_entry *e;
-    size_t i;
-    int ret;
 
-    e = calloc(num_entries + 1, sizeof(struct ph_entry));
+    e = malloc(sizeof(struct ph_entry));
     if (e == NULL) {
         return NULL;
     }
 
-    for (i = 0; i < num_entries; i++) {
-        /* FIXME - would e+i be more readable? */
-        ret = ph_entry_init(&e[i], num_entry_attrs);
-        if (ret != 0) {
-            ph_entry_array_free(e);
-            return NULL;
-        }
+    e->num_attrs = num_attrs;
+    e->attrs = calloc(num_attrs, sizeof(struct ph_attr *));
+    if (e->attrs == NULL) {
+        free(e);
+        return NULL;
     }
 
     return e;
-}
-
-struct ph_entry *
-ph_entry_array_el(struct ph_entry *head,
-                  size_t entry_idx)
-{
-    return head + entry_idx;
-}
-
-int
-ph_entry_set_attr(struct ph_entry *e,
-                  struct ph_attr *a,
-                  size_t attr_index)
-{
-    if (e == NULL || e->attrs == NULL) {
-        return EINVAL;
-    }
-
-    if (attr_index >= e->num_attrs) {
-        return EINVAL;
-    }
-
-    e->attrs[attr_index] = a;
-    return 0;
-}
-
-size_t
-ph_num_entries(struct ph_entry *head)
-{
-    size_t num = 0;
-
-    if (head == NULL) {
-        return 0;
-    }
-
-    for (num = 0; &head[num]; num++) ;
-
-    return num;
-}
-
-/* FIXME - rename to get_attr */
-struct ph_attr *
-ph_entry_get_attr_val(struct ph_entry *e,
-                      size_t attr_index)
-{
-    struct ph_attr *a;
-
-    if (e == NULL || e->attrs == NULL) {
-        return NULL;
-    }
-
-    if (attr_index >= e->num_attrs) {
-        return NULL;
-    }
-
-    a = e->attrs[attr_index];
-    if (a == NULL) {
-        return NULL;
-    }
-
-    return a;
 }
 
 static void
@@ -189,15 +96,90 @@ ph_entry_free(struct ph_entry *e)
     free(e);
 }
 
-void ph_entry_array_free(struct ph_entry *head)
+struct ph_entry **
+ph_entry_array_alloc(size_t num_entry_attrs,
+                     size_t num_entries)
 {
-    size_t i;
+    struct ph_entry **e;
 
-    if (head == NULL) {
+    e = calloc(num_entries + 1, sizeof(struct ph_entry *));
+    if (e == NULL) {
+        return NULL;
+    }
+
+    for (size_t i = 0; i < num_entries; i++) {
+        e[i] = ph_entry_alloc(num_entry_attrs);
+        if (e[i] == NULL) {
+            ph_entry_array_free(e);
+            return NULL;
+        }
+    }
+
+    return e;
+}
+
+int
+ph_entry_set_attr(struct ph_entry *e,
+                  struct ph_attr *a,
+                  size_t attr_index)
+{
+    if (e == NULL || e->attrs == NULL) {
+        return EINVAL;
+    }
+
+    if (attr_index >= e->num_attrs) {
+        return EINVAL;
+    }
+
+    e->attrs[attr_index] = a;
+    return 0;
+}
+
+size_t
+ph_num_entries(struct ph_entry **entry_list)
+{
+    size_t num;
+
+    if (entry_list == NULL) {
+        return 0;
+    }
+
+    for (num = 0; entry_list[num]; num++) ;
+
+    return num;
+}
+
+struct ph_attr *
+ph_entry_get_attr(struct ph_entry *e,
+                  size_t attr_index)
+{
+    struct ph_attr *a;
+
+    if (e == NULL || e->attrs == NULL) {
+        return NULL;
+    }
+
+    if (attr_index >= e->num_attrs) {
+        return NULL;
+    }
+
+    a = e->attrs[attr_index];
+    if (a == NULL) {
+        return NULL;
+    }
+
+    return a;
+}
+
+void ph_entry_array_free(struct ph_entry **entry_list)
+{
+
+    if (entry_list == NULL) {
         return;
     }
 
-    for (i = 0; head + i != NULL; i++) {
-        ph_entry_free(head + i);
+    for (size_t i = 0; entry_list[i]; i++) {
+        ph_entry_free(entry_list[i]);
     }
+    free(entry_list);
 }

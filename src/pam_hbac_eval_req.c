@@ -174,8 +174,8 @@ tgt_host_to_eval_req_el(struct ph_entry *host)
     struct ph_attr *fqdn;
     struct ph_attr *hostgroups;
 
-    fqdn = ph_entry_get_attr_val(host, PH_MAP_HOST_FQDN);
-    hostgroups = ph_entry_get_attr_val(host, PH_MAP_HOST_MEMBEROF);
+    fqdn = ph_entry_get_attr(host, PH_MAP_HOST_FQDN);
+    hostgroups = ph_entry_get_attr(host, PH_MAP_HOST_MEMBEROF);
 
     return entry_to_eval_req_el(fqdn, hostgroups, REQ_EL_HOST);
 }
