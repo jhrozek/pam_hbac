@@ -23,7 +23,8 @@
 
 #include "pam_hbac.h"
 
-void free_string_clist(const char **list)
+void
+free_string_clist(const char **list)
 {
     size_t i;
 
@@ -37,7 +38,8 @@ void free_string_clist(const char **list)
     free(list);
 }
 
-void free_string_list(char **list)
+void
+free_string_list(char **list)
 {
     size_t i;
 
@@ -49,5 +51,19 @@ void free_string_list(char **list)
         free(list[i]);
     }
     free(list);
+}
+
+size_t
+null_string_array_size(char *arr[])
+{
+    size_t nelem;
+
+    if (arr == NULL) {
+        return 0;
+    }
+
+    for (nelem = 0; arr[nelem] != NULL; nelem++);
+
+    return nelem;
 }
 
