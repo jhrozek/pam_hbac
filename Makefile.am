@@ -57,15 +57,28 @@ config_tests_CFLAGS = \
 config_tests_LDADD = \
 		     $(CMOCKA_LIBS)
 
-libipa_wrap_tests_SOURCES = \
-	src/tests/libipa_wrap_tests.c \
-	src/pam_hbac_libipa_wrap.c \
+#libipa_wrap_tests_SOURCES = \
+#	src/tests/libipa_wrap_tests.c \
+#	src/pam_hbac_libipa_wrap.c \
+#	$(NULL)
+#libipa_wrap_tests_CFLAGS = \
+#	$(AM_CFLAGS) \
+#	$(CMOCKA_CFLAGS) \
+#	$(NULL)
+#libipa_wrap_tests_LDADD = \
+#	-lldap \
+#	$(CMOCKA_LIBS) \
+#	$(NULL)
+
+entry_tests_SOURCES = \
+	src/tests/entry_tests.c \
+	src/pam_hbac_entry.c \
 	$(NULL)
-libipa_wrap_tests_CFLAGS = \
+entry_tests_CFLAGS = \
 	$(AM_CFLAGS) \
 	$(CMOCKA_CFLAGS) \
 	$(NULL)
-libipa_wrap_tests_LDADD = \
+entry_tests_LDADD = \
 	-lldap \
 	$(CMOCKA_LIBS) \
 	$(NULL)
@@ -73,7 +86,8 @@ libipa_wrap_tests_LDADD = \
 if HAVE_CMOCKA
     check_PROGRAMS = \
 	config-tests \
-	libipa-wrap-tests \
+	entry-tests \
+	#libipa-wrap-tests \
 	$(NULL)
 endif
 

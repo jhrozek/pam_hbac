@@ -34,7 +34,7 @@ int ph_search(LDAP *ld,
               struct pam_hbac_config *conf,
               struct ph_search_ctx *s,
               const char *obj_filter,
-              struct ph_entry **_pentry);
+              struct ph_entry ***_entry_list);
 
 int ph_connect(struct pam_hbac_ctx *ctx);
 

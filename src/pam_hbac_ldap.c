@@ -162,14 +162,13 @@ parse_entry(LDAP *ld,
 
 static int
 parse_message(LDAP *ld, LDAPMessage *msg, struct ph_search_ctx *s,
-              struct ph_entry **_entries)
+              struct ph_entry ***_entries)
 {
     int num_entries;
     LDAPMessage *ent;
     int ent_type;
     int ret;
-    struct ph_entry *entries = NULL;
-    struct ph_entry *pentry = NULL;
+    struct ph_entry **entries = NULL;
     size_t entry_idx = 0;
 
     num_entries = ldap_count_entries(ld, msg);
@@ -177,7 +176,7 @@ parse_message(LDAP *ld, LDAPMessage *msg, struct ph_search_ctx *s,
     D(("Found %d entries\n", num_entries));
 #endif
 
-    entries = ph_entry_array_new(s->num_attrs, num_entries);
+    entries = ph_entry_array_alloc(s->num_attrs, num_entries);
     if (entries == NULL) {
         return ENOMEM;
     }
@@ -191,12 +190,7 @@ parse_message(LDAP *ld, LDAPMessage *msg, struct ph_search_ctx *s,
         switch (ent_type) {
             case LDAP_RES_SEARCH_ENTRY:
                 /* The result is an entry. */
-                pentry = ph_entry_array_el(entries, entry_idx);
-                if (pentry == NULL) {
-                    continue;
-                }
-
-                ret = parse_entry(ld, ent, s, pentry);
+                ret = parse_entry(ld, ent, s, entries[entry_idx]);
                 if (ret != 0) {
                     /* This is safe b/c we don't support deny fules */
                     continue;
@@ -256,13 +250,13 @@ ph_search(LDAP *ld,
           struct pam_hbac_config *conf,
           struct ph_search_ctx *s,
           const char *obj_filter,
-          struct ph_entry **_pentry)
+          struct ph_entry ***_entry_list)
 {
     LDAPMessage *res = NULL;
     char *search_base = NULL;
     char *filter = NULL;
     int ret;
-    struct ph_entry *pentry;
+    struct ph_entry **entry_list;
 
     ret = asprintf(&search_base, "%s,%s", s->sub_base, conf->search_base);
     if (ret < 0) {
@@ -282,12 +276,12 @@ ph_search(LDAP *ld,
         goto done;
     }
 
-    ret = parse_message(ld, res, s, &pentry);
+    ret = parse_message(ld, res, s, &entry_list);
     if (ret != 0) {
         goto done;
     }
 
-    *_pentry = pentry;
+    *_entry_list = entry_list;
     ret = 0;
 done:
     free(search_base);

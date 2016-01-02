@@ -113,12 +113,12 @@ create_rules_filter(struct ph_entry *host)
     struct ph_attr *hostname;
     struct ph_attr *hostgroups;
 
-    hostname = ph_entry_get_attr_val(host, PH_MAP_HOST_FQDN);
+    hostname = ph_entry_get_attr(host, PH_MAP_HOST_FQDN);
     if (hostname == NULL || hostname->nvals != 1) {
         return NULL;
     }
 
-    hostgroups = ph_entry_get_attr_val(host, PH_MAP_HOST_MEMBEROF);
+    hostgroups = ph_entry_get_attr(host, PH_MAP_HOST_MEMBEROF);
     if (hostgroups == NULL) {
         return NULL;
     }
@@ -165,13 +165,13 @@ el_member_attr(struct ph_entry *rule_entry,
 {
     switch (el_type) {
     case REQ_EL_USER:
-        return ph_entry_get_attr_val(rule_entry,
+        return ph_entry_get_attr(rule_entry,
                                      PH_MAP_RULE_MEMBER_USER);
     case REQ_EL_HOST:
-        return ph_entry_get_attr_val(rule_entry,
+        return ph_entry_get_attr(rule_entry,
                                      PH_MAP_RULE_MEMBER_HOST);
     case REQ_EL_SVC:
-        return ph_entry_get_attr_val(rule_entry,
+        return ph_entry_get_attr(rule_entry,
                                      PH_MAP_RULE_MEMBER_SVC);
     default:
         break;
@@ -186,13 +186,13 @@ el_category_attr(struct ph_entry *rule_entry,
 {
     switch (el_type) {
     case REQ_EL_USER:
-        return ph_entry_get_attr_val(rule_entry,
+        return ph_entry_get_attr(rule_entry,
                                      PH_MAP_RULE_USER_CAT);
     case REQ_EL_HOST:
-        return ph_entry_get_attr_val(rule_entry,
+        return ph_entry_get_attr(rule_entry,
                                      PH_MAP_RULE_HOST_CAT);
     case REQ_EL_SVC:
-        return ph_entry_get_attr_val(rule_entry,
+        return ph_entry_get_attr(rule_entry,
                                      PH_MAP_RULE_SVC_CAT);
     default:
         break;
@@ -298,7 +298,7 @@ fill_rule_enabled(struct ph_entry *rule_entry,
     struct ph_attr *enabled_attr;
     struct berval *bv;
 
-    enabled_attr = ph_entry_get_attr_val(rule_entry, PH_MAP_RULE_NAME);
+    enabled_attr = ph_entry_get_attr(rule_entry, PH_MAP_RULE_NAME);
     if (enabled_attr == NULL || enabled_attr->nvals < 1) {
         D(("No value for enabled\n"));
         return ENOENT;
@@ -325,7 +325,7 @@ fill_rule_name(struct ph_entry *rule_entry,
 {
     struct ph_attr *name_attr;
 
-    name_attr = ph_entry_get_attr_val(rule_entry, PH_MAP_RULE_NAME);
+    name_attr = ph_entry_get_attr(rule_entry, PH_MAP_RULE_NAME);
     if (name_attr == NULL || name_attr->nvals < 1) {
         D(("No value for name, using fallback\n"));
         rule->name = RULE_NAME_FALLBACK;
@@ -402,8 +402,7 @@ ph_get_hbac_rules(struct pam_hbac_ctx *ctx,
     char *rule_filter;
     int ret;
     struct hbac_rule **rules;
-    struct ph_entry *rule_entries;
-    struct ph_entry *rule;
+    struct ph_entry **rule_entries;
     size_t num_rule_entries;
     size_t i;
     size_t num_rules;
@@ -432,12 +431,7 @@ ph_get_hbac_rules(struct pam_hbac_ctx *ctx,
 
     num_rules = 0;
     for (i = 0; i < num_rule_entries; i++) {
-        rule = ph_entry_array_el(rule_entries, i);
-        if (rule == NULL) {
-            continue;
-        }
-
-        ret = entry_to_hbac_rule(rule, &rules[num_rules]);
+        ret = entry_to_hbac_rule(rule_entries[i], &rules[num_rules]);
         if (ret != 0) {
             continue;
         }

@@ -163,7 +163,7 @@ int ph_get_host(struct pam_hbac_ctx *ctx,
     size_t num;
     int ret;
     char *host_filter;
-    struct ph_entry *host;
+    struct ph_entry **hosts;
     struct ph_attr *fqdn;
 
     if (hostname == NULL) {
@@ -177,46 +177,48 @@ int ph_get_host(struct pam_hbac_ctx *ctx,
         return ENOMEM;
     }
 
-    ret = ph_search(ctx->ld, ctx->pc, &host_search_obj, host_filter, &host);
+    ret = ph_search(ctx->ld, ctx->pc, &host_search_obj, host_filter, &hosts);
     free(host_filter);
     if (ret != 0) {
         return ret;
     }
 
-    num = ph_num_entries(host);
+    num = ph_num_entries(hosts);
     if (num == 0) {
         D(("No such host %s\n", hostname));
-        ph_entry_array_free(host);
+        ph_entry_array_free(hosts);
         return ENOENT;
     } else if (num > 1) {
         D(("Got more than one host entry\n"));
-        ph_entry_array_free(host);
+        ph_entry_array_free(hosts);
         return EINVAL;
     }
 
     /* check host validity */
-    fqdn = ph_entry_get_attr_val(host, PH_MAP_HOST_FQDN);
+    fqdn = ph_entry_get_attr(hosts[0], PH_MAP_HOST_FQDN);
     if (fqdn == NULL) {
         D(("Host %s has no FQDN attribute\n", hostname));
-        ph_entry_array_free(host);
+        ph_entry_array_free(hosts);
         return EINVAL;
     }
 
     if (fqdn->nvals != 1) {
         D(("Expected 1 host name, got %d\n", ldap_count_values_len(vals)));
-        ph_entry_array_free(host);
+        ph_entry_array_free(hosts);
         return EINVAL;
     }
 
-
-    *_host = host;
+    *_host = hosts[0];
     return 0;
 }
 
 void
 ph_free_host(struct ph_entry *host)
 {
-    ph_entry_array_free(host);
+    /* This is ugly but should be safe since we always return
+     * the first host
+     */
+    ph_entry_array_free(&host);
 }
 
 int
@@ -230,5 +232,5 @@ ph_get_svc(struct pam_hbac_ctx *ctx,
 void
 ph_free_svc(struct ph_entry *svc)
 {
-    ph_entry_array_free(svc);
+    ph_entry_array_free(&svc);
 }
