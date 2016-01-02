@@ -165,7 +165,7 @@ svc_to_eval_req_el(struct ph_entry *svc)
     struct ph_attr *svcname = NULL;
     struct ph_attr *hostgroups = NULL;
 
-    return entry_to_eval_req_el(svcname, hostgroups, REQ_EL_SVC);
+    return entry_to_eval_req_el(svcname, hostgroups, DN_TYPE_SVC);
 }
 
 static struct hbac_request_element *
@@ -177,7 +177,7 @@ tgt_host_to_eval_req_el(struct ph_entry *host)
     fqdn = ph_entry_get_attr(host, PH_MAP_HOST_FQDN);
     hostgroups = ph_entry_get_attr(host, PH_MAP_HOST_MEMBEROF);
 
-    return entry_to_eval_req_el(fqdn, hostgroups, REQ_EL_HOST);
+    return entry_to_eval_req_el(fqdn, hostgroups, DN_TYPE_HOST);
 }
 
 void

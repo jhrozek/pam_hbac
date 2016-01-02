@@ -83,15 +83,29 @@ entry_tests_LDADD = \
 	$(CMOCKA_LIBS) \
 	$(NULL)
 
+dnparse_tests_SOURCES = \
+	src/tests/dnparse_tests.c \
+	src/pam_hbac_dnparse.c \
+	$(NULL)
+dnparse_tests_CFLAGS = \
+	$(AM_CFLAGS) \
+	$(CMOCKA_CFLAGS) \
+	$(NULL)
+dnparse_tests_LDADD = \
+	-lldap \
+	$(CMOCKA_LIBS) \
+	$(NULL)
+
 if HAVE_CMOCKA
     check_PROGRAMS = \
 	config-tests \
 	entry-tests \
+	dnparse-tests \
 	#libipa-wrap-tests \
 	$(NULL)
 endif
 
-TESTS = config-tests
+TESTS = $(check_PROGRAMS)
 
 ### Interactive test program
 noinst_PROGRAMS = pam_test_client

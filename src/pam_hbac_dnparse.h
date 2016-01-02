@@ -19,9 +19,9 @@
 #define __PAM_HBAC_DNPARSE_H__
 
 enum member_el_type {
-    REQ_EL_USER,
-    REQ_EL_HOST,
-    REQ_EL_SVC,
+    DN_TYPE_USER,
+    DN_TYPE_HOST,
+    DN_TYPE_SVC,
 };
 
 int group_name_from_dn(const char *dn,

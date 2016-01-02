@@ -138,6 +138,7 @@ container_matches(char * const *dn_parts, const char ***kvs)
 static int
 container_check_and_get_rdn(char * const *dn_parts,
                             const char ***container_kvs,
+                            const char *rdn_key,
                             const char **_rdn_val)
 {
     bool ok;
@@ -151,7 +152,7 @@ container_check_and_get_rdn(char * const *dn_parts,
     if (dn_parts[0] == NULL) {
         return ERANGE;
     }
-    *_rdn_val = rdn_check_and_getval(dn_parts[0], "cn");
+    *_rdn_val = rdn_check_and_getval(dn_parts[0], rdn_key);
     if (*_rdn_val == NULL) {
         return EINVAL;
     }
@@ -169,7 +170,8 @@ user_container_rdn(char * const *dn_parts,
         cn1, cn2, NULL
     };
 
-    return container_check_and_get_rdn(dn_parts, group_container, _rdn_val);
+    return container_check_and_get_rdn(dn_parts, group_container,
+                                       "uid", _rdn_val);
 }
 
 static int
@@ -182,7 +184,8 @@ usergroup_container_rdn(char * const *dn_parts,
         cn1, cn2, NULL
     };
 
-    return container_check_and_get_rdn(dn_parts, group_container, _rdn_val);
+    return container_check_and_get_rdn(dn_parts, group_container,
+                                       "cn",_rdn_val);
 }
 
 static int
@@ -195,7 +198,8 @@ svc_container_rdn(char * const *dn_parts,
         cn1, cn2, NULL
     };
 
-    return container_check_and_get_rdn(dn_parts, svc_container, _rdn_val);
+    return container_check_and_get_rdn(dn_parts, svc_container,
+                                       "cn", _rdn_val);
 }
 
 static int
@@ -208,7 +212,8 @@ svcgroup_container_rdn(char * const *dn_parts,
         cn1, cn2, NULL
     };
 
-    return container_check_and_get_rdn(dn_parts, svc_container, _rdn_val);
+    return container_check_and_get_rdn(dn_parts, svc_container,
+                                       "cn", _rdn_val);
 }
 
 static int
@@ -221,7 +226,8 @@ host_container_rdn(char * const *dn_parts,
         cn1, cn2, NULL
     };
 
-    return container_check_and_get_rdn(dn_parts, host_container, _rdn_val);
+    return container_check_and_get_rdn(dn_parts, host_container,
+                                       "fqdn", _rdn_val);
 }
 
 static int
@@ -234,7 +240,8 @@ hostgroup_container_rdn(char * const *dn_parts,
         cn1, cn2, NULL
     };
 
-    return container_check_and_get_rdn(dn_parts, host_container, _rdn_val);
+    return container_check_and_get_rdn(dn_parts, host_container,
+                                       "cn", _rdn_val);
 }
 
 int
@@ -242,7 +249,6 @@ group_name_from_dn(const char *dn,
                    enum member_el_type el_type,
                    const char **_group_name)
 {
-    /* Extract NAME from cn=NAME,cn=groups,cn=accounts */
     char **dn_parts;
     int ret;
 
@@ -252,13 +258,13 @@ group_name_from_dn(const char *dn,
     }
 
     switch (el_type) {
-    case REQ_EL_USER:
+    case DN_TYPE_USER:
         ret = usergroup_container_rdn(dn_parts, _group_name);
         break;
-    case REQ_EL_SVC:
+    case DN_TYPE_SVC:
         ret = svcgroup_container_rdn(dn_parts, _group_name);
         break;
-    case REQ_EL_HOST:
+    case DN_TYPE_HOST:
         ret = hostgroup_container_rdn(dn_parts, _group_name);
         break;
     default:
@@ -285,13 +291,13 @@ name_from_dn(const char *dn,
     }
 
     switch (el_type) {
-    case REQ_EL_USER:
+    case DN_TYPE_USER:
         ret = user_container_rdn(dn_parts, _name);
         break;
-    case REQ_EL_SVC:
+    case DN_TYPE_SVC:
         ret = svc_container_rdn(dn_parts, _name);
         break;
-    case REQ_EL_HOST:
+    case DN_TYPE_HOST:
         ret = host_container_rdn(dn_parts, _name);
         break;
     default:
