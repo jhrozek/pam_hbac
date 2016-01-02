@@ -94,5 +94,6 @@ void ph_cleanup_config(struct pam_hbac_config *conf);
 
 void free_string_clist(const char **list);
 void free_string_list(char **list);
+size_t null_string_array_size(char *arr[]);
 
 #endif /* __PAM_HBAC_H__ */

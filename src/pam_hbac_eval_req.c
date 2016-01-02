@@ -48,21 +48,6 @@ free_request_element(struct hbac_request_element *el)
     free(el);
 }
 
-/* FIXME - split to utils? */
-static size_t
-null_string_array_size(char *arr[])
-{
-    size_t nelem;
-
-    if (arr == NULL) {
-        return 0;
-    }
-
-    for (nelem = 0; arr[nelem] != NULL; nelem++);
-
-    return nelem;
-}
-
 static struct hbac_request_element *
 new_sized_request_element(size_t ngroups)
 {
