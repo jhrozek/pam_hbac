@@ -31,13 +31,18 @@ struct ph_user {
     char **group_names;
 };
 
-/* FIXME - do we need all attrs? Same for other objects */
 enum ph_host_attrmap {
     PH_MAP_HOST_OC,
-    PH_MAP_HOST_NAME,
     PH_MAP_HOST_FQDN,
     PH_MAP_HOST_MEMBEROF,
     PH_MAP_HOST_END
+};
+
+enum ph_svc_attrmap {
+    PH_MAP_SVC_OC,
+    PH_MAP_SVC_NAME,
+    PH_MAP_SVC_MEMBEROF,
+    PH_MAP_SVC_END
 };
 
 #endif /* __PAM_HBAC_OBJ_INT_H__ */

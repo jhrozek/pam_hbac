@@ -143,7 +143,6 @@ ph_free_user(struct ph_user *user)
 }
 
 static const char *ph_host_attrs[] = { PAM_HBAC_ATTR_OC,
-                                       "cn",
                                        "fqdn",
                                        "memberOf",
                                        NULL };
@@ -220,6 +219,22 @@ ph_free_host(struct ph_entry *host)
      */
     ph_entry_array_free(&host);
 }
+
+static const char *ph_svc_attrs[] = { PAM_HBAC_ATTR_OC,
+                                      "cn",
+                                      "memberOf",
+                                      NULL };
+
+/* FIXME - do we need this complexity? */
+static struct ph_search_ctx svc_search_obj = {
+    /* FIXME - this is copied in parsing DN as well, should we use
+     * common definition?
+     */
+    .sub_base = "cn=computers,cn=accounts",
+    .oc = "ipaHost",
+    .attrs = ph_svc_attrs,
+    .num_attrs = PH_MAP_HOST_END,
+};
 
 int
 ph_get_svc(struct pam_hbac_ctx *ctx,

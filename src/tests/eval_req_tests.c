@@ -19,11 +19,15 @@
 #include <stdio.h>
 #include <string.h>
 #include <stddef.h>
+#include <stdarg.h>
 #include <setjmp.h>
 #include <cmocka.h>
 
 #include <errno.h>
 #include "pam_hbac.h"
+#include "pam_hbac_entry.h"
+#include "pam_hbac_obj.h"
+#include "pam_hbac_obj_int.h"
 
 #define TEST_BASEDN "dc=ipa,dc=test"
 #define GROUP_CONTAINER "cn=groups,cn=accounts"
@@ -40,15 +44,31 @@
 #define SVC_GROUP2  "svc_gr2"
 
 struct eval_req_test_ctx {
-    struct ph_member_obj user;
-    struct ph_member_obj tgthost;
-    struct ph_member_obj service;
+    struct ph_user user;
+    struct ph_entry targethost;
+    struct ph_entry service;
     struct hbac_eval_req *req;
 };
 
-static void add_to_member_obj(struct ph_member_obj *obj,
-                              char *name,
-                              char **group_dns)
+static void mock_user_obj(struct ph_user *user,
+                          const char *name,
+                          ...)
+{
+    va_list ap;
+    va_list ap_count;
+    char *v;
+
+    va_copy(ap, cp_count);
+
+    va_start(ap, name);
+    while ((v = va_arg(ap, const char *)) != NULL) {
+    }
+    va_end(ap);
+}
+
+static void add_to_ph_entry(struct ph_member_obj *obj,
+                            char *name,
+                            char **group_dns)
 {
     obj->name = name;
     obj->memberofs = group_dns;
