@@ -135,7 +135,7 @@ print_pam_items(struct pam_items *pi, int args)
 static struct pam_hbac_ctx *
 ph_init(void)
 {
-    errno_t ret;
+    int ret;
     struct pam_hbac_ctx *ctx;
 
     ctx = (struct pam_hbac_ctx *) calloc(1, sizeof(struct pam_hbac_ctx));
