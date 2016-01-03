@@ -31,7 +31,8 @@
 #include "libhbac/ipa_hbac.h"
 
 static void
-free_request_element(struct hbac_request_element *el)
+free_request_element(struct hbac_request_element *el,
+                     bool free_group_ptrs)
 {
     size_t i;
 
@@ -45,11 +46,12 @@ free_request_element(struct hbac_request_element *el)
         }
     }
 
+    free(el->groups);
     free(el);
 }
 
 static struct hbac_request_element *
-new_sized_request_element(size_t ngroups)
+alloc_sized_request_element(size_t ngroups)
 {
     struct hbac_request_element *el;
 
@@ -82,7 +84,7 @@ entry_to_eval_req_el(struct ph_attr *name,
         return NULL;
     }
 
-    el = new_sized_request_element(memberof->nvals);
+    el = alloc_sized_request_element(memberof->nvals);
     if (el == NULL) {
         return NULL;
     }
@@ -104,7 +106,7 @@ entry_to_eval_req_el(struct ph_attr *name,
                 continue;
             default:
                 /* ENOMEMs and such */
-                free_request_element(el);
+                free_request_element(el, true);
                 return NULL;
         }
 
@@ -123,20 +125,14 @@ user_to_eval_req_el(struct ph_user *user)
 
     ngroups = null_string_array_size(user->group_names);
 
-    el = new_sized_request_element(ngroups);
+    el = alloc_sized_request_element(ngroups);
     if (el == NULL) {
         return NULL;
     }
 
-    /* No need to copy objname */
+    /* No need to copy username */
     el->name = user->name;
 
-    if (ngroups == 0) {
-        return el;
-    }
-
-    /* Iterate over all memberof attribute values and copy out the
-     * groupname */
     for (i=0; user->group_names[i]; i++) {
         el->groups[i] = user->group_names[i];
     }
@@ -147,10 +143,13 @@ user_to_eval_req_el(struct ph_user *user)
 static struct hbac_request_element *
 svc_to_eval_req_el(struct ph_entry *svc)
 {
-    struct ph_attr *svcname = NULL;
-    struct ph_attr *hostgroups = NULL;
+    struct ph_attr *svcname;
+    struct ph_attr *svcgroups;
 
-    return entry_to_eval_req_el(svcname, hostgroups, DN_TYPE_SVC);
+    svcname = ph_entry_get_attr(svc, PH_MAP_SVC_NAME);
+    svcgroups = ph_entry_get_attr(svc, PH_MAP_SVC_MEMBEROF);
+
+    return entry_to_eval_req_el(svcname, svcgroups, DN_TYPE_SVC);
 }
 
 static struct hbac_request_element *
@@ -172,16 +171,17 @@ ph_free_eval_req(struct hbac_eval_req *req)
         return;
     }
 
-    free_request_element(req->user);
-    free_request_element(req->service);
-    free_request_element(req->targethost);
+    free_request_element(req->user, false);
+    free_request_element(req->service, true);
+    free_request_element(req->targethost, true);
     free(req);
 }
 
-int ph_create_hbac_eval_req(struct ph_user *user,
-                            struct ph_entry *targethost,
-                            struct ph_entry *service,
-                            struct hbac_eval_req **_req)
+int
+ph_create_hbac_eval_req(struct ph_user *user,
+                        struct ph_entry *targethost,
+                        struct ph_entry *service,
+                        struct hbac_eval_req **_req)
 {
     int ret;
     struct hbac_eval_req *req;
