@@ -23,99 +23,60 @@
 
 #include "pam_hbac_dnparse.h"
 
-static const char *rdn_get_val(char **exploded_rdn, const char *attr)
-{
-    size_t i;
-    size_t j;
-    int attr_len;
-
-    attr_len = strlen(attr);
-
-    if (exploded_rdn == NULL) {
-        return NULL;
-    }
-
-    for (i = 0; exploded_rdn[i]; i++) {
-        if (strncasecmp(exploded_rdn[i], attr, attr_len) != 0) {
-            continue;
-        }
-
-        for (j = attr_len; isspace(exploded_rdn[i][j]); j++);
-
-        if (exploded_rdn[i][j] != '=') {
-            continue;
-        }
-        j++;
-
-        while (isspace(exploded_rdn[i][j])) j++;
-
-        if (exploded_rdn[i][j] == '\0') {
-            continue;
-        }
-
-        return exploded_rdn[i] + j;
-    }
-
-    return NULL;
-}
-
 /* if val is NULL, only key is checked */
 static bool
-rdn_keyval_matches(const char *rdn, const char *key, const char *val)
+rdn_keyval_matches(LDAPAVA **rdn, const char *key, const char *val)
 {
-    char **exploded_rdn;
-    const char *rdn_val;
-    bool ret = false;
+    bool matches = false;
 
-    exploded_rdn = ldap_explode_rdn(rdn, 0);
-    if (exploded_rdn == NULL) {
-        return false;
+    if (rdn != NULL && rdn[0] != NULL && rdn[1] == NULL) {
+        /* Exactly one value */
+        if (strncasecmp(rdn[0]->la_attr.bv_val, key,
+                        rdn[0]->la_attr.bv_len) == 0) {
+            /* The key matches */
+            if (val == NULL ||
+                strncasecmp(rdn[0]->la_value.bv_val, val,
+                            rdn[0]->la_value.bv_len) == 0) {
+                /* The value matches */
+                matches = true;
+            }
+        }
     }
 
-    rdn_val = rdn_get_val(exploded_rdn, key);
-    if ((rdn_val != NULL) && ((val == NULL || strcmp(val, rdn_val) == 0))) {
-            ret = true;
-    }
-    ldap_value_free(exploded_rdn);
-
-    return ret;
+    return matches;
 }
 
 static char *
-rdn_check_and_getval(const char *rdn, const char *key)
+rdn_check_and_getval(LDAPAVA **rdn, const char *key)
 {
-    char **exploded_rdn;
-    const char *rdn_val = NULL;
-    char *ret;
+    char *rdn_val = NULL;
 
-    exploded_rdn = ldap_explode_rdn(rdn, 0);
-    if (exploded_rdn == NULL) {
-        return false;
+    if (rdn != NULL && rdn[0] != NULL && rdn[1] == NULL) {
+        /* Exactly one value */
+        if (strncasecmp(rdn[0]->la_attr.bv_val, key,
+                        rdn[0]->la_attr.bv_len) == 0) {
+            /* The key matches */
+            rdn_val = strndup(rdn[0]->la_value.bv_val,
+                              rdn[0]->la_value.bv_len);
+        }
     }
 
-    rdn_val = rdn_get_val(exploded_rdn, key);
-    if (rdn_val) {
-        ret = strdup(rdn_val);
-    } else {
-        ret = NULL;
-    }
-    ldap_value_free(exploded_rdn);
-
-    return ret;
+    /* NULL check should be done by the caller anyway */
+    return rdn_val;
 }
 
 static bool
-container_matches(char * const *dn_parts, const char ***kvs)
+container_matches(LDAPDN dn_parts, const char ***kvs)
 {
     size_t idx;
     bool match;
 
-    if (dn_parts == NULL || dn_parts[0] == NULL || kvs == NULL) {
+    if (dn_parts == NULL || kvs == NULL) {
         return false;
     }
 
     for (idx = 0; kvs[idx]; idx++) {
-        /* +1 because we don't care about RDN */
+        /* +1 because we don't care about RDN value, only the remainder */
         if (dn_parts[idx+1] == NULL) {
             /* Short DN.. */
             return false;
@@ -128,7 +89,9 @@ container_matches(char * const *dn_parts, const char ***kvs)
     }
 
     /* There must be at least one more for basedn */
-    /* FIXME - should we check explicitly?? */
+    /* Check against the basedn --
+     * https://github.com/jhrozek/pam_hbac/issues/5
+     */
     if (dn_parts[idx+1] == NULL) {
         return false;
     }
@@ -136,7 +99,7 @@ container_matches(char * const *dn_parts, const char ***kvs)
 }
 
 static int
-container_check_and_get_rdn(char * const *dn_parts,
+container_check_and_get_rdn(LDAPDN dn_parts,
                             const char ***container_kvs,
                             const char *rdn_key,
                             const char **_rdn_val)
@@ -161,7 +124,7 @@ container_check_and_get_rdn(char * const *dn_parts,
 }
 
 static int
-user_container_rdn(char * const *dn_parts,
+user_container_rdn(LDAPDN dn_parts,
                    const char **_rdn_val)
 {
     const char *cn1[] = { "cn", "users" };
@@ -175,7 +138,7 @@ user_container_rdn(char * const *dn_parts,
 }
 
 static int
-usergroup_container_rdn(char * const *dn_parts,
+usergroup_container_rdn(LDAPDN dn_parts,
                         const char **_rdn_val)
 {
     const char *cn1[] = { "cn", "groups" };
@@ -189,7 +152,7 @@ usergroup_container_rdn(char * const *dn_parts,
 }
 
 static int
-svc_container_rdn(char * const *dn_parts,
+svc_container_rdn(LDAPDN dn_parts,
                   const char **_rdn_val)
 {
     const char *cn1[] = { "cn", "hbacservices" };
@@ -203,7 +166,7 @@ svc_container_rdn(char * const *dn_parts,
 }
 
 static int
-svcgroup_container_rdn(char * const *dn_parts,
+svcgroup_container_rdn(LDAPDN dn_parts,
                        const char **_rdn_val)
 {
     const char *cn1[] = { "cn", "hbacservicegroups" };
@@ -217,7 +180,7 @@ svcgroup_container_rdn(char * const *dn_parts,
 }
 
 static int
-host_container_rdn(char * const *dn_parts,
+host_container_rdn(LDAPDN dn_parts,
                    const char **_rdn_val)
 {
     const char *cn1[] = { "cn", "computers" };
@@ -231,7 +194,7 @@ host_container_rdn(char * const *dn_parts,
 }
 
 static int
-hostgroup_container_rdn(char * const *dn_parts,
+hostgroup_container_rdn(LDAPDN dn_parts,
                          const char **_rdn_val)
 {
     const char *cn1[] = { "cn", "hostgroups" };
@@ -249,12 +212,12 @@ group_name_from_dn(const char *dn,
                    enum member_el_type el_type,
                    const char **_group_name)
 {
-    char **dn_parts;
+    LDAPDN dn_parts;
     int ret;
 
-    dn_parts = ldap_explode_dn(dn, 0);
-    if (dn_parts == NULL) {
-        return EINVAL; /* FIXME - better error code */
+    ret = ldap_str2dn(dn, &dn_parts, LDAP_DN_FORMAT_LDAPV3);
+    if (ret != 0) {
+        return EINVAL;
     }
 
     switch (el_type) {
@@ -272,7 +235,7 @@ group_name_from_dn(const char *dn,
         break;
     }
 
-    ldap_value_free(dn_parts);
+    ldap_dnfree(dn_parts);
     return ret;
 }
 
@@ -281,13 +244,12 @@ name_from_dn(const char *dn,
              enum member_el_type el_type,
              const char **_name)
 {
-    /* Extract NAME from cn=NAME,cn=groups,cn=accounts */
-    char **dn_parts;
+    LDAPDN dn_parts;
     int ret;
 
-    dn_parts = ldap_explode_dn(dn, 0);
-    if (dn_parts == NULL) {
-        return EINVAL; /* FIXME - better error code */
+    ret = ldap_str2dn(dn, &dn_parts, LDAP_DN_FORMAT_LDAPV3);
+    if (ret != 0) {
+        return EINVAL;
     }
 
     switch (el_type) {
@@ -305,7 +267,7 @@ name_from_dn(const char *dn,
         break;
     }
 
-    ldap_value_free(dn_parts);
+    ldap_dnfree(dn_parts);
     return ret;
 }
 
