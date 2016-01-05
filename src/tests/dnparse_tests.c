@@ -40,7 +40,6 @@ static void test_rdn_from_dn(rdn_getter_fn getter,
 
     for (size_t i = 0; i <= DN_TYPE_SVC; i++) {
         for (size_t ii = 0; ii <= DN_TYPE_SVC; ii++) {
-            free_const(rdn_val);
             rdn_val = NULL;
 
             ret = getter(dn_list[i], ii, &rdn_val);
@@ -48,6 +47,8 @@ static void test_rdn_from_dn(rdn_getter_fn getter,
                 assert_int_equal(ret, 0);
                 assert_non_null(rdn_val);
                 assert_string_equal(rdn_val, rdn_list[i]);
+                free_const(rdn_val);
+                rdn_val = NULL;
             } else {
                 assert_int_not_equal(ret, 0);
                 assert_null(rdn_val);
@@ -110,6 +111,16 @@ test_rdn_key_mismatch(void **state)
 
     ret = group_name_from_dn("oops=admins,cn=groups,cn=accounts,dc=ipa,dc=test",
                              DN_TYPE_USER, &rdn_val);
+    assert_int_not_equal(ret, 0);
+
+    /* No basedn */
+    ret = name_from_dn("uid=admin,cn=users",
+                       DN_TYPE_USER, &rdn_val);
+    assert_int_not_equal(ret, 0);
+
+    /* Missing required component */
+    ret = name_from_dn("uid=admin",
+                       DN_TYPE_USER, &rdn_val);
     assert_int_not_equal(ret, 0);
 }
 
