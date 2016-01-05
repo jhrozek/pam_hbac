@@ -6,7 +6,7 @@ m4_include([external/libcmocka.m4])
 
 AC_INIT([libpam_hbac],
         VERSION_NUMBER,
-        [jakub.hrozek@gmail.com])
+        [jakub.hrozek@posteo.se])
 
 AC_CONFIG_AUX_DIR([build])
 
