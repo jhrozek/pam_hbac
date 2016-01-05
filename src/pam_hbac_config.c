@@ -56,7 +56,9 @@
 void
 ph_cleanup_config(struct pam_hbac_config *conf)
 {
-    if (!conf) return;
+    if (conf == NULL) {
+        return;
+    }
 
     free_const(conf->uri);
     free_const(conf->search_base);
@@ -73,9 +75,11 @@ default_config(struct pam_hbac_config *conf)
     SET_DEFAULT_STRING(conf->uri, PAM_HBAC_DEFAULT_URI);
     SET_DEFAULT_STRING(conf->search_base, PAM_HBAC_DEFAULT_SEARCH_BASE);
 
-    if (conf->hostname) {
+    if (conf->hostname == NULL) {
         conf->hostname = malloc(HOST_NAME_MAX);
-        if (!conf->hostname) goto fail;
+        if (conf->hostname == NULL) {
+            goto fail;
+        }
 
         ret = gethostname(conf->hostname, HOST_NAME_MAX);
         if (ret == -1) {
@@ -105,9 +109,9 @@ strip(char *s)
     end = s + strlen(s) - 1;
 
     /* Trim leading whitespace */
-    while(*start && isspace(*start)) ++start;
+    while (*start && isspace(*start)) ++start;
     /* Trim trailing whitespace */
-    while(end > start && isspace(*end)) *end-- = '\0';
+    while (end > start && isspace(*end)) *end-- = '\0';
 
     return start;
 }
@@ -123,10 +127,8 @@ get_key_value(const char *line,
     char *l;
 
     sep = strchr(line, SEPARATOR);
-    if (!sep) {
-#if 0
+    if (sep == NULL) {
         D(("Malformed line; no separator\n"));
-#endif
         return EINVAL;
     }
 
@@ -162,39 +164,29 @@ read_config_line(const char *line, struct pam_hbac_config *conf)
     /* Skip comments */
     if (*l == '#') {
         ret = EAGAIN;
-        goto done;
+        goto fail;
     }
 
     ret = get_key_value(l, &key, &value);
     if (ret) {
-        goto done;
+        goto fail;
     }
 
     if (strcasecmp(key, PAM_HBAC_CONFIG_URI) == 0) {
         conf->uri = value;
-#if 0
         D(("URI: %s", conf->uri));
-#endif
     } else if (strcasecmp(key, PAM_HBAC_CONFIG_BIND_DN) == 0) {
         conf->bind_dn = value;
-#if 0
         D(("bind dn: %s", conf->bind_dn));
-#endif
     } else if (strcasecmp(key, PAM_HBAC_CONFIG_BIND_PW) == 0) {
         conf->bind_pw = value;
-#if 0
         D(("bind pw: %s", conf->bind_pw));
-#endif
     } else if (strcasecmp(key, PAM_HBAC_CONFIG_SEARCH_BASE) == 0) {
         conf->search_base = value;
-#if 0
         D(("search base: %s", conf->search_base));
-#endif
     } else if (strcasecmp(key, PAM_HBAC_CONFIG_HOST_NAME) == 0) {
         conf->hostname = discard_const(value);
-#if 0
         D(("host name: %s", conf->hostname));
-#endif
     } else {
         /* Skip unknown key/values */
         free_const(value);
@@ -203,10 +195,8 @@ read_config_line(const char *line, struct pam_hbac_config *conf)
     free_const(key);
     return 0;
 
-done:
-#if 0
+fail:
     D(("cannot read config [%d]: %s\n", ret, strerror(ret)));
-#endif
     free_const(key);
     free_const(value);
     return ret;
@@ -220,9 +210,7 @@ ph_read_config(const char *config_file, struct pam_hbac_config **_conf)
     char line[MAX_LINE];
     struct pam_hbac_config *conf;
 
-#if 0
     D(("config file: %s", config_file));
-#endif
 
     errno = 0;
     fp = fopen(config_file, "r");
