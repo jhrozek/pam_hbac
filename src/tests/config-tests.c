@@ -109,12 +109,12 @@ void test_trailing_whitespace(void **state)
 
 int main(void)
 {
-    const UnitTest tests[] = {
-        unit_test(test_good_config),
-        unit_test(test_whitespace_around_equal_sign),
-        unit_test(test_leading_whitespace),
-        unit_test(test_trailing_whitespace),
+    const struct CMUnitTest tests[] = {
+        cmocka_unit_test(test_good_config),
+        cmocka_unit_test(test_whitespace_around_equal_sign),
+        cmocka_unit_test(test_leading_whitespace),
+        cmocka_unit_test(test_trailing_whitespace),
     };
 
-    return run_tests(tests);
+    return cmocka_run_group_tests(tests, NULL, NULL);
 }
