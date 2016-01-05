@@ -35,6 +35,7 @@ pam_hbac_la_SOURCES = \
 		     $(NULL)
 
 pam_hbac_la_LDFLAGS = \
+		     -llber \
 		     -lldap \
 		     -lpam \
 		     -module \
@@ -80,6 +81,7 @@ entry_tests_CFLAGS = \
 	$(NULL)
 entry_tests_LDADD = \
 	-lldap \
+	-llber \
 	$(CMOCKA_LIBS) \
 	$(NULL)
 
@@ -93,6 +95,7 @@ dnparse_tests_CFLAGS = \
 	$(NULL)
 dnparse_tests_LDADD = \
 	-lldap \
+	-llber \
 	$(CMOCKA_LIBS) \
 	$(NULL)
 
