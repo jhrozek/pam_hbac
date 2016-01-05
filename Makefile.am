@@ -58,18 +58,18 @@ config_tests_CFLAGS = \
 config_tests_LDADD = \
 		     $(CMOCKA_LIBS)
 
-#libipa_wrap_tests_SOURCES = \
-#	src/tests/libipa_wrap_tests.c \
-#	src/pam_hbac_libipa_wrap.c \
-#	$(NULL)
-#libipa_wrap_tests_CFLAGS = \
-#	$(AM_CFLAGS) \
-#	$(CMOCKA_CFLAGS) \
-#	$(NULL)
-#libipa_wrap_tests_LDADD = \
-#	-lldap \
-#	$(CMOCKA_LIBS) \
-#	$(NULL)
+eval_req_tests_SOURCES = \
+	src/tests/eval_req_tests.c \
+	src/pam_hbac_eval_req.c \
+	$(NULL)
+eval_req_tests_CFLAGS = \
+	$(AM_CFLAGS) \
+	$(CMOCKA_CFLAGS) \
+	$(NULL)
+eval_req_tests_LDADD = \
+	-lldap \
+	$(CMOCKA_LIBS) \
+	$(NULL)
 
 entry_tests_SOURCES = \
 	src/tests/entry_tests.c \
