@@ -34,10 +34,25 @@
 #define PAM_TEST_DFL_ACTION "acct"
 #define PAM_TEST_DFL_USER   "dummy"
 
+#ifdef HAVE_SECURITY_PAM_MISC_H
+# include <security/pam_misc.h>
+#elif defined(HAVE_SECURITY_OPENPAM_H)
+# include <security/openpam.h>
+#endif
+
+#ifdef HAVE_SECURITY_PAM_MISC_H
 static struct pam_conv conv = {
     misc_conv,
     NULL
 };
+#elif defined(HAVE_SECURITY_OPENPAM_H)
+static struct pam_conv conv = {
+    openpam_ttyconv,
+    NULL
+};
+#else
+# error "Missing text based pam conversation function"
+#endif
 
 int main(int argc, char *argv[]) {
 
