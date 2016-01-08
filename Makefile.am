@@ -58,21 +58,9 @@ config_tests_CFLAGS = \
 config_tests_LDADD = \
 		     $(CMOCKA_LIBS)
 
-eval_req_tests_SOURCES = \
-	src/tests/eval_req_tests.c \
-	src/pam_hbac_eval_req.c \
-	$(NULL)
-eval_req_tests_CFLAGS = \
-	$(AM_CFLAGS) \
-	$(CMOCKA_CFLAGS) \
-	$(NULL)
-eval_req_tests_LDADD = \
-	-lldap \
-	$(CMOCKA_LIBS) \
-	$(NULL)
-
 entry_tests_SOURCES = \
 	src/tests/entry_tests.c \
+	src/tests/mock_entry.c \
 	src/pam_hbac_entry.c \
 	$(NULL)
 entry_tests_CFLAGS = \
@@ -99,12 +87,33 @@ dnparse_tests_LDADD = \
 	$(CMOCKA_LIBS) \
 	$(NULL)
 
+eval_req_tests_SOURCES = \
+	src/tests/eval_req_tests.c \
+	src/pam_hbac_eval_req.c \
+	src/tests/mock_entry.c \
+	src/tests/mock_user.c \
+	src/pam_hbac_obj.c \
+	src/pam_hbac_entry.c \
+	src/pam_hbac_dnparse.c \
+	src/pam_hbac_utils.c \
+	src/pam_hbac_ldap.c \
+	$(NULL)
+eval_req_tests_CFLAGS = \
+	$(AM_CFLAGS) \
+	$(CMOCKA_CFLAGS) \
+	$(NULL)
+eval_req_tests_LDADD = \
+	-lldap \
+	-llber \
+	$(CMOCKA_LIBS) \
+	$(NULL)
+
 if HAVE_CMOCKA
     check_PROGRAMS = \
 	config-tests \
 	entry-tests \
 	dnparse-tests \
-	#libipa-wrap-tests \
+	eval_req-tests \
 	$(NULL)
 endif
 

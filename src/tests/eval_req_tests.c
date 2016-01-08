@@ -28,6 +28,7 @@
 #include "pam_hbac_entry.h"
 #include "pam_hbac_obj.h"
 #include "pam_hbac_obj_int.h"
+#include "common_mock.h"
 
 #define TEST_BASEDN "dc=ipa,dc=test"
 #define GROUP_CONTAINER "cn=groups,cn=accounts"
@@ -44,62 +45,31 @@
 #define SVC_GROUP2  "svc_gr2"
 
 struct eval_req_test_ctx {
-    struct ph_user user;
-    struct ph_entry targethost;
-    struct ph_entry service;
+    struct ph_user *user;
     struct hbac_eval_req *req;
+
+    struct ph_entry *targethost;
+    struct ph_entry *service;
 };
 
-static void mock_user_obj(struct ph_user *user,
-                          const char *name,
-                          ...)
-{
-    va_list ap;
-    va_list ap_count;
-    char *v;
-
-    va_copy(ap, cp_count);
-
-    va_start(ap, name);
-    while ((v = va_arg(ap, const char *)) != NULL) {
-    }
-    va_end(ap);
-}
-
-static void add_to_ph_entry(struct ph_member_obj *obj,
-                            char *name,
-                            char **group_dns)
-{
-    obj->name = name;
-    obj->memberofs = group_dns;
-}
-
-static void assert_empty_groups(struct hbac_request_element *el)
+static void
+assert_empty_groups(struct hbac_request_element *el)
 {
     assert_non_null(el);
     assert_non_null(el->groups);
     assert_null(el->groups[0]);
 }
 
-static size_t string_list_size(const char *list[])
-{
-    size_t i;
-
-    assert_non_null(list);
-
-    for (i = 0; list[i]; i++);
-    return i;
-}
-
-static void assert_string_list_matches(const char *list[],
-                                       const char *expected[])
+static void
+assert_string_list_matches(const char *list[],
+                           const char *expected[])
 {
     size_t exp_size;
     size_t list_size;
     size_t i;
 
-    exp_size = string_list_size(expected);
-    list_size = string_list_size(list);
+    exp_size = null_cstring_array_size(expected);
+    list_size = null_cstring_array_size(list);
     assert_int_equal(exp_size, list_size);
 
     for (i = 0; i < exp_size; i++) {
@@ -107,36 +77,70 @@ static void assert_string_list_matches(const char *list[],
     }
 }
 
-static int eval_req_test_setup(void **state)
+static int
+eval_req_test_setup(void **state)
 {
     struct eval_req_test_ctx *test_ctx;
-    static char *nogroups[] = { NULL };
 
     test_ctx = calloc(1, sizeof(struct eval_req_test_ctx));
     if (test_ctx == NULL) {
         return 1;
     }
 
-    add_to_member_obj(&test_ctx->user, "testuser", nogroups);
-    add_to_member_obj(&test_ctx->tgthost, "testhost", nogroups);
-    add_to_member_obj(&test_ctx->service, "testsvc", nogroups);
+    test_ctx->targethost = ph_entry_alloc(PH_MAP_HOST_END);
+    if (test_ctx->targethost == NULL) {
+        return 1;
+    }
+    test_ctx->targethost->attrs[PH_MAP_HOST_OC] = \
+                                                mock_ph_attr("objectClass",
+                                                             "top", "ipaHost",
+                                                             NULL);
+    test_ctx->targethost->attrs[PH_MAP_HOST_FQDN] = \
+                                             mock_ph_attr("fqdn",
+                                                          "testhost",
+                                                           NULL);
+    if (test_ctx->targethost->attrs[PH_MAP_HOST_OC] == NULL ||
+            test_ctx->targethost->attrs[PH_MAP_HOST_FQDN] == NULL) {
+        return 1;
+    }
+
+    test_ctx->service = ph_entry_alloc(PH_MAP_SVC_END);
+    if (test_ctx->service == NULL) {
+        return 1;
+    }
+    test_ctx->service->attrs[PH_MAP_SVC_OC] = mock_ph_attr("objectClass",
+                                                      "top", "ipaService",
+                                                      NULL);
+    test_ctx->service->attrs[PH_MAP_SVC_NAME] = mock_ph_attr("cn",
+                                                        "testsvc",
+                                                         NULL);
+    if (test_ctx->service->attrs[PH_MAP_SVC_OC] == NULL ||
+            test_ctx->service->attrs[PH_MAP_SVC_NAME] == NULL) {
+        return 1;
+    }
 
     *state = test_ctx;
     return 0;
 }
 
-static int eval_req_test_teardown(void **state)
+static int
+eval_req_test_teardown(void **state)
 {
     struct eval_req_test_ctx *test_ctx = *state;
 
-    if (test_ctx != NULL) {
-        ph_free_hbac_eval_req(test_ctx->req);
-        free(test_ctx);
+    if (test_ctx == NULL) {
+        return 0;
     }
+
+    ph_entry_free(test_ctx->targethost);
+    ph_entry_free(test_ctx->service);
+
+    free(test_ctx);
     return 0;
 }
 
-static void test_create_eval_req_invalid(void **state)
+static void
+test_create_eval_req_invalid(void **state)
 {
     int ret;
 
@@ -146,17 +150,41 @@ static void test_create_eval_req_invalid(void **state)
     assert_int_equal(ret, EINVAL);
 }
 
+static int
+test_create_eval_req_nogroups_setup(void **state)
+{
+    struct eval_req_test_ctx *test_ctx = *state;
+
+    test_ctx->user = mock_user_obj("testuser", NULL);
+    if (test_ctx->user == NULL) {
+        return 1;
+    }
+
+    return 0;
+}
+
+static int
+test_create_eval_req_nogroups_teardown(void **state)
+{
+    struct eval_req_test_ctx *test_ctx = *state;
+
+    ph_free_user(test_ctx->user);
+    ph_free_hbac_eval_req(test_ctx->req);
+    return 0;
+}
+
 static void test_create_eval_req_nogroups(void **state)
 {
     int ret;
     struct eval_req_test_ctx *test_ctx = *state;
 
-    ret = ph_create_hbac_eval_req(&test_ctx->user,
-                                  &test_ctx->tgthost,
-                                  &test_ctx->service,
+    ret = ph_create_hbac_eval_req(test_ctx->user,
+                                  test_ctx->targethost,
+                                  test_ctx->service,
                                   &test_ctx->req);
     assert_int_equal(ret, 0);
 
+    assert_non_null(test_ctx->req);
     assert_string_equal(test_ctx->req->user->name, "testuser");
     assert_empty_groups(test_ctx->req->user);
     assert_string_equal(test_ctx->req->targethost->name, "testhost");
@@ -166,112 +194,168 @@ static void test_create_eval_req_nogroups(void **state)
     assert_int_equal(test_ctx->req->request_time, time(NULL));
 }
 
+static int
+test_create_eval_req_valid_groups_setup(void **state)
+{
+    struct eval_req_test_ctx *test_ctx = *state;
+
+    test_ctx->user = mock_user_obj("testuser", USER_GROUP1, USER_GROUP2, NULL);
+    if (test_ctx->user == NULL) {
+        return 1;
+    }
+
+    test_ctx->targethost->attrs[PH_MAP_HOST_MEMBEROF] = \
+               mock_ph_attr("memberof",
+                            "cn="HOST_GROUP1","HOST_CONTAINER","TEST_BASEDN,
+                            NULL);
+    if (test_ctx->targethost->attrs[PH_MAP_HOST_MEMBEROF] == NULL) {
+        return 1;
+    }
+
+    test_ctx->service->attrs[PH_MAP_SVC_MEMBEROF] = \
+               mock_ph_attr("memberof",
+                            "cn="SVC_GROUP1","SVC_CONTAINER","TEST_BASEDN,
+                            "cn="SVC_GROUP2","SVC_CONTAINER","TEST_BASEDN,
+                            NULL);
+    if (test_ctx->service->attrs[PH_MAP_SVC_MEMBEROF] == NULL) {
+        return 1;
+    }
+
+    return 0;
+}
+
+static int
+test_create_eval_req_valid_groups_teardown(void **state)
+{
+    struct eval_req_test_ctx *test_ctx = *state;
+
+    ph_attr_free(test_ctx->targethost->attrs[PH_MAP_HOST_MEMBEROF]);
+    test_ctx->targethost->attrs[PH_MAP_HOST_MEMBEROF] = NULL;
+
+    ph_attr_free(test_ctx->service->attrs[PH_MAP_SVC_MEMBEROF]);
+    test_ctx->service->attrs[PH_MAP_SVC_MEMBEROF] = NULL;
+
+    ph_free_hbac_eval_req(test_ctx->req);
+    ph_free_user(test_ctx->user);
+    return 0;
+}
+
 static void test_create_eval_req_valid_groups(void **state)
 {
     int ret;
     struct eval_req_test_ctx *test_ctx = *state;
-
-    char *user_group_dns[] = {
-        "cn="USER_GROUP1","GROUP_CONTAINER","TEST_BASEDN,
-        NULL
-    };
-    const char *user_groups[] = {
+    const char *exp_usr_groups[] = {
         USER_GROUP1,
+        USER_GROUP2,
         NULL
     };
-
-    char *service_group_dns[] = {
-        "cn="SVC_GROUP1","SVC_CONTAINER","TEST_BASEDN,
-        NULL
-    };
-    const char *service_groups[] = {
-        SVC_GROUP1,
-        NULL
-    };
-
-    char *host_group_dns[] = {
-        "cn="HOST_GROUP1","HOST_CONTAINER","TEST_BASEDN,
-        NULL
-    };
-    const char *host_groups[] = {
+    const char *exp_host_groups[] = {
         HOST_GROUP1,
         NULL
     };
+    const char *exp_svc_groups[] = {
+        SVC_GROUP1,
+        SVC_GROUP2,
+        NULL
+    };
 
-    test_ctx->user.memberofs = user_group_dns;
-    test_ctx->service.memberofs = service_group_dns;
-    test_ctx->tgthost.memberofs = host_group_dns;
-
-    ret = ph_create_hbac_eval_req(&test_ctx->user,
-                                  &test_ctx->tgthost,
-                                  &test_ctx->service,
+    ret = ph_create_hbac_eval_req(test_ctx->user,
+                                  test_ctx->targethost,
+                                  test_ctx->service,
                                   &test_ctx->req);
     assert_int_equal(ret, 0);
 
+    assert_non_null(test_ctx->req);
     assert_string_equal(test_ctx->req->user->name, "testuser");
-    assert_string_list_matches(test_ctx->req->user->groups, user_groups);
+    assert_string_list_matches(test_ctx->req->user->groups, exp_usr_groups);
     assert_string_equal(test_ctx->req->targethost->name, "testhost");
-    assert_string_list_matches(test_ctx->req->targethost->groups, host_groups);
+    assert_string_list_matches(test_ctx->req->targethost->groups,
+                               exp_host_groups);
     assert_string_equal(test_ctx->req->service->name, "testsvc");
-    assert_string_list_matches(test_ctx->req->service->groups, service_groups);
+    assert_string_list_matches(test_ctx->req->service->groups,
+                               exp_svc_groups);
     assert_int_equal(test_ctx->req->request_time, time(NULL));
+}
+
+static int
+test_create_eval_req_invalid_groups_setup(void **state)
+{
+    struct eval_req_test_ctx *test_ctx = *state;
+
+    test_ctx->user = mock_user_obj("testuser", USER_GROUP1, USER_GROUP2, NULL);
+    if (test_ctx->user == NULL) {
+        return 1;
+    }
+
+    test_ctx->targethost->attrs[PH_MAP_HOST_MEMBEROF] = \
+               mock_ph_attr("memberof",
+                            /* Missing basedn */
+                            "cn="HOST_GROUP2","HOST_CONTAINER,
+                            NULL);
+    if (test_ctx->targethost->attrs[PH_MAP_HOST_MEMBEROF] == NULL) {
+        return 1;
+    }
+
+    test_ctx->service->attrs[PH_MAP_SVC_MEMBEROF] = \
+               mock_ph_attr("memberof",
+                            /* Bad RDN  */
+                            "foo="SVC_GROUP1","SVC_CONTAINER","TEST_BASEDN,
+                            /* Bad container */
+                            "cn="SVC_GROUP1",cn=foo,"TEST_BASEDN,
+                            "cn="SVC_GROUP2","SVC_CONTAINER","TEST_BASEDN,
+                            /* Not a DN */
+                            "kalle_anka",
+                            NULL);
+    if (test_ctx->service->attrs[PH_MAP_SVC_MEMBEROF] == NULL) {
+        return 1;
+    }
+
+    return 0;
+}
+
+static int
+test_create_eval_req_invalid_groups_teardown(void **state)
+{
+    struct eval_req_test_ctx *test_ctx = *state;
+
+    ph_attr_free(test_ctx->targethost->attrs[PH_MAP_HOST_MEMBEROF]);
+    test_ctx->targethost->attrs[PH_MAP_HOST_MEMBEROF] = NULL;
+
+    ph_attr_free(test_ctx->service->attrs[PH_MAP_SVC_MEMBEROF]);
+    test_ctx->service->attrs[PH_MAP_SVC_MEMBEROF] = NULL;
+
+    ph_free_hbac_eval_req(test_ctx->req);
+    ph_free_user(test_ctx->user);
+    return 0;
 }
 
 static void test_create_eval_req_skip_invalid_groups(void **state)
 {
     int ret;
     struct eval_req_test_ctx *test_ctx = *state;
-
-   char *user_group_dns[] = {
-        /* Bad RDN */
-        "uid="USER_GROUP1","GROUP_CONTAINER","TEST_BASEDN,
-        "cn="USER_GROUP1","GROUP_CONTAINER","TEST_BASEDN,
-        "cn="USER_GROUP2","GROUP_CONTAINER","TEST_BASEDN,
-        NULL
-    };
-    const char *user_groups[] = {
+    const char *exp_usr_groups[] = {
         USER_GROUP1,
         USER_GROUP2,
         NULL
     };
-
-    char *service_group_dns[] = {
-        "cn="SVC_GROUP1","SVC_CONTAINER","TEST_BASEDN,
-        /* Bad container */
-        "cn="SVC_GROUP1",cn=foo,"TEST_BASEDN,
-        "cn="SVC_GROUP2","SVC_CONTAINER","TEST_BASEDN,
-        /* Not a DN */
-        "kalle_anka",
-        NULL
-    };
-    const char *service_groups[] = {
-        SVC_GROUP1,
+    const char *exp_svc_groups[] = {
         SVC_GROUP2,
         NULL
     };
 
-    char *host_group_dns[] = {
-        /* Missing basedn */
-        "cn="HOST_GROUP2","HOST_CONTAINER,
-        NULL
-    };
-
-    test_ctx->user.memberofs = user_group_dns;
-    test_ctx->service.memberofs = service_group_dns;
-    test_ctx->tgthost.memberofs = host_group_dns;
-
-    ret = ph_create_hbac_eval_req(&test_ctx->user,
-                                  &test_ctx->tgthost,
-                                  &test_ctx->service,
+    ret = ph_create_hbac_eval_req(test_ctx->user,
+                                  test_ctx->targethost,
+                                  test_ctx->service,
                                   &test_ctx->req);
     assert_int_equal(ret, 0);
 
     assert_string_equal(test_ctx->req->user->name, "testuser");
-    assert_string_list_matches(test_ctx->req->user->groups, user_groups);
+    assert_string_list_matches(test_ctx->req->user->groups, exp_usr_groups);
     assert_string_equal(test_ctx->req->targethost->name, "testhost");
     assert_empty_groups(test_ctx->req->targethost);
     assert_string_equal(test_ctx->req->service->name, "testsvc");
-    assert_string_list_matches(test_ctx->req->service->groups, service_groups);
+    assert_string_list_matches(test_ctx->req->service->groups,
+                               exp_svc_groups);
     assert_int_equal(test_ctx->req->request_time, time(NULL));
 }
 
@@ -279,9 +363,15 @@ int main(void)
 {
     const struct CMUnitTest tests[] = {
         cmocka_unit_test(test_create_eval_req_invalid),
-        cmocka_unit_test(test_create_eval_req_nogroups),
-        cmocka_unit_test(test_create_eval_req_valid_groups),
-        cmocka_unit_test(test_create_eval_req_skip_invalid_groups),
+        cmocka_unit_test_setup_teardown(test_create_eval_req_nogroups,
+                                        test_create_eval_req_nogroups_setup,
+                                        test_create_eval_req_nogroups_teardown),
+        cmocka_unit_test_setup_teardown(test_create_eval_req_valid_groups,
+                                        test_create_eval_req_valid_groups_setup,
+                                        test_create_eval_req_valid_groups_teardown),
+        cmocka_unit_test_setup_teardown(test_create_eval_req_skip_invalid_groups,
+                                        test_create_eval_req_invalid_groups_setup,
+                                        test_create_eval_req_invalid_groups_teardown),
     };
 
     return cmocka_run_group_tests(tests,
