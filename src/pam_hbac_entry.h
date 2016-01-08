@@ -39,14 +39,18 @@ void ph_attr_free(struct ph_attr *a);
  */
 struct ph_entry {
     struct ph_attr **attrs;
+    /* FIXME - do we need num_attrs since the array is NULL-terminated? */
     size_t num_attrs;
 };
+
+struct ph_entry *ph_entry_alloc(size_t num_attrs);
+void ph_entry_free(struct ph_entry *e);
+int ph_entry_set_attr(struct ph_entry *e, struct ph_attr *a, size_t index);
+struct ph_attr *ph_entry_get_attr(struct ph_entry *e, size_t attr_index);
 
 struct ph_entry **ph_entry_array_alloc(size_t num_entry_attrs,
                                        size_t num_entries);
 size_t ph_num_entries(struct ph_entry **entry_list);
-int ph_entry_set_attr(struct ph_entry *e, struct ph_attr *a, size_t index);
-struct ph_attr *ph_entry_get_attr(struct ph_entry *e, size_t attr_index);
 void ph_entry_array_free(struct ph_entry **entry_list);
 
 #endif /* __PAM_HBAC_ENTRY_H__ */

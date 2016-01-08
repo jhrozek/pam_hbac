@@ -57,7 +57,7 @@ ph_attr_free(struct ph_attr *a)
 }
 
 /* search entry */
-static struct ph_entry *
+struct ph_entry *
 ph_entry_alloc(size_t num_attrs)
 {
     struct ph_entry *e;
@@ -77,7 +77,7 @@ ph_entry_alloc(size_t num_attrs)
     return e;
 }
 
-static void
+void
 ph_entry_free(struct ph_entry *e)
 {
     size_t i;
