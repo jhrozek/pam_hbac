@@ -58,6 +58,18 @@ config_tests_CFLAGS = \
 config_tests_LDADD = \
 		     $(CMOCKA_LIBS)
 
+utils_tests_SOURCES = \
+	src/tests/utils_tests.c \
+	src/pam_hbac_utils.c \
+	$(NULL)
+utils_tests_CFLAGS = \
+	$(AM_CFLAGS) \
+	$(CMOCKA_CFLAGS) \
+	$(NULL)
+utils_tests_LDADD = \
+	$(CMOCKA_LIBS) \
+	$(NULL)
+
 entry_tests_SOURCES = \
 	src/tests/entry_tests.c \
 	src/tests/mock_entry.c \
@@ -111,6 +123,7 @@ eval_req_tests_LDADD = \
 if HAVE_CMOCKA
     check_PROGRAMS = \
 	config-tests \
+	utils-tests \
 	entry-tests \
 	dnparse-tests \
 	eval_req-tests \
