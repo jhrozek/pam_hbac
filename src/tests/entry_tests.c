@@ -25,6 +25,7 @@
 #include <ldap.h>
 
 #include "pam_hbac_entry.h"
+#include "common_mock.h"
 
 static void test_ph_attr(void **state)
 {
@@ -62,36 +63,40 @@ static void test_ph_attr(void **state)
     assert_null(a);
 }
 
-static struct ph_attr *
-create_test_attr(const char *name, ...)
+static void test_ph_entry(void **state)
 {
-    va_list ap;
-    char *nc;
-    const char *v = NULL;
-    struct berval *bv;
-    struct berval **vals = NULL;
+    const size_t num_attrs = 3;
+    struct ph_entry *entry = NULL;
+    struct ph_attr *a, *aa;
+    int ret;
 
-    va_start(ap, name);
-    while ((v = va_arg(ap, const char *)) != NULL) {
-        bv = ber_bvstrdup(v);
-        if (bv == NULL) {
-            ber_bvecfree(vals);
-            return NULL;
-        }
-        ber_bvecadd(&vals, bv);
-    }
-    va_end(ap);
+    (void) state; /* unused */
 
-    nc = ldap_strdup(name);
-    if (nc == NULL) {
-        ber_bvecfree(vals);
-        return NULL;
-    }
+    entry = ph_entry_alloc(num_attrs);
+    assert_non_null(entry);
 
-    return ph_attr_new(nc, vals);
+    assert_null(ph_entry_get_attr(entry, 0));
+    assert_null(ph_entry_get_attr(entry, 666));
+
+    a = mock_ph_attr("name", "foo", "bar", NULL);
+    ret = ph_entry_set_attr(entry, a, 3);
+    assert_int_not_equal(ret, 0);   /* off by one */
+
+    ret = ph_entry_set_attr(entry, a, 0);
+    assert_int_equal(ret, 0);   /* off by one */
+
+    aa = ph_entry_get_attr(entry, 0);
+    assert_non_null(aa);
+    assert_non_null(aa->name);
+    assert_string_equal(aa->name, "name");
+    assert_int_equal(aa->nvals, 2);
+    assert_string_equal(aa->vals[0]->bv_val, "foo");
+    assert_string_equal(aa->vals[1]->bv_val, "bar");
+
+    ph_entry_free(entry);
 }
 
-static void test_ph_entry(void **state)
+static void test_ph_entry_array(void **state)
 {
     const size_t num_entries = 2;
     const size_t num_attrs = 3;
@@ -114,7 +119,7 @@ static void test_ph_entry(void **state)
     assert_null(ph_entry_get_attr(entry_list[0], 0));
     assert_null(ph_entry_get_attr(entry_list[0], 666));
 
-    a = create_test_attr("name", "foo", "bar", NULL);
+    a = mock_ph_attr("name", "foo", "bar", NULL);
     ret = ph_entry_set_attr(entry_list[0], a, 3);
     assert_int_not_equal(ret, 0);   /* off by one */
 
@@ -137,6 +142,7 @@ int main(void)
     const struct CMUnitTest tests[] = {
         cmocka_unit_test(test_ph_attr),
         cmocka_unit_test(test_ph_entry),
+        cmocka_unit_test(test_ph_entry_array),
     };
 
     return cmocka_run_group_tests(tests, NULL, NULL);
