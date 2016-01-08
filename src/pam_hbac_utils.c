@@ -67,3 +67,17 @@ null_string_array_size(char *arr[])
     return nelem;
 }
 
+size_t
+null_cstring_array_size(const char *arr[])
+{
+    size_t nelem;
+
+    if (arr == NULL) {
+        return 0;
+    }
+
+    for (nelem = 0; arr[nelem] != NULL; nelem++);
+
+    return nelem;
+}
+
