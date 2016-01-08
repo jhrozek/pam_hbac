@@ -40,7 +40,7 @@ free_request_element(struct hbac_request_element *el,
         return;
     }
 
-    if (el->groups != NULL) {
+    if (el->groups != NULL && free_group_ptrs) {
         for (i=0; el->groups[i]; i++) {
             free_const(el->groups[i]);
         }
@@ -77,6 +77,7 @@ entry_to_eval_req_el(struct ph_attr *name,
 {
     struct hbac_request_element *el;
     size_t i, gi;
+    size_t n_memberof = 0;
     int ret;
 
     /* Name can only have one value */
@@ -84,7 +85,11 @@ entry_to_eval_req_el(struct ph_attr *name,
         return NULL;
     }
 
-    el = alloc_sized_request_element(memberof->nvals);
+    if (memberof != NULL) {
+        n_memberof = memberof->nvals;
+    }
+
+    el = alloc_sized_request_element(n_memberof);
     if (el == NULL) {
         return NULL;
     }
@@ -93,7 +98,7 @@ entry_to_eval_req_el(struct ph_attr *name,
     /* Iterate over all memberof attribute values and copy out the
      * groupname */
     gi = 0;
-    for (i=0; i < memberof->nvals; i++) {
+    for (i=0; i < n_memberof; i++) {
         ret = group_name_from_dn((const char *) memberof->vals[i]->bv_val,
                                  el_type,
                                  &el->groups[gi]);
@@ -165,7 +170,7 @@ tgt_host_to_eval_req_el(struct ph_entry *host)
 }
 
 void
-ph_free_eval_req(struct hbac_eval_req *req)
+ph_free_hbac_eval_req(struct hbac_eval_req *req)
 {
     if (req == NULL) {
         return;
@@ -220,6 +225,6 @@ ph_create_hbac_eval_req(struct ph_user *user,
     return 0;
 
 fail:
-    ph_free_eval_req(req);
+    ph_free_hbac_eval_req(req);
     return ret;
 }
