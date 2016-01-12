@@ -120,6 +120,37 @@ eval_req_tests_LDADD = \
 	$(CMOCKA_LIBS) \
 	$(NULL)
 
+ldap_tests_SOURCES = \
+	src/tests/ldap_tests.c \
+	src/pam_hbac_ldap.c \
+	src/pam_hbac_entry.c \
+	src/pam_hbac_utils.c \
+	$(NULL)
+ldap_tests_CFLAGS = \
+	$(AM_CFLAGS) \
+	$(CMOCKA_CFLAGS) \
+	$(NULL)
+ldap_tests_LDFLAGS = \
+	-Wl,-wrap,ldap_sasl_bind_s \
+	-Wl,-wrap,ldap_unbind_ext \
+	-Wl,-wrap,ldap_search_ext_s \
+	-Wl,-wrap,ldap_first_message \
+	-Wl,-wrap,ldap_next_message \
+	-Wl,-wrap,ldap_msgtype \
+	-Wl,-wrap,ldap_count_entries \
+	-Wl,-wrap,ldap_get_values_len \
+	-Wl,-wrap,ldap_first_attribute \
+	-Wl,-wrap,ldap_first_attribute \
+	-Wl,-wrap,ldap_next_attribute \
+	-Wl,-wrap,ldap_memfree \
+	-Wl,-wrap,ber_free \
+	$(NULL)
+ldap_tests_LDADD = \
+	-lldap \
+	-llber \
+	$(CMOCKA_LIBS) \
+	$(NULL)
+
 if HAVE_CMOCKA
     check_PROGRAMS = \
 	config-tests \
@@ -127,6 +158,7 @@ if HAVE_CMOCKA
 	entry-tests \
 	dnparse-tests \
 	eval_req-tests \
+	ldap-tests \
 	$(NULL)
 endif
 
