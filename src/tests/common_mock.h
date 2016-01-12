@@ -23,6 +23,9 @@
 #include "pam_hbac_obj.h"
 #include "pam_hbac_obj_int.h"
 
+#define ph_mock_type(type) ((type) mock());
+#define ph_mock_ptr_type(type) ((type) (uintptr_t) mock());
+
 struct ph_attr *mock_ph_attr(const char *name, ...);
 struct ph_user *mock_user_obj(const char *name, ...);
 

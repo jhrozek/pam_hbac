@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <sys/time.h>
 
+#include "pam_hbac_compat.h"
 #include "pam_hbac_ldap.h"
 
 static int
@@ -28,7 +29,7 @@ internal_search(LDAP *ld,
                 const char *search_base,
                 const char * const attrs[],
                 const char *filter,
-                LDAPMessage **res)
+                LDAPMessage **_msg)
 {
     int ret;
     struct timeval tv;
@@ -41,23 +42,17 @@ internal_search(LDAP *ld,
     }
     tv.tv_sec += timeout;
 
-    /* FIXME - test timeout */
-#if 0
     D(("searching with filter: %s\n", filter));
-#endif
     ret = ldap_search_ext_s(ld, search_base, LDAP_SCOPE_SUBTREE, filter,
                             discard_const(attrs), 0, NULL, NULL, &tv, 0, &msg);
     if (ret != LDAP_SUCCESS) {
-#if 0
         D(("ldap_search_ext_s failed: %s", ldap_err2string(ret)));
-#endif
-        /* FIXME - better errcode? */
         ret = EIO;
         goto done;
     }
 
     ret = 0;
-    *res = msg;
+    *_msg = msg;
 done:
     return ret;
 }
@@ -65,14 +60,13 @@ done:
 static bool
 entry_has_oc(LDAP *ld, LDAPMessage *entry, const char *oc)
 {
-    int i;
+    size_t i;
     struct berval **vals;
+    bool ret;
 
     vals = ldap_get_values_len(ld, entry, PAM_HBAC_ATTR_OC);
     if (vals == NULL) {
-#if 0
         D(("No objectclass? Corrupt entry\n"));
-#endif
         return false;
     }
 
@@ -81,25 +75,22 @@ entry_has_oc(LDAP *ld, LDAPMessage *entry, const char *oc)
             break;
         }
     }
-    ldap_value_free_len(vals);
 
     if (vals[i] == NULL) {
-        /* Could not find the expected objectclass */
-#if 0
         D(("Could not find objectclass %s\n", oc));
-#endif
-        return false;
+        ret = false;
+    } else {
+        ret = true;
     }
 
-    return true;
+    ldap_value_free_len(vals);
+    return ret;
 }
 
 static int
 want_attrname(const char *attr, struct ph_search_ctx *obj)
 {
-    int i;
-
-    for (i = 0; i < obj->num_attrs; i++) {
+    for (size_t i = 0; i < obj->num_attrs; i++) {
         if (strcmp(obj->attrs[i], attr) == 0) {
             return i;
         }
@@ -114,7 +105,7 @@ parse_entry(LDAP *ld,
             struct ph_search_ctx *obj,
             struct ph_entry *pentry)
 {
-    BerElement *ber;
+    BerElement *ber = NULL;
     char *a;
     struct berval **vals;
     struct ph_attr *attr;
@@ -122,7 +113,7 @@ parse_entry(LDAP *ld,
     int ret;
 
     /* check objectclass first */
-    if (!entry_has_oc(ld, entry, obj->oc)) {
+    if (entry_has_oc(ld, entry, obj->oc) == false) {
         return ENOENT;
     }
 
@@ -164,7 +155,7 @@ static int
 parse_message(LDAP *ld, LDAPMessage *msg, struct ph_search_ctx *s,
               struct ph_entry ***_entries)
 {
-    int num_entries;
+    size_t num_entries;
     LDAPMessage *ent;
     int ent_type;
     int ret;
@@ -172,9 +163,7 @@ parse_message(LDAP *ld, LDAPMessage *msg, struct ph_search_ctx *s,
     size_t entry_idx = 0;
 
     num_entries = ldap_count_entries(ld, msg);
-#if 0
     D(("Found %d entries\n", num_entries));
-#endif
 
     entries = ph_entry_array_alloc(s->num_attrs, num_entries);
     if (entries == NULL) {
@@ -188,7 +177,13 @@ parse_message(LDAP *ld, LDAPMessage *msg, struct ph_search_ctx *s,
         /* Determine what type of message was sent from the server. */
         ent_type = ldap_msgtype(ent);
         switch (ent_type) {
+            /* FIXME - break into a function? */
             case LDAP_RES_SEARCH_ENTRY:
+                if (entry_idx >= num_entries) {
+                    /* Be defensive.. */
+                    return E2BIG;
+                }
+
                 /* The result is an entry. */
                 ret = parse_entry(ld, ent, s, entries[entry_idx]);
                 if (ret != 0) {
@@ -198,17 +193,13 @@ parse_message(LDAP *ld, LDAPMessage *msg, struct ph_search_ctx *s,
                 entry_idx++;
                 break;
             case LDAP_RES_SEARCH_REFERENCE:
-#if 0
                 D(("No support for referrals.."));
-#endif
                 break;
             case LDAP_RES_SEARCH_RESULT:
                 /* The result is the final result sent by the server. */
                 break;
             default:
-#if 0
                 D(("Unexpected message type %d, ignoring\n", ent_type));
-#endif
                 break;
         }
     }
@@ -231,7 +222,6 @@ compose_search_filter(struct ph_search_ctx *s,
     }
 
     if (obj_filter != NULL) {
-        /* FIXME - check if the obj_filter is enclosed in () */
         ret = asprintf(&filter, "(&%s(%s))", oc_filter, obj_filter);
         free(oc_filter);
         if (ret < 0) {
@@ -252,11 +242,15 @@ ph_search(LDAP *ld,
           const char *obj_filter,
           struct ph_entry ***_entry_list)
 {
-    LDAPMessage *res = NULL;
+    LDAPMessage *msg = NULL;
     char *search_base = NULL;
     char *filter = NULL;
     int ret;
     struct ph_entry **entry_list;
+
+    if (ld == NULL || conf == NULL || s == NULL) {
+        return EINVAL;
+    }
 
     ret = asprintf(&search_base, "%s,%s", s->sub_base, conf->search_base);
     if (ret < 0) {
@@ -271,12 +265,12 @@ ph_search(LDAP *ld,
     }
 
     ret = internal_search(ld, conf->timeout, search_base, s->attrs,
-                          filter, &res);
+                          filter, &msg);
     if (ret != 0) {
         goto done;
     }
 
-    ret = parse_message(ld, res, s, &entry_list);
+    ret = parse_message(ld, msg, s, &entry_list);
     if (ret != 0) {
         goto done;
     }
@@ -296,12 +290,13 @@ ph_connect(struct pam_hbac_ctx *ctx)
     LDAP *ld;
     struct berval password = {0, NULL};
 
-    /* FIXME - detect availability with configure? */
+    if (ctx == NULL) {
+        return EINVAL;
+    }
+
     ret = ldap_initialize(&ld, ctx->pc->uri);
     if (ret != LDAP_SUCCESS) {
-#if 0
         D(("ldap_initialize failed [%d]: %s\n", ret, ldap_err2string(ret)));
-#endif
         return EIO;
     }
 
@@ -311,27 +306,29 @@ ph_connect(struct pam_hbac_ctx *ctx)
     ret = ldap_sasl_bind_s(ld, ctx->pc->bind_dn, LDAP_SASL_SIMPLE, &password,
                            NULL, NULL, NULL);
     if (ret != LDAP_SUCCESS) {
-#if 0
         D(("ldap_simple_bind_s failed [%d]: %s\n", ret, ldap_err2string(ret)));
-#endif
+        ldap_destroy(ld);
         return EACCES;
     }
 
     ctx->ld = ld;
     return 0;
 }
+
 void
 ph_disconnect(struct pam_hbac_ctx *ctx)
 {
     int ret;
 
-    if (!ctx || !ctx->ld) return;
+    if (ctx == NULL || ctx->ld == NULL) {
+        return;
+    }
 
     ret = ldap_unbind_ext(ctx->ld, NULL, NULL);
     if (ret != LDAP_SUCCESS) {
-#if 0
         D(("ldap_unbind_ext failed [%d]: %s\n", ret, ldap_err2string(ret)));
-#endif
     }
-}
 
+    ldap_destroy(ctx->ld);
+    ctx->ld = NULL;
+}
