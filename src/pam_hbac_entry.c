@@ -96,6 +96,9 @@ ph_entry_free(struct ph_entry *e)
     free(e);
 }
 
+/* FIXME - we should reverse the order of params to look more
+ * like calloc()
+ */
 struct ph_entry **
 ph_entry_array_alloc(size_t num_entry_attrs,
                      size_t num_entries)

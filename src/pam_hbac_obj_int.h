@@ -35,7 +35,7 @@ enum ph_host_attrmap {
     PH_MAP_HOST_OC,
     PH_MAP_HOST_FQDN,
     PH_MAP_HOST_MEMBEROF,
-    PH_MAP_HOST_END
+    PH_MAP_HOST_END     /* FIXME - rename to PH_PAM_NUM_ATTRS?? */
 };
 
 enum ph_svc_attrmap {

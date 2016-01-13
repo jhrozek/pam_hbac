@@ -3,6 +3,7 @@ AC_PREREQ(2.59)
 m4_include([version.m4])
 m4_include([external/attribute.m4])
 m4_include([external/libcmocka.m4])
+m4_include([external/cwrap.m4])
 
 AC_INIT([libpam_hbac],
         VERSION_NUMBER,
@@ -55,6 +56,7 @@ AC_SUBST(pammoddir)
 
 # Optional build dependencies - Unit tests
 AM_CHECK_CMOCKA
+AM_CHECK_NSS_WRAPPER
 
 AC_CONFIG_HEADER(config.h)
 AC_CONFIG_FILES([Makefile])

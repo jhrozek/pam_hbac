@@ -293,8 +293,8 @@ done:
     ph_free_hbac_rules(rules);
     ph_free_hbac_eval_req(eval_req);
     ph_free_user(user);
-    ph_free_svc(service);
-    ph_free_host(targethost);
+    ph_entry_free(service);
+    ph_entry_free(targethost);
     ph_disconnect(ctx);
     ph_cleanup(ctx);
     return pam_ret;

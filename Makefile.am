@@ -49,6 +49,11 @@ dist_noinst_HEADERS = \
 		      src/pam_hbac.h
 
 ### Unit tests
+TESTS_ENVIRONMENT = \
+	CWRAP_TEST_SRCDIR=$(abs_srcdir)/src/tests/cwrap \
+	. $(srcdir)/src/tests/cwrap_test_setup.sh; \
+	$(NULL)
+
 config_tests_SOURCES = \
 		      src/tests/config-tests.c \
 		      src/pam_hbac_config.c
@@ -151,6 +156,27 @@ ldap_tests_LDADD = \
 	$(CMOCKA_LIBS) \
 	$(NULL)
 
+obj_tests_SOURCES = \
+	src/tests/obj_tests.c \
+	src/tests/mock_entry.c \
+	src/pam_hbac_obj.c \
+	src/pam_hbac_entry.c \
+	src/pam_hbac_utils.c \
+	src/pam_hbac_ldap.c \
+	$(NULL)
+obj_tests_CFLAGS = \
+	$(AM_CFLAGS) \
+	$(CMOCKA_CFLAGS) \
+	$(NULL)
+obj_tests_LDFLAGS = \
+	-Wl,-wrap,ph_search \
+	$(NULL)
+obj_tests_LDADD = \
+	-lldap \
+	-llber \
+	$(CMOCKA_LIBS) \
+	$(NULL)
+
 if HAVE_CMOCKA
     check_PROGRAMS = \
 	config-tests \
@@ -159,6 +185,7 @@ if HAVE_CMOCKA
 	dnparse-tests \
 	eval_req-tests \
 	ldap-tests \
+	obj-tests \
 	$(NULL)
 endif
 
