@@ -32,12 +32,10 @@ struct ph_entry;
 int ph_get_host(struct pam_hbac_ctx *ctx,
                 const char *hostname,
                 struct ph_entry **_host);
-void ph_free_host(struct ph_entry *host);
 
 int ph_get_svc(struct pam_hbac_ctx *ctx,
                const char *svcname,
                struct ph_entry **_svc);
-void ph_free_svc(struct ph_entry *svc);
 
 /* pam_hbac_eval_req.c */
 

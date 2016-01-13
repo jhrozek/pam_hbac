@@ -28,5 +28,7 @@
 
 struct ph_attr *mock_ph_attr(const char *name, ...);
 struct ph_user *mock_user_obj(const char *name, ...);
+int mock_ph_host(struct ph_entry *host, const char *fqdn);
+int mock_ph_svc(struct ph_entry *host, const char *svcname);
 
 #endif /* __COMMON_MOCK_H__ */

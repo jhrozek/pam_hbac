@@ -61,8 +61,8 @@ getgroupname(gid_t gid)
 
 struct ph_user *
 get_user_names(struct passwd *pwd,
-               int *gidlist,
-               size_t maxgroups)
+               gid_t *gidlist,
+               size_t ngroups)
 {
     struct ph_user *user;
     size_t i;
@@ -78,13 +78,13 @@ get_user_names(struct passwd *pwd,
         return NULL;
     }
 
-    user->group_names = calloc(maxgroups + 1, sizeof(char *));
+    user->group_names = calloc(ngroups + 1, sizeof(char *));
     if (user->group_names == NULL) {
         ph_free_user(user);
         return NULL;
     }
 
-    for (i = 0; i < maxgroups; i++) {
+    for (i = 0; i < ngroups; i++) {
         user->group_names[i] = getgroupname(gidlist[i]);
         if (user->group_names[i] == NULL) {
             ph_free_user(user);
@@ -93,6 +93,31 @@ get_user_names(struct passwd *pwd,
     }
 
     return user;
+}
+
+struct ph_user *
+get_user_int(const char *username, const size_t bufsize, const int maxgroups)
+{
+    char buffer[bufsize];
+    gid_t gidlist[maxgroups];
+    int ret;
+    struct passwd pwd;
+    struct passwd *result = NULL;
+    int ngroups;
+
+    ret = getpwnam_r(username, &pwd, buffer, bufsize, &result);
+    if (ret != 0 || result == NULL) {
+        return NULL;
+    }
+
+    ngroups = maxgroups;    /* don't modify input parameter */
+    ret = getgrouplist(pwd.pw_name, pwd.pw_gid, gidlist, &ngroups);
+    if (ret == -1) {
+        /* FIXME - resize on platforms where we allocate fewer groups? */
+        return NULL;
+    }
+
+    return get_user_names(&pwd, gidlist, ngroups);
 }
 
 struct ph_user *
@@ -111,23 +136,7 @@ ph_get_user(const char *username)
         return NULL;
     }
 
-    int ret;
-    char buffer[bufsize];
-    int gidlist[maxgroups];
-    struct passwd pwd;
-    struct passwd *result = NULL;
-
-    ret = getpwnam_r(username, &pwd, buffer, bufsize, &result);
-    if (ret != 0 || result == NULL) {
-        return NULL;
-    }
-
-    ret = getgrouplist(pwd.pw_name, pwd.pw_gid, gidlist, &maxgroups);
-    if (ret != 0) {
-        return NULL;
-    }
-
-    return get_user_names(&pwd, gidlist, maxgroups);
+    return get_user_int(username, bufsize, maxgroups);
 }
 
 void
@@ -142,30 +151,29 @@ ph_free_user(struct ph_user *user)
     free(user);
 }
 
-static const char *ph_host_attrs[] = { PAM_HBAC_ATTR_OC,
-                                       "fqdn",
-                                       "memberOf",
-                                       NULL };
-
-/* FIXME - do we need this complexity? */
-static struct ph_search_ctx host_search_obj = {
-    .sub_base = "cn=computers,cn=accounts",
-    .oc = "ipaHost",
-    .attrs = ph_host_attrs,
-    .num_attrs = PH_MAP_HOST_END,
-};
-
-int ph_get_host(struct pam_hbac_ctx *ctx,
-                const char *hostname,
-                struct ph_entry **_host)
+int
+ph_get_host(struct pam_hbac_ctx *ctx,
+            const char *hostname,
+            struct ph_entry **_host)
 {
     size_t num;
     int ret;
     char *host_filter;
     struct ph_entry **hosts;
     struct ph_attr *fqdn;
+    static const char *ph_host_attrs[] = { PAM_HBAC_ATTR_OC,
+                                           "fqdn",
+                                           "memberOf",
+                                           NULL };
 
-    if (hostname == NULL) {
+    static struct ph_search_ctx host_search_obj = {
+        .sub_base = "cn=computers,cn=accounts",
+        .oc = "ipaHost",
+        .attrs = ph_host_attrs,
+        .num_attrs = PH_MAP_HOST_END,
+    };
+
+    if (ctx == NULL || hostname == NULL) {
         return EINVAL;
     }
 
@@ -184,13 +192,14 @@ int ph_get_host(struct pam_hbac_ctx *ctx,
 
     num = ph_num_entries(hosts);
     if (num == 0) {
+        /* FIXME: So..would we have ENOENT earlier or 0 entries here? */
         D(("No such host %s\n", hostname));
         ph_entry_array_free(hosts);
         return ENOENT;
     } else if (num > 1) {
         D(("Got more than one host entry\n"));
         ph_entry_array_free(hosts);
-        return EINVAL;
+        return E2BIG;
     }
 
     /* check host validity */
@@ -202,50 +211,86 @@ int ph_get_host(struct pam_hbac_ctx *ctx,
     }
 
     if (fqdn->nvals != 1) {
-        D(("Expected 1 host name, got %d\n", ldap_count_values_len(vals)));
+        D(("Expected 1 host name, got %d\n", fqdn->nvals));
         ph_entry_array_free(hosts);
         return EINVAL;
     }
 
     *_host = hosts[0];
+    ph_entry_array_shallow_free(hosts);
     return 0;
 }
 
-void
-ph_free_host(struct ph_entry *host)
-{
-    /* This is ugly but should be safe since we always return
-     * the first host
-     */
-    ph_entry_array_free(&host);
-}
-
-static const char *ph_svc_attrs[] = { PAM_HBAC_ATTR_OC,
-                                      "cn",
-                                      "memberOf",
-                                      NULL };
-
-/* FIXME - do we need this complexity? */
-static struct ph_search_ctx svc_search_obj = {
-    /* FIXME - this is copied in parsing DN as well, should we use
-     * common definition?
-     */
-    .sub_base = "cn=computers,cn=accounts",
-    .oc = "ipaHost",
-    .attrs = ph_svc_attrs,
-    .num_attrs = PH_MAP_HOST_END,
-};
-
+/* FIXME - shouldn't we just merge get_svc and get_hosts? */
 int
 ph_get_svc(struct pam_hbac_ctx *ctx,
            const char *svcname,
            struct ph_entry **_svc)
 {
-    return 0;
-}
+    size_t num;
+    int ret;
+    char *svc_filter;
+    struct ph_entry **services;
+    struct ph_attr *svc_cn;
+    static const char *ph_svc_attrs[] = { PAM_HBAC_ATTR_OC,
+                                          "cn",
+                                          "memberOf",
+                                          NULL };
 
-void
-ph_free_svc(struct ph_entry *svc)
-{
-    ph_entry_array_free(&svc);
+    static struct ph_search_ctx svc_search_obj = {
+        /* FIXME - this is copied in parsing DN as well, should we use
+        * common definition?
+        */
+        .sub_base = "cn=hbacservices,cn=hbac",
+        .oc = "ipaHbacService",
+        .attrs = ph_svc_attrs,
+        .num_attrs = PH_MAP_HOST_END,
+    };
+
+    if (ctx == NULL || svcname == NULL) {
+        return EINVAL;
+    }
+
+    /* FIXME - GNU extenstion!! */
+    ret = asprintf(&svc_filter, "%s=%s",
+                   ph_svc_attrs[PH_MAP_HOST_FQDN], svcname);
+    if (ret < 0) {
+        return ENOMEM;
+    }
+
+    ret = ph_search(ctx->ld, ctx->pc, &svc_search_obj, svc_filter, &services);
+    free(svc_filter);
+    if (ret != 0) {
+        return ret;
+    }
+
+    num = ph_num_entries(services);
+    if (num == 0) {
+        /* FIXME: So..would we have ENOENT earlier or 0 entries here? */
+        D(("No such service %s\n", svcname));
+        ph_entry_array_free(services);
+        return ENOENT;
+    } else if (num > 1) {
+        D(("Got more than one service entry\n"));
+        ph_entry_array_free(services);
+        return E2BIG;
+    }
+
+    /* check service validity */
+    svc_cn = ph_entry_get_attr(services[0], PH_MAP_HOST_FQDN);
+    if (svc_cn == NULL) {
+        D(("Host %s has no FQDN attribute\n", hostname));
+        ph_entry_array_free(services);
+        return EINVAL;
+    }
+
+    if (svc_cn->nvals != 1) {
+        D(("Expected 1 host name, got %d\n", svc_cn->nvals));
+        ph_entry_array_free(services);
+        return EINVAL;
+    }
+
+    *_svc = services[0];
+    ph_entry_array_shallow_free(services);
+    return 0;
 }

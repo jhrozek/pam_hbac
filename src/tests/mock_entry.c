@@ -57,3 +57,48 @@ mock_ph_attr(const char *name, ...)
 
     return ph_attr_new(nc, vals);
 }
+
+int
+mock_ph_host(struct ph_entry *host,
+             const char *fqdn)
+{
+    host->attrs[PH_MAP_HOST_OC] = mock_ph_attr("objectClass",
+                                               "top", "ipaHost",
+                                                NULL);
+    if (host->attrs[PH_MAP_HOST_OC] == NULL) {
+        return ENOMEM;
+    }
+
+    if (fqdn != NULL) {
+        host->attrs[PH_MAP_HOST_FQDN] = mock_ph_attr("fqdn", fqdn, NULL);
+        if (host->attrs[PH_MAP_HOST_FQDN] == NULL) {
+            ph_attr_free(host->attrs[PH_MAP_HOST_OC]);
+            return ENOMEM;;
+        }
+    }
+
+    return 0;
+}
+
+int
+mock_ph_svc(struct ph_entry *host,
+            const char *svcname)
+{
+    host->attrs[PH_MAP_SVC_OC] = mock_ph_attr("objectClass",
+                                              "top",
+                                              "ipaHbacService",
+                                              NULL);
+    if (host->attrs[PH_MAP_SVC_OC] == NULL) {
+        return ENOMEM;
+    }
+
+    if (svcname != NULL) {
+        host->attrs[PH_MAP_SVC_NAME] = mock_ph_attr("cn", svcname, NULL);
+        if (host->attrs[PH_MAP_SVC_NAME] == NULL) {
+            ph_attr_free(host->attrs[PH_MAP_SVC_OC]);
+            return ENOMEM;;
+        }
+    }
+
+    return 0;
+}
