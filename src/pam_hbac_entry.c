@@ -186,3 +186,8 @@ void ph_entry_array_free(struct ph_entry **entry_list)
     }
     free(entry_list);
 }
+
+void ph_entry_array_shallow_free(struct ph_entry **entry_list)
+{
+    free(entry_list);
+}
