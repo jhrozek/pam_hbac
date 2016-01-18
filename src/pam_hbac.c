@@ -234,14 +234,22 @@ pam_hbac(enum pam_hbac_actions action, pam_handle_t *pamh,
      * future.
      */
     ret = ph_get_host(ctx, pi.pam_rhost, &targethost);
-    if (ret != 0) {
+    if (ret == ENOENT) {
+        /* No such host? Deny */
+        pam_ret = PAM_PERM_DENIED;
+        goto done;
+    } else if (ret != 0) {
         pam_ret = PAM_ABORT;
         goto done;
     }
 
     /* Search for the service */
     ret = ph_get_svc(ctx, pi.pam_service, &service);
-    if (ret != 0) {
+    if (ret == ENOENT) {
+        /* No such service? Deny */
+        pam_ret = PAM_PERM_DENIED;
+        goto done;
+    } else if (ret != 0) {
         pam_ret = PAM_ABORT;
         goto done;
     }
