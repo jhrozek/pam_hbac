@@ -101,6 +101,8 @@ static void test_ph_entry_array(void **state)
     const size_t num_entries = 2;
     const size_t num_attrs = 3;
     struct ph_entry **entry_list = NULL;
+    struct ph_entry *e1;
+    struct ph_entry *e2;
     struct ph_attr *a, *aa;
     int ret;
 
@@ -135,6 +137,18 @@ static void test_ph_entry_array(void **state)
     assert_string_equal(aa->vals[1]->bv_val, "bar");
 
     ph_entry_array_free(entry_list);
+
+    entry_list = ph_entry_array_alloc(num_attrs, num_entries);
+    assert_non_null(entry_list);
+    assert_non_null(entry_list[0]);
+    e1 = entry_list[0];
+    assert_non_null(entry_list[1]);
+    e2 = entry_list[1];
+    assert_null(entry_list[2]);
+
+    ph_entry_array_shallow_free(entry_list);
+    ph_entry_free(e1);
+    ph_entry_free(e2);
 }
 
 int main(void)

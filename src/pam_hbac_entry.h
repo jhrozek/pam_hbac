@@ -52,5 +52,6 @@ struct ph_entry **ph_entry_array_alloc(size_t num_entry_attrs,
                                        size_t num_entries);
 size_t ph_num_entries(struct ph_entry **entry_list);
 void ph_entry_array_free(struct ph_entry **entry_list);
+void ph_entry_array_shallow_free(struct ph_entry **entry_list);
 
 #endif /* __PAM_HBAC_ENTRY_H__ */
