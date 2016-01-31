@@ -57,8 +57,9 @@ AC_SUBST(pammoddir)
 # Optional build dependencies - Unit tests
 AM_CHECK_CMOCKA
 AM_CHECK_NSS_WRAPPER
+AM_CHECK_PAM_WRAPPER
 
 AC_CONFIG_HEADER(config.h)
-AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([Makefile src/intgtests/Makefile])
 AC_OUTPUT
 

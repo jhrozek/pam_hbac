@@ -217,6 +217,8 @@ if HAVE_CMOCKA
 	$(NULL)
 endif
 
+SUBDIRS = . src/intgtests
+
 TESTS = $(check_PROGRAMS)
 
 ### Interactive test program
@@ -226,6 +228,7 @@ pam_test_client_LDFLAGS = -lpam $(PAM_MISC_LIBS)
 
 ### Targets
 tests: all $(check_PROGRAMS)
+	(cd src/intgtests && $(MAKE) $(AM_MAKEFLAGS) $@) || exit 1;
 
 debug:
 if HAVE_GCC
