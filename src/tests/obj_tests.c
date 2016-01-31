@@ -118,7 +118,7 @@ __wrap_ph_search(LDAP *ld,
             return ENOMEM;
         }
 
-        ret = mock_ph_host(entry_list[0], key);
+        ret = mock_ph_host(entry_list[0], key, NULL);
         assert_int_equal(ret, 0);
     } else if (strcmp(key, "multi.ipa.test") == 0) {
         entry_list = ph_entry_array_alloc(PH_MAP_HOST_END, 2);
@@ -126,9 +126,9 @@ __wrap_ph_search(LDAP *ld,
             return ENOMEM;
         }
 
-        ret = mock_ph_host(entry_list[0], key);
+        ret = mock_ph_host(entry_list[0], key, NULL);
         assert_int_equal(ret, 0);
-        ret = mock_ph_host(entry_list[1], "foo.ipa.test");
+        ret = mock_ph_host(entry_list[1], "foo.ipa.test", NULL);
         assert_int_equal(ret, 0);
     } else if (strcmp(key, "nofqdn.ipa.test") == 0) {
         entry_list = ph_entry_array_alloc(PH_MAP_HOST_END, 1);

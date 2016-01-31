@@ -144,6 +144,10 @@ parse_entry(LDAP *ld,
         }
     }
 
+    /* FIXME - should we iterate here over unset attrs and set them
+     * to an empty value?
+     */
+
     if (ber != NULL) {
         ber_free(ber, 0);
     }

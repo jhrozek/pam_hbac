@@ -178,6 +178,28 @@ obj_tests_LDADD = \
 	$(CMOCKA_LIBS) \
 	$(NULL)
 
+rules_tests_SOURCES = \
+	src/tests/rules_tests.c \
+	src/tests/mock_entry.c \
+	src/tests/test_helpers.c \
+	src/pam_hbac_rules.c \
+	src/pam_hbac_utils.c \
+	src/pam_hbac_entry.c \
+	src/pam_hbac_dnparse.c \
+	$(NULL)
+rules_tests_CFLAGS = \
+	$(AM_CFLAGS) \
+	$(CMOCKA_CFLAGS) \
+	$(NULL)
+rules_tests_LDFLAGS = \
+	-Wl,-wrap,ph_search \
+	$(NULL)
+rules_tests_LDADD = \
+	-lldap \
+	-llber \
+	$(CMOCKA_LIBS) \
+	$(NULL)
+
 if HAVE_CMOCKA
     check_PROGRAMS = \
 	config-tests \
@@ -187,6 +209,7 @@ if HAVE_CMOCKA
 	eval_req-tests \
 	ldap-tests \
 	obj-tests \
+	rules-tests \
 	$(NULL)
 endif
 

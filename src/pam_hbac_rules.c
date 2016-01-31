@@ -69,33 +69,15 @@ void ph_free_hbac_rules(struct hbac_rule **rules)
     for (i = 0; rules[i]; i++) {
         free_hbac_rule(rules[i]);
     }
+    free(rules);
 }
-
-enum ph_rule_attrmap {
-    PH_MAP_RULE_OC,
-    PH_MAP_RULE_NAME,
-    PH_MAP_RULE_UNIQUE_ID,
-    PH_MAP_RULE_ENABLED_FLAG,
-    PH_MAP_RULE_ACCESS_RULE_TYPE,
-    PH_MAP_RULE_MEMBER_USER,
-    PH_MAP_RULE_USER_CAT,
-    PH_MAP_RULE_MEMBER_SVC,
-    PH_MAP_RULE_SVC_CAT,
-    PH_MAP_RULE_SRC_HOST,
-    PH_MAP_RULE_SRC_HOST_CAT,
-    PH_MAP_RULE_EXTERNAL_HOST,
-    PH_MAP_RULE_MEMBER_HOST,
-    PH_MAP_RULE_HOST_CAT,
-    PH_MAP_RULE_END
-};
 
 static const char *ph_rule_attrs[] = { PAM_HBAC_ATTR_OC, "cn", "ipaUniqueID",
                                        "ipaEnabledFlag", "accessRuleType",
                                        "memberUser", "userCategory",
                                        "memberService", "serviceCategory",
-                                       "sourceHost", "sourceHostCategory",
-                                       "externalHost", "memberHost",
-                                       "hostCategory", NULL };
+                                       "memberHost", "hostCategory",
+                                       "externalHost",  NULL };
 
 static struct ph_search_ctx rule_search_obj = {
     .sub_base = "cn=hbac",
@@ -118,11 +100,6 @@ create_rules_filter(struct ph_entry *host)
         return NULL;
     }
 
-    hostgroups = ph_entry_get_attr(host, PH_MAP_HOST_MEMBEROF);
-    if (hostgroups == NULL) {
-        return NULL;
-    }
-
     ret = asprintf(&filter, "(%s=%s)(%s=%s)(|(%s=%s)(%s=%s)",
                    ph_rule_attrs[PH_MAP_RULE_ENABLED_FLAG], PAM_HBAC_TRUE_VALUE,
                    ph_rule_attrs[PH_MAP_RULE_ACCESS_RULE_TYPE], PAM_HBAC_ALLOW_VALUE,
@@ -133,17 +110,20 @@ create_rules_filter(struct ph_entry *host)
         return NULL;
     }
 
-    for (i = 0; i < hostgroups->nvals; i++) {
-        prev = filter;
+    hostgroups = ph_entry_get_attr(host, PH_MAP_HOST_MEMBEROF);
+    if (hostgroups) {
+        for (i = 0; i < hostgroups->nvals; i++) {
+            prev = filter;
 
-        ret = asprintf(&filter, "%s(%s=%s)",
-                       prev,
-                       ph_rule_attrs[PH_MAP_RULE_MEMBER_HOST],
-                       (const char *) hostgroups->vals[i]->bv_val);
-        free(prev);
-        if (ret < 0) {
-            free(filter);
-            return NULL;
+            ret = asprintf(&filter, "%s(%s=%s)",
+                        prev,
+                        ph_rule_attrs[PH_MAP_RULE_MEMBER_HOST],
+                        (const char *) hostgroups->vals[i]->bv_val);
+            free(prev);
+            if (ret < 0) {
+                free(filter);
+                return NULL;
+            }
         }
     }
 
@@ -187,13 +167,13 @@ el_category_attr(struct ph_entry *rule_entry,
     switch (el_type) {
     case DN_TYPE_USER:
         return ph_entry_get_attr(rule_entry,
-                                     PH_MAP_RULE_USER_CAT);
+                                 PH_MAP_RULE_USER_CAT);
     case DN_TYPE_HOST:
         return ph_entry_get_attr(rule_entry,
-                                     PH_MAP_RULE_HOST_CAT);
+                                 PH_MAP_RULE_HOST_CAT);
     case DN_TYPE_SVC:
         return ph_entry_get_attr(rule_entry,
-                                     PH_MAP_RULE_SVC_CAT);
+                                 PH_MAP_RULE_SVC_CAT);
     default:
         break;
     }
@@ -208,6 +188,8 @@ el_fill_category(struct ph_entry *rule_entry,
 {
     struct ph_attr *cat_attr;
     struct berval *bv;
+
+    el->category = 0;
 
     cat_attr = el_category_attr(rule_entry, el_type);
     if (cat_attr == NULL || cat_attr->nvals == 0) {
@@ -239,7 +221,7 @@ attr_to_rule_element(struct ph_entry *rule_entry,
     int ret;
     const char *member_name;
 
-    el = malloc(sizeof(struct hbac_rule_element));
+    el = calloc(1, sizeof(struct hbac_rule_element));
     if (el == NULL) {
         return ENOMEM;
     }
@@ -270,14 +252,14 @@ attr_to_rule_element(struct ph_entry *rule_entry,
     for (i = 0; i < a->nvals; i++) {
         member_name = NULL;
 
-        ret = name_from_dn(a->vals[i]->bv_val, el_type, &member_name);
+        ret = ph_name_from_dn(a->vals[i]->bv_val, el_type, &member_name);
         if (ret == 0) {
             el->names[ni] = member_name;
             ni++;
             continue;
         }
 
-        ret = group_name_from_dn(a->vals[i]->bv_val, el_type, &member_name);
+        ret = ph_group_name_from_dn(a->vals[i]->bv_val, el_type, &member_name);
         if (ret == 0) {
             el->groups[gi] = member_name;
             gi++;
@@ -298,7 +280,7 @@ fill_rule_enabled(struct ph_entry *rule_entry,
     struct ph_attr *enabled_attr;
     struct berval *bv;
 
-    enabled_attr = ph_entry_get_attr(rule_entry, PH_MAP_RULE_NAME);
+    enabled_attr = ph_entry_get_attr(rule_entry, PH_MAP_RULE_ENABLED_FLAG);
     if (enabled_attr == NULL || enabled_attr->nvals < 1) {
         D(("No value for enabled\n"));
         return ENOENT;
@@ -311,6 +293,7 @@ fill_rule_enabled(struct ph_entry *rule_entry,
     if (strncasecmp(bv->bv_val, PAM_HBAC_TRUE_VALUE, bv->bv_len) == 0) {
         rule->enabled = true;
     } else if (strncasecmp(bv->bv_val, PAM_HBAC_FALSE_VALUE, bv->bv_len) == 0) {
+        D(("Unknown value for enabled, fail\n"));
         rule->enabled = false;
     } else {
         return EINVAL;
@@ -328,7 +311,10 @@ fill_rule_name(struct ph_entry *rule_entry,
     name_attr = ph_entry_get_attr(rule_entry, PH_MAP_RULE_NAME);
     if (name_attr == NULL || name_attr->nvals < 1) {
         D(("No value for name, using fallback\n"));
-        rule->name = RULE_NAME_FALLBACK;
+        rule->name = strdup(RULE_NAME_FALLBACK);
+        if (rule->name == NULL) {
+            return ENOMEM;
+        }
         return 0;
     }
 
