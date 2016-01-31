@@ -60,23 +60,6 @@ assert_empty_groups(struct hbac_request_element *el)
     assert_null(el->groups[0]);
 }
 
-static void
-assert_string_list_matches(const char *list[],
-                           const char *expected[])
-{
-    size_t exp_size;
-    size_t list_size;
-    size_t i;
-
-    exp_size = null_cstring_array_size(expected);
-    list_size = null_cstring_array_size(list);
-    assert_int_equal(exp_size, list_size);
-
-    for (i = 0; i < exp_size; i++) {
-        assert_string_equal(list[i], expected[i]);
-    }
-}
-
 static int
 eval_req_test_setup(void **state)
 {
