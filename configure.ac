@@ -5,7 +5,7 @@ m4_include([external/attribute.m4])
 m4_include([external/libcmocka.m4])
 m4_include([external/cwrap.m4])
 
-AC_INIT([libpam_hbac],
+AC_INIT([pam_hbac],
         VERSION_NUMBER,
         [jakub.hrozek@posteo.se])
 
