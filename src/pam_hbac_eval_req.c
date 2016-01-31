@@ -99,9 +99,9 @@ entry_to_eval_req_el(struct ph_attr *name,
      * groupname */
     gi = 0;
     for (i=0; i < n_memberof; i++) {
-        ret = group_name_from_dn((const char *) memberof->vals[i]->bv_val,
-                                 el_type,
-                                 &el->groups[gi]);
+        ret = ph_group_name_from_dn((const char *) memberof->vals[i]->bv_val,
+                                     el_type,
+                                     &el->groups[gi]);
         switch (ret) {
             case 0:
                 break;

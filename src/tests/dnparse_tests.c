@@ -31,9 +31,9 @@ typedef int (*rdn_getter_fn)(const char *,
                              enum member_el_type,
                              const char **);
 
-static void test_rdn_from_dn(rdn_getter_fn getter,
-                             const char *dn_list[],
-                             const char *rdn_list[])
+static void ph_test_rdn_from_dn(rdn_getter_fn getter,
+                                const char *dn_list[],
+                                const char *rdn_list[])
 {
     int ret;
     const char *rdn_val = NULL;
@@ -70,11 +70,11 @@ static const char *ok_entry_rdn[] = {
 };
 
 static void
-test_name_from_dn(void **state)
+test_ph_name_from_dn(void **state)
 {
     (void) state; /* unused */
 
-    test_rdn_from_dn(name_from_dn, ok_entry_dn, ok_entry_rdn);
+    ph_test_rdn_from_dn(ph_name_from_dn, ok_entry_dn, ok_entry_rdn);
 }
 
 static const char *ok_group_dn[] = {
@@ -90,10 +90,10 @@ static const char *ok_group_rdn[] = {
 };
 
 static void
-test_group_name_from_dn(void **state)
+test_ph_group_name_from_dn(void **state)
 {
     (void) state; /* unused */
-    test_rdn_from_dn(group_name_from_dn, ok_group_dn, ok_group_rdn);
+    ph_test_rdn_from_dn(ph_group_name_from_dn, ok_group_dn, ok_group_rdn);
 }
 
 static void
@@ -105,22 +105,22 @@ test_rdn_key_mismatch(void **state)
     (void) state; /* unused */
 
     /* test RDN key mismatch */
-    ret = name_from_dn("oops=admin,cn=users,cn=accounts,dc=ipa,dc=test",
-                       DN_TYPE_USER, &rdn_val);
+    ret = ph_name_from_dn("oops=admin,cn=users,cn=accounts,dc=ipa,dc=test",
+                          DN_TYPE_USER, &rdn_val);
     assert_int_not_equal(ret, 0);
 
-    ret = group_name_from_dn("oops=admins,cn=groups,cn=accounts,dc=ipa,dc=test",
-                             DN_TYPE_USER, &rdn_val);
+    ret = ph_group_name_from_dn("oops=admins,cn=groups,cn=accounts,dc=ipa,dc=test",
+                                DN_TYPE_USER, &rdn_val);
     assert_int_not_equal(ret, 0);
 
     /* No basedn */
-    ret = name_from_dn("uid=admin,cn=users",
-                       DN_TYPE_USER, &rdn_val);
+    ret = ph_name_from_dn("uid=admin,cn=users",
+                          DN_TYPE_USER, &rdn_val);
     assert_int_not_equal(ret, 0);
 
     /* Missing required component */
-    ret = name_from_dn("uid=admin",
-                       DN_TYPE_USER, &rdn_val);
+    ret = ph_name_from_dn("uid=admin",
+                          DN_TYPE_USER, &rdn_val);
     assert_int_not_equal(ret, 0);
 }
 
@@ -128,8 +128,8 @@ int
 main(void)
 {
     const struct CMUnitTest tests[] = {
-        cmocka_unit_test(test_name_from_dn),
-        cmocka_unit_test(test_group_name_from_dn),
+        cmocka_unit_test(test_ph_name_from_dn),
+        cmocka_unit_test(test_ph_group_name_from_dn),
         cmocka_unit_test(test_rdn_key_mismatch),
     };
 

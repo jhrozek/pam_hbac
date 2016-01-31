@@ -24,13 +24,13 @@ enum member_el_type {
     DN_TYPE_SVC,
 };
 
-int group_name_from_dn(const char *dn,
-                       enum member_el_type el_type,
-                       const char **_group_name);
+int ph_group_name_from_dn(const char *dn,
+                          enum member_el_type el_type,
+                          const char **_group_name);
 
-int name_from_dn(const char *dn,
-                 enum member_el_type el_type,
-                 const char **_name);
+int ph_name_from_dn(const char *dn,
+                    enum member_el_type el_type,
+                    const char **_name);
 
 #endif /* __PAM_HBAC_DNPARSE_H__ */
 
