@@ -32,7 +32,20 @@ assert_string_list_matches(const char *list[],
 
 struct ph_attr *mock_ph_attr(const char *name, ...);
 struct ph_user *mock_user_obj(const char *name, ...);
-int mock_ph_host(struct ph_entry *host, const char *fqdn);
+int mock_ph_host(struct ph_entry *host, const char *fqdn, ...);
 int mock_ph_svc(struct ph_entry *host, const char *svcname);
+
+int
+mock_ph_rule(struct ph_entry *rule,
+             const char *cn,
+             const char *uuid,
+             const char *ipa_enabled_flag,
+             const char *member_user[], const char *member_user_groups[],
+             const char *user_category,
+             const char *member_service[], const char *member_service_groups[],
+             const char *service_category,
+             const char *member_host[], const char *member_host_groups[],
+             const char *host_category,
+             const char *external_host);
 
 #endif /* __COMMON_MOCK_H__ */

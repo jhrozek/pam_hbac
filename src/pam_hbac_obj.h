@@ -22,6 +22,8 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
+#include "pam_hbac.h"
+
 struct ph_user;
 
 struct ph_user *ph_get_user(const char *username);
