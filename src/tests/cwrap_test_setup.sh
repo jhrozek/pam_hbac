@@ -4,7 +4,7 @@ pkg-config --exists nss_wrapper || exit 1
 
 nss_wrapper=$(pkg-config --libs nss_wrapper)
 if [ -z $nss_wrapper ]; then
-    echo "Cannot locate cwrap libraries"
+    echo "Cannot locate nss wrapper"
     exit 2
 fi
 
