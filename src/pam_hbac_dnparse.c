@@ -208,9 +208,9 @@ hostgroup_container_rdn(LDAPDN dn_parts,
 }
 
 int
-group_name_from_dn(const char *dn,
-                   enum member_el_type el_type,
-                   const char **_group_name)
+ph_group_name_from_dn(const char *dn,
+                      enum member_el_type el_type,
+                      const char **_group_name)
 {
     LDAPDN dn_parts;
     int ret;
@@ -240,9 +240,9 @@ group_name_from_dn(const char *dn,
 }
 
 int
-name_from_dn(const char *dn,
-             enum member_el_type el_type,
-             const char **_name)
+ph_name_from_dn(const char *dn,
+                enum member_el_type el_type,
+                const char **_name)
 {
     LDAPDN dn_parts;
     int ret;
