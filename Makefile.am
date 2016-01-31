@@ -56,12 +56,16 @@ TESTS_ENVIRONMENT = \
 
 config_tests_SOURCES = \
 		      src/tests/config-tests.c \
-		      src/pam_hbac_config.c
+		      src/pam_hbac_config.c \
+		      $(NULL)
 config_tests_CFLAGS = \
 		      $(AM_CFLAGS) \
-		      $(CMOCKA_CFLAGS)
+		      $(CMOCKA_CFLAGS) \
+		      -DTEST_CONF_DIR=\"$(abs_srcdir)/\" \
+		      $(NULL)
 config_tests_LDADD = \
-		     $(CMOCKA_LIBS)
+		     $(CMOCKA_LIBS) \
+		     $(NULL)
 
 utils_tests_SOURCES = \
 	src/tests/utils_tests.c \
