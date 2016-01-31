@@ -65,7 +65,7 @@ void test_good_config(void **state)
 
     (void) state; /* unused */
 
-    conf = read_test_config("src/tests/good1.conf");
+    conf = read_test_config(TEST_CONF_DIR"/src/tests/good1.conf");
     print_config(conf);
     check_example_result(conf);
     ph_cleanup_config(conf);
@@ -77,7 +77,7 @@ void test_whitespace_around_equal_sign(void **state)
 
     (void) state; /* unused */
 
-    conf = read_test_config("src/tests/eqwsp.conf");
+    conf = read_test_config(TEST_CONF_DIR"/src/tests/eqwsp.conf");
     print_config(conf);
     check_example_result(conf);
     ph_cleanup_config(conf);
@@ -89,7 +89,7 @@ void test_leading_whitespace(void **state)
 
     (void) state; /* unused */
 
-    conf = read_test_config("src/tests/lwsp.conf");
+    conf = read_test_config(TEST_CONF_DIR"/src/tests/lwsp.conf");
     print_config(conf);
     check_example_result(conf);
     ph_cleanup_config(conf);
@@ -101,7 +101,7 @@ void test_trailing_whitespace(void **state)
 
     (void) state; /* unused */
 
-    conf = read_test_config("src/tests/twsp.conf");
+    conf = read_test_config(TEST_CONF_DIR"/src/tests/twsp.conf");
     print_config(conf);
     check_example_result(conf);
     ph_cleanup_config(conf);
