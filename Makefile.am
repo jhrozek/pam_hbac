@@ -109,6 +109,7 @@ eval_req_tests_SOURCES = \
 	src/pam_hbac_eval_req.c \
 	src/tests/mock_entry.c \
 	src/tests/mock_user.c \
+	src/tests/test_helpers.c \
 	src/pam_hbac_obj.c \
 	src/pam_hbac_entry.c \
 	src/pam_hbac_dnparse.c \

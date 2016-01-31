@@ -15,24 +15,32 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef __COMMON_MOCK_H__
-#define __COMMON_MOCK_H__
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <stddef.h>
+#include <stdarg.h>
+#include <setjmp.h>
+#include <cmocka.h>
 
-#include "pam_hbac.h"
-#include "pam_hbac_entry.h"
-#include "pam_hbac_obj.h"
-#include "pam_hbac_obj_int.h"
-
-#define ph_mock_type(type) ((type) mock());
-#define ph_mock_ptr_type(type) ((type) (uintptr_t) mock());
+#include <errno.h>
+#include "common_mock.h"
 
 void
 assert_string_list_matches(const char *list[],
-                           const char *expected[]);
+                           const char *expected[])
+{
+    size_t exp_size;
+    size_t list_size;
+    size_t i;
 
-struct ph_attr *mock_ph_attr(const char *name, ...);
-struct ph_user *mock_user_obj(const char *name, ...);
-int mock_ph_host(struct ph_entry *host, const char *fqdn);
-int mock_ph_svc(struct ph_entry *host, const char *svcname);
+    exp_size = null_cstring_array_size(expected);
+    list_size = null_cstring_array_size(list);
+    assert_int_equal(exp_size, list_size);
 
-#endif /* __COMMON_MOCK_H__ */
+    for (i = 0; i < exp_size; i++) {
+        assert_string_equal(list[i], expected[i]);
+    }
+}
+
+
