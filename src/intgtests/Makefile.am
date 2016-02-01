@@ -4,6 +4,11 @@ TESTS_ENVIRONMENT = \
 	. $(srcdir)/intgtest_runner.sh; \
 	$(NULL)
 
+dist_noinst_DATA = \
+		      intgtest_runner.sh \
+		      test_pam_hbac.py \
+		      $(NULL)
+
 INTG_TESTS = $(NULL)
 
 if HAVE_PAM_WRAPPER

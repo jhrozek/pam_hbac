@@ -46,7 +46,30 @@ pam_hbac_la_LDFLAGS = \
 #endif
 
 dist_noinst_HEADERS = \
-		      src/pam_hbac.h
+		      src/pam_hbac.h \
+		      src/pam_hbac_compat.h \
+		      src/pam_hbac_dnparse.h \
+		      src/pam_hbac_entry.h \
+		      src/pam_hbac_ldap.h \
+		      src/pam_hbac_obj.h \
+		      src/pam_hbac_obj_int.h \
+		      src/libhbac/ipa_hbac.h \
+		      src/tests/common_mock.h \
+		      src/tests/ph_tests.h \
+		      $(NULL)
+
+dist_noinst_DATA = \
+		      src/tests/good1.conf \
+		      src/tests/eqwsp.conf \
+		      src/tests/lwsp.conf \
+		      src/tests/twsp.conf \
+		      src/tests/cwrap/passwd \
+		      src/tests/cwrap/group \
+		      $(NULL)
+
+dist_noinst_SCRIPTS = \
+		      src/tests/cwrap_test_setup.sh \
+		      $(NULL)
 
 ### Unit tests
 TESTS_ENVIRONMENT = \
