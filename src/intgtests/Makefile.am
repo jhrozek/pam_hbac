@@ -1,7 +1,7 @@
 TESTS_ENVIRONMENT = \
-	PAM_HBAC_ABS_PATH=$(abs_builddir)/.libs/pam_hbac.so \
-	INTGTEST_DATADIR=$(abs_builddir)/intgtests
-	. $(srcdir)/src/intgtests/intgtest_runner.sh; \
+	PAM_HBAC_ABS_PATH=$(abs_top_builddir)/.libs/pam_hbac.so \
+	INTGTEST_DATADIR=$(abs_builddir) \
+	. $(srcdir)/intgtest_runner.sh; \
 	$(NULL)
 
 INTG_TESTS = $(NULL)
