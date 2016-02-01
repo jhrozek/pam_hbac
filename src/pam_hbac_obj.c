@@ -26,7 +26,6 @@
 #include <pwd.h>
 #include <grp.h>
 #include <unistd.h>
-#include <uuid/uuid.h>
 
 #include "pam_hbac.h"
 #include "pam_hbac_compat.h"
