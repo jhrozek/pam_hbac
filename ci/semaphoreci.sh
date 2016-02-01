@@ -34,9 +34,10 @@ popd
 
 # Build pam_hbac
 autoreconf -if
-export CFLAGS="-g -O0 -Wall -W -fprofile-arcs -ftest-coverage"
-export LDFLAGS="-fprofile-arcs -ftest-coverage"
-./configure
+mkdir _build_coverage
+cd _build_coverage
+../configure CFLAGS="-g -O0 -Wall -W -fprofile-arcs -ftest-coverage" \
+             LDFLAGS="-fprofile-arcs -ftest-coverage"
 make
 
 # Test!
