@@ -285,7 +285,6 @@ test_ph_svc_multiple(void **state)
     mock_ph_search(0, svcname);
     ret = ph_get_svc(&ph_ctx, svcname, &svc);
     assert_int_equal(ret, E2BIG);
-    assert_non_null(svc);
 }
 
 static void
@@ -301,7 +300,6 @@ test_ph_svc_srch_fail(void **state)
     mock_ph_search(EIO, svcname);
     ret = ph_get_svc(&ph_ctx, svcname, &svc);
     assert_int_equal(ret, EIO);
-    assert_non_null(svc);
 }
 
 
@@ -318,7 +316,6 @@ test_ph_svc_no_cn(void **state)
     mock_ph_search(0, svcname);
     ret = ph_get_svc(&ph_ctx, svcname, &svc);
     assert_int_equal(ret, EINVAL);
-    assert_non_null(svc);
 }
 
 int
