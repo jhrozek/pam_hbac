@@ -33,6 +33,7 @@ sudo make install
 popd
 
 # Build pam_hbac
+export SRC_DIR=$PWD
 autoreconf -if
 export CFLAGS="-g -O0 -Wall -W -fprofile-arcs -ftest-coverage"
 export LDFLAGS="-fprofile-arcs -ftest-coverage"
@@ -41,3 +42,11 @@ make
 
 # Test!
 make check
+
+export CFLAGS="-g -O2 -Wall"
+export LDFLAGS=""
+cd $SRC_DIR
+mkdir _build_dist
+cd _build_dist
+../configure
+make distcheck
