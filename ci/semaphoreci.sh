@@ -37,11 +37,13 @@ export SRC_DIR=$PWD
 autoreconf -if
 export CFLAGS="-g -O0 -Wall -W -fprofile-arcs -ftest-coverage"
 export LDFLAGS="-fprofile-arcs -ftest-coverage"
-./configure
+cd $SRC_DIR
+mkdir _build_test
+pushd _build_test
+../configure
 make
-
-# Test!
 make check
+popd
 
 export CFLAGS="-g -O2 -Wall"
 export LDFLAGS=""
