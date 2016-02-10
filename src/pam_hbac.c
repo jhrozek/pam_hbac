@@ -39,6 +39,9 @@
 
 #define PAM_DEBUG_ARG       0x0001
 
+#define PH_OPT_DEBUG       "debug"
+#define PH_OPT_CONFIG      "config="
+
 enum pam_hbac_actions {
     PAM_HBAC_ACCOUNT,
     PAM_HBAC_SENTINEL   /* SENTINEL */
@@ -59,23 +62,32 @@ struct pam_items {
 };
 
 static int
-parse_args(int argc, const char **argv)
+parse_args(int argc, const char **argv,
+           int *_flags,
+           const char **_config)
 {
-    int ctrl = 0;
+    int flags = 0;
 
     /* step through arguments */
     for (; argc-- > 0; ++argv) {
         /* generic options */
-        if (0 == strcmp(*argv, "debug")) {
-            ctrl |= PAM_DEBUG_ARG;
+        if (strcmp(*argv, PH_OPT_DEBUG) == 0) {
+            flags |= PAM_DEBUG_ARG;
             D(("pam_debug found"));
+        } else if (strncmp(*argv, PH_OPT_CONFIG, strlen(PH_OPT_CONFIG)) == 0) {
+            if (*(*argv+strlen(PH_OPT_CONFIG)) == '\0') {
+                return EINVAL;
+            } else {
+                *_config = *argv+strlen(PH_OPT_CONFIG);
+            }
         } else {
             pam_syslog(pamh, LOG_ERR, "unknown option: %s", *argv);
             D(("unknown option %s\n", *argv));
         }
     }
 
-    return ctrl;
+    *_flags = flags;
+    return 0;
 }
 
 static int
@@ -120,9 +132,9 @@ pam_hbac_get_items(pam_handle_t *pamh, struct pam_items *pi)
 }
 
 static void
-print_pam_items(struct pam_items *pi, int args)
+print_pam_items(struct pam_items *pi, int flags)
 {
-    if (!(args & PAM_DEBUG_ARG)) return;
+    if (!(flags & PAM_DEBUG_ARG)) return;
     if (pi == NULL) return;
 
     D(("Service: %s", CHECK_AND_RETURN_PI_STRING(pi->pam_service)));
@@ -133,7 +145,7 @@ print_pam_items(struct pam_items *pi, int args)
 }
 
 static struct pam_hbac_ctx *
-ph_init(void)
+ph_init(const char *config_file)
 {
     int ret;
     struct pam_hbac_ctx *ctx;
@@ -143,7 +155,11 @@ ph_init(void)
         return NULL;
     }
 
-    ret = ph_read_dfl_config(&ctx->pc);
+    if (config_file != NULL) {
+        ret = ph_read_config(config_file, &ctx->pc);
+    } else {
+        ret = ph_read_dfl_config(&ctx->pc);
+    }
     if (ret != 0) {
         D(("ph_read_dfl_config returned error: %s", strerror(ret)));
         free(ctx);
@@ -157,6 +173,10 @@ ph_init(void)
 static void
 ph_cleanup(struct pam_hbac_ctx *ctx)
 {
+    if (ctx == NULL) {
+        return;
+    }
+
     ph_cleanup_config(ctx->pc);
     free(ctx);
 }
@@ -168,9 +188,10 @@ pam_hbac(enum pam_hbac_actions action, pam_handle_t *pamh,
 {
     int ret;
     int pam_ret = PAM_SYSTEM_ERR;
-    int args;
+    int flags;
     struct pam_items pi;
     struct pam_hbac_ctx *ctx = NULL;
+    const char *config_file = NULL;
 
     struct ph_user *user = NULL;
     struct ph_entry *service = NULL;
@@ -193,7 +214,12 @@ pam_hbac(enum pam_hbac_actions action, pam_handle_t *pamh,
 
     D(("Hello pam_hbac: %s", action2str(action)));
 
-    args = parse_args(argc, argv);
+    ret = parse_args(argc, argv, &flags, &config_file);
+    if (ret != PAM_SUCCESS) {
+        D(("parse_args returned error: %s", strerror(ret)));
+        pam_ret = PAM_SYSTEM_ERR;
+        goto done;
+    }
 
     ret = pam_hbac_get_items(pamh, &pi);
     if (ret != PAM_SUCCESS) {
@@ -203,7 +229,7 @@ pam_hbac(enum pam_hbac_actions action, pam_handle_t *pamh,
     }
     D(("pam_hbac_get_items: OK"));
 
-    ctx = ph_init();
+    ctx = ph_init(config_file);
     if (!ctx) {
         D(("ph_init failed\n"));
         pam_ret = PAM_SYSTEM_ERR;
@@ -219,7 +245,7 @@ pam_hbac(enum pam_hbac_actions action, pam_handle_t *pamh,
     }
     D(("ph_connect: OK"));
 
-    print_pam_items(&pi, args);
+    print_pam_items(&pi, flags);
 
     /* Run info on the user from NSS, otherwise we can't support AD users since
      * they are not in IPA LDAP.
