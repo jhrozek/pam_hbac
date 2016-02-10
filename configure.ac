@@ -60,6 +60,6 @@ AM_CHECK_NSS_WRAPPER
 AM_CHECK_PAM_WRAPPER
 
 AC_CONFIG_HEADER(config.h)
-AC_CONFIG_FILES([Makefile src/intgtests/Makefile])
+AC_CONFIG_FILES([Makefile src/intgtests/Makefile src/intgtests/test_pam_services/ph_test_svc])
 AC_OUTPUT
 
