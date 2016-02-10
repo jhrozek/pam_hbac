@@ -24,6 +24,7 @@
 #include <errno.h>
 
 #include <ldap.h>
+#include <security/pam_modules.h>
 
 #include "libhbac/ipa_hbac.h"
 
@@ -80,9 +81,11 @@ int ph_read_config(const char *config_file, struct pam_hbac_config **_conf);
 #define ph_read_dfl_config(conf) ph_read_config(PAM_HBAC_CONFIG, conf)
 void ph_cleanup_config(struct pam_hbac_config *conf);
 
+/* pam_hbac_util.c */
 void free_string_clist(const char **list);
 void free_string_list(char **list);
 size_t null_string_array_size(char *arr[]);
 size_t null_cstring_array_size(const char *arr[]);
+void logger(pam_handle_t *pamh, int level, const char *fmt, ...);
 
 #endif /* __PAM_HBAC_H__ */

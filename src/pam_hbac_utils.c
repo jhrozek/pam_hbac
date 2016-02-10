@@ -19,6 +19,10 @@
 #include <stdio.h>
 #include <errno.h>
 
+#include <security/pam_modules.h>
+#include <syslog.h>
+#include <security/pam_ext.h>
+
 #include "pam_hbac.h"
 
 void
@@ -77,5 +81,34 @@ null_cstring_array_size(const char *arr[])
     for (nelem = 0; arr[nelem] != NULL; nelem++);
 
     return nelem;
+}
+
+void logger(pam_handle_t *pamh, int level, const char *fmt, ...)
+{
+    va_list ap;
+
+    va_start(ap, fmt);
+
+#ifdef DEBUG
+    va_list apd;
+    char debug_msg[DEBUG_MGS_LEN];
+    int ret;
+    va_copy(apd, ap);
+
+    ret = vsnprintf(debug_msg, DEBUG_MGS_LEN, fmt, apd);
+    if (ret >= DEBUG_MGS_LEN) {
+        D(("the following message is truncated: %s", debug_msg));
+    } else if (ret < 0) {
+        D(("vsnprintf failed to format debug message!"));
+    } else {
+        D((debug_msg));
+    }
+
+    va_end(apd);
+#endif
+
+    pam_vsyslog(pamh, LOG_AUTHPRIV|level, fmt, ap);
+
+    va_end(ap);
 }
 
