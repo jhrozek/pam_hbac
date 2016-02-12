@@ -272,7 +272,7 @@ pam_hbac(enum pam_hbac_actions action, pam_handle_t *pamh,
     /* Search hosts for fqdn = hostname. FIXME - Make the hostname configurable in the
      * future.
      */
-    ret = ph_get_host(ctx, pi.pam_rhost, &targethost);
+    ret = ph_get_host(ctx, ctx->pc->hostname, &targethost);
     if (ret == ENOENT) {
         logger(pamh, LOG_NOTICE,
                "Did not find host %s denying access\n", ctx->pc->hostname);
