@@ -31,28 +31,6 @@
 #define MAX_LINE    1024
 #define SEPARATOR   '='
 
-#define CHECK_PTR_L(ptr, l) do { \
-    if(ptr == NULL) {            \
-        goto l;                  \
-    }                            \
-} while(0);
-
-#define CHECK_PTR_LRET(ptr, l) do { \
-    if(ptr == NULL) {            \
-        ret = ENOMEM;            \
-        goto l;                  \
-    }                            \
-} while(0);
-
-#define CHECK_PTR(ptr) CHECK_PTR_L(ptr, fail)
-
-#define SET_DEFAULT_STRING(k, def) do {              \
-    if (k == NULL) {                                 \
-        k = strdup(def);                             \
-        CHECK_PTR(k);                                \
-    }                                                \
-} while(0);                                          \
-
 void
 ph_cleanup_config(struct pam_hbac_config *conf)
 {
@@ -72,8 +50,17 @@ default_config(struct pam_hbac_config *conf)
 {
     int ret;
 
-    SET_DEFAULT_STRING(conf->uri, PAM_HBAC_DEFAULT_URI);
-    SET_DEFAULT_STRING(conf->search_base, PAM_HBAC_DEFAULT_SEARCH_BASE);
+    if (conf->uri == NULL) {
+        conf->uri = strdup(PAM_HBAC_DEFAULT_URI);
+    }
+    if (conf->search_base == NULL) {
+        conf->uri = strdup(PAM_HBAC_DEFAULT_SEARCH_BASE);
+    }
+
+    if (conf->search_base == NULL ||
+            conf->uri == NULL) {
+        goto fail;
+    }
 
     if (conf->hostname == NULL) {
         conf->hostname = malloc(HOST_NAME_MAX);
@@ -225,7 +212,10 @@ ph_read_config(const char *config_file, struct pam_hbac_config **_conf)
     }
 
     conf = calloc(1, sizeof(struct pam_hbac_config));
-    CHECK_PTR_LRET(conf, done);
+    if (conf == NULL) {
+        ret = ENOMEM;
+        goto done;
+    }
 
     while (fgets(line, sizeof(line), fp) != NULL) {
         /* Try to parse a line */
@@ -239,7 +229,10 @@ ph_read_config(const char *config_file, struct pam_hbac_config **_conf)
 
     /* Set all values that were not set explicitly */
     conf = default_config(conf);
-    CHECK_PTR_LRET(conf, done);
+    if (conf == NULL) {
+        ret = ENOMEM;
+        goto done;
+    }
 
     ret = 0;
     *_conf = conf;
