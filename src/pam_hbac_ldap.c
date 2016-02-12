@@ -240,7 +240,8 @@ compose_search_filter(struct ph_search_ctx *s,
 }
 
 int
-ph_search(LDAP *ld,
+ph_search(pam_handle_t *pamh,
+          LDAP *ld,
           struct pam_hbac_config *conf,
           struct ph_search_ctx *s,
           const char *obj_filter,
@@ -253,29 +254,36 @@ ph_search(LDAP *ld,
     struct ph_entry **entry_list;
 
     if (ld == NULL || conf == NULL || s == NULL) {
+        logger(pamh, LOG_ERR, "Invalid parameters\n");
         return EINVAL;
     }
 
     ret = asprintf(&search_base, "%s,%s", s->sub_base, conf->search_base);
     if (ret < 0) {
+        logger(pamh, LOG_CRIT, "Cannot create filter\n");
         ret = ENOMEM;
         goto done;
     }
 
     filter = compose_search_filter(s, obj_filter);
     if (filter == NULL) {
+        logger(pamh, LOG_CRIT, "Cannot compose filter\n");
         ret = ENOMEM;
         goto done;
     }
 
-    ret = internal_search(ld, conf->timeout, search_base, s->attrs,
+    ret = internal_search(pamh, ld, conf->timeout, search_base, s->attrs,
                           filter, &msg);
     if (ret != 0) {
+        logger(pamh, LOG_ERR,
+               "Search returned [%d]: %s\n", ret, strerror(ret));
         goto done;
     }
 
     ret = parse_message(ld, msg, s, &entry_list);
     if (ret != 0) {
+        logger(pamh, LOG_ERR,
+               "Message parsing failed [%d]: %s\n", ret, strerror(ret));
         goto done;
     }
 
@@ -300,7 +308,9 @@ ph_connect(struct pam_hbac_ctx *ctx)
 
     ret = ldap_initialize(&ld, ctx->pc->uri);
     if (ret != LDAP_SUCCESS) {
-        D(("ldap_initialize failed [%d]: %s\n", ret, ldap_err2string(ret)));
+        logger(ctx->pamh, LOG_ERR,
+               "ldap_initialize failed [%d]: %s\n",
+               ret, ldap_err2string(ret));
         return EIO;
     }
 
@@ -310,7 +320,9 @@ ph_connect(struct pam_hbac_ctx *ctx)
     ret = ldap_sasl_bind_s(ld, ctx->pc->bind_dn, LDAP_SASL_SIMPLE, &password,
                            NULL, NULL, NULL);
     if (ret != LDAP_SUCCESS) {
-        D(("ldap_simple_bind_s failed [%d]: %s\n", ret, ldap_err2string(ret)));
+        logger(ctx->pamh, LOG_ERR,
+               "ldap_simple_bind_s failed [%d]: %s\n",
+               ret, ldap_err2string(ret));
         ldap_destroy(ld);
         return EACCES;
     }
@@ -330,9 +342,9 @@ ph_disconnect(struct pam_hbac_ctx *ctx)
 
     ret = ldap_unbind_ext(ctx->ld, NULL, NULL);
     if (ret != LDAP_SUCCESS) {
-        D(("ldap_unbind_ext failed [%d]: %s\n", ret, ldap_err2string(ret)));
+        logger(ctx->pamh, LOG_ERR,
+               "ldap_unbind_ext failed [%d]: %s\n",
+               ret, ldap_err2string(ret));
     }
-
-    ldap_destroy(ctx->ld);
     ctx->ld = NULL;
 }

@@ -17,7 +17,6 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <syslog.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
@@ -62,7 +61,8 @@ struct pam_items {
 };
 
 static int
-parse_args(int argc, const char **argv,
+parse_args(pam_handle_t *pamh,
+           int argc, const char **argv,
            int *_flags,
            const char **_config)
 {
@@ -73,7 +73,7 @@ parse_args(int argc, const char **argv,
         /* generic options */
         if (strcmp(*argv, PH_OPT_DEBUG) == 0) {
             flags |= PAM_DEBUG_ARG;
-            D(("pam_debug found"));
+            logger(pamh, LOG_DEBUG, "pam_debug found");
         } else if (strncmp(*argv, PH_OPT_CONFIG, strlen(PH_OPT_CONFIG)) == 0) {
             if (*(*argv+strlen(PH_OPT_CONFIG)) == '\0') {
                 return EINVAL;
@@ -81,8 +81,7 @@ parse_args(int argc, const char **argv,
                 *_config = *argv+strlen(PH_OPT_CONFIG);
             }
         } else {
-            pam_syslog(pamh, LOG_ERR, "unknown option: %s", *argv);
-            D(("unknown option %s\n", *argv));
+            logger(pamh, LOG_ERR, "unknown option: %s", *argv);
         }
     }
 
@@ -103,12 +102,12 @@ pam_hbac_get_items(pam_handle_t *pamh, struct pam_items *pi)
     ret = pam_get_item(pamh, PAM_USER, (const void **) &(pi->pam_user));
     if (ret != PAM_SUCCESS) return ret;
     if (pi->pam_user == NULL) {
-        D(("No user found, aborting."));
+        logger(pamh, LOG_ERR, "No user found, aborting.");
         return PAM_BAD_ITEM;
     }
 
     if (strcmp(pi->pam_user, "root") == 0) {
-        D(("pam_hbac will not handle root."));
+        logger(pamh, LOG_NOTICE, "pam_hbac will not handle root.");
         return PAM_USER_UNKNOWN;
     }
     pi->pam_user_size = strlen(pi->pam_user) + 1;
@@ -132,20 +131,25 @@ pam_hbac_get_items(pam_handle_t *pamh, struct pam_items *pi)
 }
 
 static void
-print_pam_items(struct pam_items *pi, int flags)
+print_pam_items(pam_handle_t *pamh, struct pam_items *pi, int flags)
 {
-    if (!(flags & PAM_DEBUG_ARG)) return;
     if (pi == NULL) return;
 
-    D(("Service: %s", CHECK_AND_RETURN_PI_STRING(pi->pam_service)));
-    D(("User: %s", CHECK_AND_RETURN_PI_STRING(pi->pam_user)));
-    D(("Tty: %s", CHECK_AND_RETURN_PI_STRING(pi->pam_tty)));
-    D(("Ruser: %s", CHECK_AND_RETURN_PI_STRING(pi->pam_ruser)));
-    D(("Rhost: %s", CHECK_AND_RETURN_PI_STRING(pi->pam_rhost)));
+    logger(pamh, LOG_DEBUG,
+           "Service: %s", CHECK_AND_RETURN_PI_STRING(pi->pam_service));
+    logger(pamh, LOG_DEBUG,
+           "User: %s", CHECK_AND_RETURN_PI_STRING(pi->pam_user));
+    logger(pamh, LOG_DEBUG,
+           "Tty: %s", CHECK_AND_RETURN_PI_STRING(pi->pam_tty));
+    logger(pamh, LOG_DEBUG,
+           "Ruser: %s", CHECK_AND_RETURN_PI_STRING(pi->pam_ruser));
+    logger(pamh, LOG_DEBUG,
+           "Rhost: %s", CHECK_AND_RETURN_PI_STRING(pi->pam_rhost));
 }
 
 static struct pam_hbac_ctx *
-ph_init(const char *config_file)
+ph_init(pam_handle_t *pamh,
+        const char *config_file)
 {
     int ret;
     struct pam_hbac_ctx *ctx;
@@ -156,17 +160,19 @@ ph_init(const char *config_file)
     }
 
     if (config_file != NULL) {
+        logger(NULL, LOG_DEBUG, "Using config file %s\n", config_file);
         ret = ph_read_config(config_file, &ctx->pc);
     } else {
         ret = ph_read_dfl_config(&ctx->pc);
     }
     if (ret != 0) {
-        D(("ph_read_dfl_config returned error: %s", strerror(ret)));
+        logger(pamh, LOG_DEBUG,
+               "ph_read_dfl_config returned error: %s", strerror(ret));
         free(ctx);
         return NULL;
     }
-    D(("ph_read_dfl_config: OK"));
 
+    ctx->pamh = pamh;
     return ctx;
 }
 
@@ -204,81 +210,96 @@ pam_hbac(enum pam_hbac_actions action, pam_handle_t *pamh,
 
     (void) pam_flags; /* unused */
 
+    logger(pamh, LOG_DEBUG, "Hello world!\n");
+
     /* Check supported actions */
     switch (action) {
         case PAM_HBAC_ACCOUNT:
             break;
         default:
+            logger(pamh, LOG_ERR, "Unsupported action %d\n", action);
             return PAM_SYSTEM_ERR;
     }
 
-    D(("Hello pam_hbac: %s", action2str(action)));
-
-    ret = parse_args(argc, argv, &flags, &config_file);
+    ret = parse_args(pamh, argc, argv, &flags, &config_file);
     if (ret != PAM_SUCCESS) {
-        D(("parse_args returned error: %s", strerror(ret)));
+        logger(pamh, LOG_ERR,
+               "parse_args returned error: %s", strerror(ret));
         pam_ret = PAM_SYSTEM_ERR;
         goto done;
     }
 
     ret = pam_hbac_get_items(pamh, &pi);
     if (ret != PAM_SUCCESS) {
-        D(("pam_hbac_get_items returned error: %s", strerror(ret)));
+        logger(pamh, LOG_ERR,
+               "pam_hbac_get_items returned error: %s",
+               pam_strerror(pamh, ret));
         pam_ret = PAM_SYSTEM_ERR;
         goto done;
     }
-    D(("pam_hbac_get_items: OK"));
 
-    ctx = ph_init(config_file);
+    ctx = ph_init(pamh, config_file);
     if (!ctx) {
-        D(("ph_init failed\n"));
+        logger(pamh, LOG_ERR, "ph_init failed\n");
         pam_ret = PAM_SYSTEM_ERR;
         goto done;
     }
-    D(("ph_init: OK"));
+    logger(pamh, LOG_DEBUG, "ph_init: OK");
 
     ret = ph_connect(ctx);
     if (ret != 0) {
-        D(("ph_connect returned error: %s", strerror(ret)));
+        logger(pamh, LOG_NOTICE,
+               "ph_connect returned error: %s", strerror(ret));
         pam_ret = PAM_AUTHINFO_UNAVAIL;
         goto done;
     }
-    D(("ph_connect: OK"));
+    logger(pamh, LOG_DEBUG, "ph_connect: OK");
 
-    print_pam_items(&pi, flags);
+    print_pam_items(pamh, &pi, flags);
 
     /* Run info on the user from NSS, otherwise we can't support AD users since
      * they are not in IPA LDAP.
      */
     user = ph_get_user(pi.pam_user);
     if (user == NULL) {
+        logger(pamh, LOG_NOTICE,
+               "Did not find user %s\n", pi.pam_user);
         pam_ret = PAM_USER_UNKNOWN;
         goto done;
     }
+    logger(pamh, LOG_DEBUG, "ph_get_user: OK");
 
     /* Search hosts for fqdn = hostname. FIXME - Make the hostname configurable in the
      * future.
      */
     ret = ph_get_host(ctx, pi.pam_rhost, &targethost);
     if (ret == ENOENT) {
-        /* No such host? Deny */
+        logger(pamh, LOG_NOTICE,
+               "Did not find host %s denying access\n", ctx->pc->hostname);
         pam_ret = PAM_PERM_DENIED;
         goto done;
     } else if (ret != 0) {
+        logger(pamh, LOG_ERR,
+               "ph_get_host error: %s", strerror(ret));
         pam_ret = PAM_ABORT;
         goto done;
     }
+    logger(pamh, LOG_DEBUG, "ph_get_host: OK");
 
     /* Search for the service */
     ret = ph_get_svc(ctx, pi.pam_service, &service);
     if (ret == ENOENT) {
-        /* No such service? Deny */
+        logger(pamh, LOG_NOTICE,
+               "Did not find service %s denying access\n", pi.pam_service);
         pam_ret = PAM_PERM_DENIED;
         goto done;
     } else if (ret != 0) {
+        logger(pamh, LOG_ERR,
+               "ph_get_svc error: %s", strerror(ret));
         pam_ret = PAM_ABORT;
         goto done;
     }
+    logger(pamh, LOG_DEBUG, "ph_get_svc: OK");
 
     /* Download all enabled rules that apply to this host or any of its hostgroups.
      * Iterate over the rules. For each rule:
@@ -324,6 +345,9 @@ pam_hbac(enum pam_hbac_actions action, pam_handle_t *pamh,
     }
 
 done:
+    logger(pamh, LOG_DEBUG,
+           "returning [%d]: %s", pam_ret, pam_strerror(pamh, pam_ret));
+
     ph_free_hbac_rules(rules);
     ph_free_hbac_eval_req(eval_req);
     ph_free_user(user);

@@ -29,7 +29,8 @@
 #include "common_mock.h"
 
 int
-__wrap_ph_search(LDAP *ld,
+__wrap_ph_search(pam_handle_t *pamh,
+                 LDAP *ld,
                  struct pam_hbac_config *conf,
                  struct ph_search_ctx *s,
                  const char *obj_filter,

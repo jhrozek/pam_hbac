@@ -100,6 +100,7 @@ utils_tests_CFLAGS = \
 	$(CMOCKA_CFLAGS) \
 	$(NULL)
 utils_tests_LDADD = \
+	-lpam \
 	$(CMOCKA_LIBS) \
 	$(NULL)
 
@@ -151,6 +152,7 @@ eval_req_tests_CFLAGS = \
 eval_req_tests_LDADD = \
 	-lldap \
 	-llber \
+	-lpam \
 	$(CMOCKA_LIBS) \
 	$(NULL)
 
@@ -182,6 +184,7 @@ ldap_tests_LDFLAGS = \
 ldap_tests_LDADD = \
 	-lldap \
 	-llber \
+	-lpam \
 	$(CMOCKA_LIBS) \
 	$(NULL)
 
@@ -203,6 +206,7 @@ obj_tests_LDFLAGS = \
 obj_tests_LDADD = \
 	-lldap \
 	-llber \
+	-lpam \
 	$(CMOCKA_LIBS) \
 	$(NULL)
 
@@ -225,6 +229,7 @@ rules_tests_LDFLAGS = \
 rules_tests_LDADD = \
 	-lldap \
 	-llber \
+	-lpam \
 	$(CMOCKA_LIBS) \
 	$(NULL)
 

@@ -176,14 +176,17 @@ ph_get_host(struct pam_hbac_ctx *ctx,
         return EINVAL;
     }
 
-    /* FIXME - GNU extenstion!! */
     ret = asprintf(&host_filter, "%s=%s",
                    ph_host_attrs[PH_MAP_HOST_FQDN], hostname);
     if (ret < 0) {
         return ENOMEM;
     }
+    logger(ctx->pamh, LOG_DEBUG,
+           "Searching for host %s using filter [%s]\n",
+           hostname, host_filter);
 
-    ret = ph_search(ctx->ld, ctx->pc, &host_search_obj, host_filter, &hosts);
+    ret = ph_search(ctx->pamh, ctx->ld, ctx->pc,
+                    &host_search_obj, host_filter, &hosts);
     free(host_filter);
     if (ret != 0) {
         return ret;
@@ -192,11 +195,11 @@ ph_get_host(struct pam_hbac_ctx *ctx,
     num = ph_num_entries(hosts);
     if (num == 0) {
         /* FIXME: So..would we have ENOENT earlier or 0 entries here? */
-        D(("No such host %s\n", hostname));
+        logger(ctx->pamh, LOG_WARNING, "No such host %s\n", hostname);
         ph_entry_array_free(hosts);
         return ENOENT;
     } else if (num > 1) {
-        D(("Got more than one host entry\n"));
+        logger(ctx->pamh, LOG_ERR, "Got more than one host entry\n");
         ph_entry_array_free(hosts);
         return E2BIG;
     }
@@ -204,17 +207,21 @@ ph_get_host(struct pam_hbac_ctx *ctx,
     /* check host validity */
     fqdn = ph_entry_get_attr(hosts[0], PH_MAP_HOST_FQDN);
     if (fqdn == NULL) {
-        D(("Host %s has no FQDN attribute\n", hostname));
+        logger(ctx->pamh, LOG_ERR,
+               "Host %s has no FQDN attribute\n", hostname);
         ph_entry_array_free(hosts);
         return EINVAL;
     }
 
     if (fqdn->nvals != 1) {
-        D(("Expected 1 host name, got %d\n", fqdn->nvals));
+        logger(ctx->pamh, LOG_ERR,
+               "Expected 1 host name, got %d\n", fqdn->nvals);
         ph_entry_array_free(hosts);
         return EINVAL;
     }
 
+    logger(ctx->pamh, LOG_DEBUG,
+           "Found host entry %s\n", fqdn->vals[0]->bv_val);
     *_host = hosts[0];
     ph_entry_array_shallow_free(hosts);
     return 0;
@@ -257,7 +264,8 @@ ph_get_svc(struct pam_hbac_ctx *ctx,
         return ENOMEM;
     }
 
-    ret = ph_search(ctx->ld, ctx->pc, &svc_search_obj, svc_filter, &services);
+    ret = ph_search(ctx->pamh, ctx->ld, ctx->pc,
+                    &svc_search_obj, svc_filter, &services);
     free(svc_filter);
     if (ret != 0) {
         return ret;

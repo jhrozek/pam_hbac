@@ -402,7 +402,7 @@ ph_get_hbac_rules(struct pam_hbac_ctx *ctx,
         return ENOMEM;
     }
 
-    ret = ph_search(ctx->ld, ctx->pc, &rule_search_obj, rule_filter, &rule_entries);
+    ret = ph_search(ctx->pamh, ctx->ld, ctx->pc, &rule_search_obj, rule_filter, &rule_entries);
     free(rule_filter);
     if (ret != 0) {
         return ret;

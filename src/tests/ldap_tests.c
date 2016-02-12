@@ -382,7 +382,7 @@ test_search_host_full(void **state)
 
     will_return_entry_msg_array(&test_msg);
 
-    ret = ph_search(test_ctx->ctx.ld, test_ctx->ctx.pc, &test_search_obj,
+    ret = ph_search(NULL, test_ctx->ctx.ld, test_ctx->ctx.pc, &test_search_obj,
                     "fqdn=client.ipa.test", &entry_list);
     assert_int_equal(ret, 0);
     assert_int_equal(ph_num_entries(entry_list), 1);
@@ -428,7 +428,7 @@ test_search_host_no_memberof(void **state)
 
     will_return_entry_msg_array(&test_msg);
 
-    ret = ph_search(test_ctx->ctx.ld, test_ctx->ctx.pc, &test_search_obj,
+    ret = ph_search(NULL, test_ctx->ctx.ld, test_ctx->ctx.pc, &test_search_obj,
                     "fqdn=client.ipa.test", &entry_list);
     assert_int_equal(ret, 0);
     assert_int_equal(ph_num_entries(entry_list), 1);
@@ -447,17 +447,17 @@ test_search_neg(void **state)
     struct ph_entry **entry_list = NULL;
     struct search_test_ctx *test_ctx = *state;
 
-    ret = ph_search(NULL, test_ctx->ctx.pc, &test_search_obj,
+    ret = ph_search(NULL, NULL, test_ctx->ctx.pc, &test_search_obj,
                     "fqdn=client.ipa.test", &entry_list);
     assert_int_equal(ret, EINVAL);
     assert_null(entry_list);
 
-    ret = ph_search(test_ctx->ctx.ld, NULL, &test_search_obj,
+    ret = ph_search(NULL, test_ctx->ctx.ld, NULL, &test_search_obj,
                     "fqdn=client.ipa.test", &entry_list);
     assert_int_equal(ret, EINVAL);
     assert_null(entry_list);
 
-    ret = ph_search(test_ctx->ctx.ld, test_ctx->ctx.pc, NULL,
+    ret = ph_search(NULL, test_ctx->ctx.ld, test_ctx->ctx.pc, NULL,
                     "fqdn=client.ipa.test", &entry_list);
     assert_int_equal(ret, EINVAL);
     assert_null(entry_list);
@@ -497,7 +497,7 @@ test_search_host_no_oc(void **state)
 
     will_return_entry_msg_array(&test_msg);
 
-    ret = ph_search(test_ctx->ctx.ld, test_ctx->ctx.pc, &test_search_obj,
+    ret = ph_search(NULL, test_ctx->ctx.ld, test_ctx->ctx.pc, &test_search_obj,
                     "fqdn=client.ipa.test", &entry_list);
     assert_int_equal(ret, 0);
     assert_int_equal(ph_num_entries(entry_list), 1);
@@ -517,7 +517,7 @@ test_search_host_search_fail(void **state)
 
     will_return(__wrap_ldap_search_ext_s, EIO);
 
-    ret = ph_search(test_ctx->ctx.ld, test_ctx->ctx.pc, &test_search_obj,
+    ret = ph_search(NULL, test_ctx->ctx.ld, test_ctx->ctx.pc, &test_search_obj,
                     "fqdn=client.ipa.test", &entry_list);
     assert_int_not_equal(ret, 0);
     assert_null(entry_list);

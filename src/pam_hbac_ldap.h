@@ -30,7 +30,8 @@ struct ph_search_ctx {
     size_t num_attrs;
 };
 
-int ph_search(LDAP *ld,
+int ph_search(pam_handle_t *pamh,
+              LDAP *ld,
               struct pam_hbac_config *conf,
               struct ph_search_ctx *s,
               const char *obj_filter,

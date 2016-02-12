@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <errno.h>
+#include <syslog.h>
 
 #include <ldap.h>
 #include <security/pam_modules.h>
@@ -63,6 +64,7 @@
 #define PAM_HBAC_CONFIG_BIND_PW         "BIND_PW"
 
 struct pam_hbac_ctx {
+    pam_handle_t *pamh;
     struct pam_hbac_config *pc;
     LDAP *ld;
 };
