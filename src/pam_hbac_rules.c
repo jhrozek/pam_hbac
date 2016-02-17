@@ -87,7 +87,7 @@ static struct ph_search_ctx rule_search_obj = {
 };
 
 static char *
-create_rules_filter(struct ph_entry *host)
+create_rules_filter(pam_handle_t *pamh, struct ph_entry *host)
 {
     char *prev;
     char *filter;
@@ -98,6 +98,7 @@ create_rules_filter(struct ph_entry *host)
 
     hostname = ph_entry_get_attr(host, PH_MAP_HOST_FQDN);
     if (hostname == NULL || hostname->nvals != 1) {
+        logger(pamh, LOG_ERR, "No hostname or more than one hostname\n");
         return NULL;
     }
 
@@ -183,7 +184,8 @@ el_category_attr(struct ph_entry *rule_entry,
 }
 
 static int
-el_fill_category(struct ph_entry *rule_entry,
+el_fill_category(pam_handle_t *pamh,
+                 struct ph_entry *rule_entry,
                  enum member_el_type el_type,
                  struct hbac_rule_element *el)
 {
@@ -196,21 +198,26 @@ el_fill_category(struct ph_entry *rule_entry,
     if (cat_attr == NULL || cat_attr->nvals == 0) {
         return ENOENT;
     } else if (cat_attr->nvals > 1) {
-        D(("More than one value for name, fail\n"));
+        logger(pamh, LOG_ERR, "More than one value for category, fail!\n");
         return EIO;
     }
 
     bv = cat_attr->vals[0];
     if (strncasecmp(bv->bv_val, PAM_HBAC_ALL_VALUE, bv->bv_len) != 0) {
+        logger(pamh, LOG_ERR, "Invalid category value\n");
         return EINVAL;
     }
 
+    logger(pamh, LOG_DEBUG,
+           "Setting category ALL for %s\n",
+           ph_member_el_type2str(el_type));
     el->category |= HBAC_CATEGORY_ALL;
     return 0;
 }
 
 static int
-attr_to_rule_element(struct ph_entry *rule_entry,
+attr_to_rule_element(pam_handle_t *pamh,
+                     struct ph_entry *rule_entry,
                      enum member_el_type el_type,
                      struct hbac_rule_element **_el)
 {
@@ -227,7 +234,7 @@ attr_to_rule_element(struct ph_entry *rule_entry,
         return ENOMEM;
     }
 
-    ret = el_fill_category(rule_entry, el_type, el);
+    ret = el_fill_category(pamh, rule_entry, el_type, el);
     if (ret == 0) {
         /* Do we still need to check the elements? */
     } else if (ret != ENOENT) {
@@ -238,6 +245,7 @@ attr_to_rule_element(struct ph_entry *rule_entry,
     a = el_member_attr(rule_entry, el_type);
     if (a == NULL) {
         /* FIXME - test an empty element? */
+        logger(pamh, LOG_DEBUG, "No members\n");
         *_el = el;
         return 0;
     }
@@ -255,6 +263,7 @@ attr_to_rule_element(struct ph_entry *rule_entry,
 
         ret = ph_name_from_dn(a->vals[i]->bv_val, el_type, &member_name);
         if (ret == 0) {
+            logger(pamh, LOG_DEBUG, "%s is a single member object\n", member_name);
             el->names[ni] = member_name;
             ni++;
             continue;
@@ -262,12 +271,14 @@ attr_to_rule_element(struct ph_entry *rule_entry,
 
         ret = ph_group_name_from_dn(a->vals[i]->bv_val, el_type, &member_name);
         if (ret == 0) {
+            logger(pamh, LOG_DEBUG, "%s is a group member object\n", member_name);
             el->groups[gi] = member_name;
             gi++;
             continue;
         }
 
-        /* FIXME - log failure but continue */
+        logger(pamh, LOG_NOTICE,
+               "Cannot determine type of member %s\n", a->vals[i]->bv_val);
     }
 
     *_el = el;
@@ -275,7 +286,8 @@ attr_to_rule_element(struct ph_entry *rule_entry,
 }
 
 static int
-fill_rule_enabled(struct ph_entry *rule_entry,
+fill_rule_enabled(pam_handle_t *pamh,
+                  struct ph_entry *rule_entry,
                   struct hbac_rule *rule)
 {
     struct ph_attr *enabled_attr;
@@ -283,18 +295,19 @@ fill_rule_enabled(struct ph_entry *rule_entry,
 
     enabled_attr = ph_entry_get_attr(rule_entry, PH_MAP_RULE_ENABLED_FLAG);
     if (enabled_attr == NULL || enabled_attr->nvals < 1) {
-        D(("No value for enabled\n"));
+        logger(pamh, LOG_NOTICE, "No value for enabled\n");
         return ENOENT;
     } else if (enabled_attr->nvals > 1) {
-        D(("More than one value for enabled, fail\n"));
+        logger(pamh, LOG_ERR, "More than one value for enabled, fail\n");
         return EIO;
     }
 
     bv = enabled_attr->vals[0];
     if (strncasecmp(bv->bv_val, PAM_HBAC_TRUE_VALUE, bv->bv_len) == 0) {
         rule->enabled = true;
+        logger(pamh, LOG_DEBUG, "Rule %s is enabled\n", rule->name);
     } else if (strncasecmp(bv->bv_val, PAM_HBAC_FALSE_VALUE, bv->bv_len) == 0) {
-        D(("Unknown value for enabled, fail\n"));
+        logger(pamh, LOG_ERR, "Unknown than one value for enabled, fail\n");
         rule->enabled = false;
     } else {
         return EINVAL;
@@ -304,14 +317,15 @@ fill_rule_enabled(struct ph_entry *rule_entry,
 }
 
 static int
-fill_rule_name(struct ph_entry *rule_entry,
+fill_rule_name(pam_handle_t *pamh,
+               struct ph_entry *rule_entry,
                struct hbac_rule *rule)
 {
     struct ph_attr *name_attr;
 
     name_attr = ph_entry_get_attr(rule_entry, PH_MAP_RULE_NAME);
     if (name_attr == NULL || name_attr->nvals < 1) {
-        D(("No value for name, using fallback\n"));
+        logger(pamh, LOG_WARNING, "No value for name, using fallback\n");
         rule->name = strdup(RULE_NAME_FALLBACK);
         if (rule->name == NULL) {
             return ENOMEM;
@@ -320,7 +334,8 @@ fill_rule_name(struct ph_entry *rule_entry,
     }
 
     if (name_attr->nvals > 1) {
-        D(("More than one value for name, using the first one\n"));
+        logger(pamh, LOG_NOTICE,
+               "More than one value for name, using the first one\n");
         /* Not fatal */
     }
 
@@ -333,7 +348,8 @@ fill_rule_name(struct ph_entry *rule_entry,
 }
 
 static int
-entry_to_hbac_rule(struct ph_entry *rule_entry,
+entry_to_hbac_rule(pam_handle_t *pamh,
+                   struct ph_entry *rule_entry,
                    struct hbac_rule **_rule)
 {
     struct hbac_rule *rule = NULL;
@@ -344,8 +360,10 @@ entry_to_hbac_rule(struct ph_entry *rule_entry,
         return ENOMEM;
     }
 
-    ret = fill_rule_name(rule_entry, rule);
+    ret = fill_rule_name(pamh, rule_entry, rule);
     if (ret != 0) {
+        logger(pamh, LOG_ERR,
+               "Cannot determine rule name [%d]: %s\n", ret, strerror(ret));
         free_hbac_rule(rule);
         return ret;
     }
@@ -353,26 +371,37 @@ entry_to_hbac_rule(struct ph_entry *rule_entry,
     /* FIXME - This only makes sense to check if there is exactly one value
      * of enabled flag, should we do the same for accessRuleType? 
      */
-    ret = fill_rule_enabled(rule_entry, rule);
+    ret = fill_rule_enabled(pamh, rule_entry, rule);
     if (ret != 0) {
+        logger(pamh, LOG_ERR,
+               "Cannot fill the enabled flag [%d]: %s\n", ret, strerror(ret));
         free_hbac_rule(rule);
         return ret;
     }
 
-    ret = attr_to_rule_element(rule_entry, DN_TYPE_USER, &rule->users);
+    ret = attr_to_rule_element(pamh, rule_entry, DN_TYPE_USER, &rule->users);
     if (ret != 0) {
+        logger(pamh, LOG_ERR,
+               "Cannot add user data to rule [%d]: %s\n",
+               ret, strerror(ret));
         free_hbac_rule(rule);
         return ret;
     }
 
-    ret = attr_to_rule_element(rule_entry, DN_TYPE_SVC, &rule->services);
+    ret = attr_to_rule_element(pamh, rule_entry, DN_TYPE_SVC, &rule->services);
     if (ret != 0) {
+        logger(pamh, LOG_ERR,
+               "Cannot add service data to rule [%d]: %s\n",
+               ret, strerror(ret));
         free_hbac_rule(rule);
         return ret;
     }
 
-    ret = attr_to_rule_element(rule_entry, DN_TYPE_HOST, &rule->targethosts);
+    ret = attr_to_rule_element(pamh, rule_entry, DN_TYPE_HOST, &rule->targethosts);
     if (ret != 0) {
+        logger(pamh, LOG_ERR,
+               "Cannot add target host data to rule [%d]: %s\n",
+               ret, strerror(ret));
         free_hbac_rule(rule);
         return ret;
     }
@@ -395,17 +424,22 @@ ph_get_hbac_rules(struct pam_hbac_ctx *ctx,
     size_t num_rules;
 
     if (ctx == NULL || targethost == NULL || _rules == NULL) {
+        logger(ctx->pamh, LOG_ERR, "Invalid input\n");
         return EINVAL;
     }
 
-    rule_filter = create_rules_filter(targethost);
+    rule_filter = create_rules_filter(ctx->pamh, targethost);
     if (rule_filter == NULL) {
+        logger(ctx->pamh, LOG_CRIT, "Cannot create filter\n");
         return ENOMEM;
     }
 
-    ret = ph_search(ctx->pamh, ctx->ld, ctx->pc, &rule_search_obj, rule_filter, &rule_entries);
+    ret = ph_search(ctx->pamh, ctx->ld, ctx->pc, &rule_search_obj,
+                    rule_filter, &rule_entries);
     free(rule_filter);
     if (ret != 0) {
+        logger(ctx->pamh, LOG_ERR,
+               "Search failed [%d]: %s\n", ret, strerror(ret));
         return ret;
     }
 
@@ -413,13 +447,16 @@ ph_get_hbac_rules(struct pam_hbac_ctx *ctx,
     rules = calloc(num_rule_entries + 1, sizeof(struct hbac_rule));
     if (rules == NULL) {
         ph_entry_array_free(rule_entries);
+        logger(ctx->pamh, LOG_CRIT, "Cannot allocate entries\n");
         return ENOMEM;
     }
 
     num_rules = 0;
     for (i = 0; i < num_rule_entries; i++) {
-        ret = entry_to_hbac_rule(rule_entries[i], &rules[num_rules]);
+        ret = entry_to_hbac_rule(ctx->pamh, rule_entries[i], &rules[num_rules]);
         if (ret != 0) {
+            logger(ctx->pamh, LOG_WARNING,
+                   "Skipping malformed rule %d/%d\n", i+1, num_rule_entries);
             continue;
         }
         num_rules++;
