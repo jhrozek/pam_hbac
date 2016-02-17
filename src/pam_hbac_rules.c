@@ -101,10 +101,10 @@ create_rules_filter(struct ph_entry *host)
         return NULL;
     }
 
-    ret = asprintf(&filter, "(%s=%s)(%s=%s)(|(%s=%s)(%s=%s)",
+    ret = asprintf(&filter, "&(%s=%s)(%s=%s)(|(%s=%s)(%s=%s)",
                    ph_rule_attrs[PH_MAP_RULE_ENABLED_FLAG], PAM_HBAC_TRUE_VALUE,
                    ph_rule_attrs[PH_MAP_RULE_ACCESS_RULE_TYPE], PAM_HBAC_ALLOW_VALUE,
-                   ph_rule_attrs[PH_MAP_RULE_SRC_HOST_CAT], PAM_HBAC_ALL_VALUE,
+                   ph_rule_attrs[PH_MAP_RULE_HOST_CAT], PAM_HBAC_ALL_VALUE,
                    ph_rule_attrs[PH_MAP_RULE_MEMBER_HOST],
                    (const char *) hostname->vals[0]->bv_val);
     if (ret < 0) {
