@@ -49,8 +49,13 @@ internal_search(pam_handle_t *pamh,
 
     ret = ldap_search_ext_s(ld, search_base, LDAP_SCOPE_SUBTREE, filter,
                             discard_const(attrs), 0, NULL, NULL, &tv, 0, &msg);
-    if (ret != LDAP_SUCCESS) {
-        D(("ldap_search_ext_s failed: %s", ldap_err2string(ret)));
+    if (ret == LDAP_NO_SUCH_OBJECT) {
+        logger(pamh, LOG_NOTICE, "No such object\n");
+        msg = NULL;
+    } else if (ret != LDAP_SUCCESS) {
+        logger(pamh, LOG_ERR,
+               "ldap_search_ext_s failed [%d]: %s\n",
+               ret, ldap_err2string(ret));
         ret = EIO;
         goto done;
     }
