@@ -24,7 +24,8 @@
 #include "pam_hbac_ldap.h"
 
 static int
-internal_search(LDAP *ld,
+internal_search(pam_handle_t *pamh,
+                LDAP *ld,
                 int timeout,
                 const char *search_base,
                 const char * const attrs[],
@@ -42,7 +43,10 @@ internal_search(LDAP *ld,
     }
     tv.tv_sec += timeout;
 
-    D(("searching with filter: %s\n", filter));
+    logger(pamh, LOG_DEBUG,
+           "Searching LDAP using filter [%s] base [%s] timeout [%d]\n",
+           filter, search_base, timeout);
+
     ret = ldap_search_ext_s(ld, search_base, LDAP_SCOPE_SUBTREE, filter,
                             discard_const(attrs), 0, NULL, NULL, &tv, 0, &msg);
     if (ret != LDAP_SUCCESS) {
@@ -58,7 +62,7 @@ done:
 }
 
 static bool
-entry_has_oc(LDAP *ld, LDAPMessage *entry, const char *oc)
+entry_has_oc(pam_handle_t *pamh, LDAP *ld, LDAPMessage *entry, const char *oc)
 {
     size_t i;
     struct berval **vals;
@@ -66,7 +70,7 @@ entry_has_oc(LDAP *ld, LDAPMessage *entry, const char *oc)
 
     vals = ldap_get_values_len(ld, entry, PAM_HBAC_ATTR_OC);
     if (vals == NULL) {
-        D(("No objectclass? Corrupt entry\n"));
+        logger(pamh, LOG_ERR, "No objectclass? Corrupt entry\n");
         return false;
     }
 
@@ -77,7 +81,7 @@ entry_has_oc(LDAP *ld, LDAPMessage *entry, const char *oc)
     }
 
     if (vals[i] == NULL) {
-        D(("Could not find objectclass %s\n", oc));
+        logger(pamh, LOG_NOTICE, "Could not find objectclass %s\n", oc);
         ret = false;
     } else {
         ret = true;
@@ -100,7 +104,8 @@ want_attrname(const char *attr, struct ph_search_ctx *obj)
 }
 
 static int
-parse_entry(LDAP *ld,
+parse_entry(pam_handle_t *pamh,
+            LDAP *ld,
             LDAPMessage *entry,
             struct ph_search_ctx *obj,
             struct ph_entry *pentry)
@@ -111,13 +116,19 @@ parse_entry(LDAP *ld,
     struct ph_attr *attr;
     int index;
     int ret;
+    char *dn;
+    size_t num_attrs;
+
+    dn = ldap_get_dn(ld, entry);
+    logger(pamh, LOG_DEBUG, "received DN: %s\n", dn);
 
     /* check objectclass first */
-    if (entry_has_oc(ld, entry, obj->oc) == false) {
+    if (entry_has_oc(pamh, ld, entry, obj->oc) == false) {
         return ENOENT;
     }
 
     /* Process the rest of the attributes */
+    num_attrs = 0;
     for (a = ldap_first_attribute(ld, entry, &ber);
          a != NULL;
          a = ldap_next_attribute(ld, entry, ber)) {
@@ -128,6 +139,7 @@ parse_entry(LDAP *ld,
             continue;
         }
 
+        logger(pamh, LOG_DEBUG, "Received attribute %s\n", a);
         vals = ldap_get_values_len(ld, entry, a);
         attr = ph_attr_new(a, vals);
         if (attr == NULL) {
@@ -142,7 +154,10 @@ parse_entry(LDAP *ld,
             ph_attr_free(attr);
             return ret;
         }
+        num_attrs++;
     }
+
+    logger(pamh, LOG_DEBUG, "Total attributes %d\n", num_attrs);
 
     /* FIXME - should we iterate here over unset attrs and set them
      * to an empty value?
@@ -156,22 +171,21 @@ parse_entry(LDAP *ld,
 }
 
 static int
-parse_message(LDAP *ld, LDAPMessage *msg, struct ph_search_ctx *s,
-              struct ph_entry ***_entries)
+parse_ldap_msg(pam_handle_t *pamh,
+               LDAP *ld,
+               LDAPMessage *msg,
+               struct ph_search_ctx *s,
+               size_t num_entries,
+               struct ph_entry **entries)
 {
-    size_t num_entries;
     LDAPMessage *ent;
     int ent_type;
     int ret;
-    struct ph_entry **entries = NULL;
     size_t entry_idx = 0;
 
-    num_entries = ldap_count_entries(ld, msg);
-    D(("Found %d entries\n", num_entries));
-
-    entries = ph_entry_array_alloc(s->num_attrs, num_entries);
-    if (entries == NULL) {
-        return ENOMEM;
+    if (msg == NULL) {
+        /* Return empty array and let the caller iterate over it */
+        return 0;
     }
 
     /* Iterate through the results. */
@@ -189,7 +203,7 @@ parse_message(LDAP *ld, LDAPMessage *msg, struct ph_search_ctx *s,
                 }
 
                 /* The result is an entry. */
-                ret = parse_entry(ld, ent, s, entries[entry_idx]);
+                ret = parse_entry(pamh, ld, ent, s, entries[entry_idx]);
                 if (ret != 0) {
                     /* This is safe b/c we don't support deny fules */
                     continue;
@@ -197,15 +211,44 @@ parse_message(LDAP *ld, LDAPMessage *msg, struct ph_search_ctx *s,
                 entry_idx++;
                 break;
             case LDAP_RES_SEARCH_REFERENCE:
-                D(("No support for referrals.."));
+                logger(pamh, LOG_NOTICE, "No support for referrals..");
                 break;
             case LDAP_RES_SEARCH_RESULT:
                 /* The result is the final result sent by the server. */
                 break;
             default:
-                D(("Unexpected message type %d, ignoring\n", ent_type));
+                logger(pamh, LOG_NOTICE,
+                       "Unexpected message type %d, ignoring\n", ent_type);
                 break;
         }
+    }
+
+    return 0;
+}
+
+static int
+parse_message(pam_handle_t *pamh,
+              LDAP *ld,
+              LDAPMessage *msg,
+              struct ph_search_ctx *s,
+              struct ph_entry ***_entries)
+{
+    struct ph_entry **entries = NULL;
+    size_t num_entries;
+    int ret;
+
+    num_entries = ldap_count_entries(ld, msg);
+    logger(pamh, LOG_DEBUG, "Found %d entries\n", num_entries);
+
+    entries = ph_entry_array_alloc(s->num_attrs, num_entries);
+    if (entries == NULL) {
+        return ENOMEM;
+    }
+
+    ret = parse_ldap_msg(pamh, ld, msg, s, num_entries, entries);
+    if (ret != 0) {
+        ph_entry_array_free(entries);
+        return ret;
     }
 
     *_entries = entries;
@@ -280,7 +323,7 @@ ph_search(pam_handle_t *pamh,
         goto done;
     }
 
-    ret = parse_message(ld, msg, s, &entry_list);
+    ret = parse_message(pamh, ld, msg, s, &entry_list);
     if (ret != 0) {
         logger(pamh, LOG_ERR,
                "Message parsing failed [%d]: %s\n", ret, strerror(ret));

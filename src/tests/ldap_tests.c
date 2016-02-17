@@ -180,6 +180,12 @@ __wrap_ber_free(BerElement *ber, int freebuf)
     return;
 }
 
+char *
+__wrap_ldap_get_dn(LDAP *ld, LDAPMessage *entry)
+{
+    return ph_mock_ptr_type(char *);
+}
+
 LDAPMessage *
 __wrap_ldap_first_message(LDAP *ld, LDAPMessage *chain)
 {
@@ -221,6 +227,7 @@ __wrap_ldap_unbind_ext(LDAP *ld, LDAPControl *sctrls[],
                        LDAPControl *cctrls[])
 {
     assert_non_null(ld);
+    ldap_destroy(ld);
 
     return 0;
 }
@@ -236,6 +243,7 @@ __wrap_ldap_search_ext_s(LDAP *ld, const char *base, int scope,
     assert_non_null(base);
     assert_non_null(filter);
     assert_non_null(attrs);
+    *res = (LDAPMessage *) ph_mock_type(uintptr_t);
 
     return ph_mock_type(int);
 }
@@ -301,8 +309,6 @@ will_return_entry_msg_array(struct mock_ldap_msg_array *msgs)
 {
     size_t count;
 
-    will_return(__wrap_ldap_search_ext_s, 0);
-
     for (count = 0; msgs->array[count]; count++) {
         if (count == 0) {
             /* We only care about a non-NULL pointer being returned */
@@ -310,9 +316,13 @@ will_return_entry_msg_array(struct mock_ldap_msg_array *msgs)
         } else {
             will_return(__wrap_ldap_next_message, msgs->array[count]);
         }
+        will_return(__wrap_ldap_get_dn, msgs->array[count]->dn);
         will_return(__wrap_ldap_msgtype, LDAP_RES_SEARCH_ENTRY);
     }
     will_return(__wrap_ldap_next_message, NULL);
+
+    will_return(__wrap_ldap_search_ext_s, count);
+    will_return(__wrap_ldap_search_ext_s, 0);
 
     will_return(__wrap_ldap_count_entries, count);
 }
@@ -515,6 +525,7 @@ test_search_host_search_fail(void **state)
     struct ph_entry **entry_list = NULL;
     struct search_test_ctx *test_ctx = *state;
 
+    will_return(__wrap_ldap_search_ext_s, NULL);
     will_return(__wrap_ldap_search_ext_s, EIO);
 
     ret = ph_search(NULL, test_ctx->ctx.ld, test_ctx->ctx.pc, &test_search_obj,

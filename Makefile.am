@@ -81,6 +81,7 @@ TESTS_ENVIRONMENT = \
 config_tests_SOURCES = \
 		      src/tests/config-tests.c \
 		      src/pam_hbac_config.c \
+		      src/pam_hbac_utils.c \
 		      $(NULL)
 config_tests_CFLAGS = \
 		      $(AM_CFLAGS) \
@@ -88,6 +89,7 @@ config_tests_CFLAGS = \
 		      -DTEST_CONF_DIR=\"$(abs_srcdir)/\" \
 		      $(NULL)
 config_tests_LDADD = \
+		     -lpam \
 		     $(CMOCKA_LIBS) \
 		     $(NULL)
 
@@ -178,6 +180,7 @@ ldap_tests_LDFLAGS = \
 	-Wl,-wrap,ldap_first_attribute \
 	-Wl,-wrap,ldap_first_attribute \
 	-Wl,-wrap,ldap_next_attribute \
+	-Wl,-wrap,ldap_get_dn \
 	-Wl,-wrap,ldap_memfree \
 	-Wl,-wrap,ber_free \
 	$(NULL)
