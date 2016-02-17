@@ -82,7 +82,8 @@ static const char *ph_rule_attrs[] = { PAM_HBAC_ATTR_OC, "cn", "ipaUniqueID",
 static struct ph_search_ctx rule_search_obj = {
     .sub_base = "cn=hbac",
     .oc = "ipaHbacRule",
-    .attrs = ph_rule_attrs
+    .attrs = ph_rule_attrs,
+    .num_attrs = PH_MAP_RULE_END,
 };
 
 static char *
