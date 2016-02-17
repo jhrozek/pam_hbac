@@ -271,3 +271,19 @@ ph_name_from_dn(const char *dn,
     return ret;
 }
 
+const char *
+ph_member_el_type2str(const enum member_el_type el_type)
+{
+    switch (el_type) {
+    case DN_TYPE_USER:
+        return "user";
+    case DN_TYPE_SVC:
+        return "service";
+    case DN_TYPE_HOST:
+        return "host";
+    default:
+        break;
+    }
+
+    return "unknown";
+}
