@@ -1,6 +1,7 @@
 TESTS_ENVIRONMENT = \
 	PAM_HBAC_ABS_PATH=$(abs_top_builddir)/.libs/pam_hbac.so \
 	INTGTEST_DATADIR=$(abs_builddir) \
+	NSS_WRAPPER_DATADIR=$(srcdir)/nss_data \
 	. $(srcdir)/intgtest_runner.sh; \
 	$(NULL)
 
@@ -17,6 +18,9 @@ INTG_TESTS += \
 	$(NULL)
 endif
 
-TESTS = $(INTG_TESTS)
-
-tests: $(INTG_TESTS)
+intgcheck: $(INTG_TESTS)
+	PAM_HBAC_ABS_PATH=$(abs_top_builddir)/.libs/pam_hbac.so \
+	INTGTEST_DATADIR=$(abs_builddir) \
+	NSS_WRAPPER_DATADIR=$(srcdir)/nss_data \
+	. $(srcdir)/intgtest_runner.sh $(srcdir)/test_pam_hbac.py; \
+	$(NULL)

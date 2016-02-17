@@ -260,6 +260,8 @@ pam_test_client_LDFLAGS = -lpam $(PAM_MISC_LIBS)
 
 ### Targets
 tests: all $(check_PROGRAMS)
+
+intgcheck:
 	(cd src/intgtests && $(MAKE) $(AM_MAKEFLAGS) $@) || exit 1;
 
 debug:
