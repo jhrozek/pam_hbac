@@ -243,3 +243,18 @@ done:
     fclose(fp);
     return ret;
 }
+
+void
+ph_dump_config(pam_handle_t *pamh, struct pam_hbac_config *conf)
+{
+    if (conf == NULL) {
+        logger(pamh, LOG_NOTICE, "NULL config pointer\n");
+        return;
+    }
+
+    logger(pamh, LOG_DEBUG, "URI: %s\n", conf->uri);
+    logger(pamh, LOG_DEBUG, "search base %s\n", conf->search_base);
+    logger(pamh, LOG_DEBUG, "bind DN %s\n", conf->bind_dn);
+    logger(pamh, LOG_DEBUG, "timeout %d\n", conf->timeout);
+    logger(pamh, LOG_DEBUG, "client hostname %s\n", conf->hostname);
+}

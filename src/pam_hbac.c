@@ -245,6 +245,7 @@ pam_hbac(enum pam_hbac_actions action, pam_handle_t *pamh,
         goto done;
     }
     logger(pamh, LOG_DEBUG, "ph_init: OK");
+    ph_dump_config(pamh, ctx->pc);
 
     ret = ph_connect(ctx);
     if (ret != 0) {

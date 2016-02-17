@@ -82,6 +82,7 @@ struct pam_hbac_config {
 int ph_read_config(const char *config_file, struct pam_hbac_config **_conf);
 #define ph_read_dfl_config(conf) ph_read_config(PAM_HBAC_CONFIG, conf)
 void ph_cleanup_config(struct pam_hbac_config *conf);
+void ph_dump_config(pam_handle_t *pamh, struct pam_hbac_config *conf);
 
 /* pam_hbac_util.c */
 void free_string_clist(const char **list);
