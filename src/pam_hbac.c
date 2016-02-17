@@ -377,7 +377,8 @@ pam_hbac(enum pam_hbac_actions action, pam_handle_t *pamh,
         pam_ret = PAM_SUCCESS;
         break;
     case HBAC_EVAL_DENY:
-        pam_ret = PAM_AUTH_ERR;
+        logger(pamh, LOG_DEBUG, "Denying access\n");
+        pam_ret = PAM_PERM_DENIED;
         break;
     case HBAC_EVAL_OOM:
         logger(pamh, LOG_ERR, "Out of memory!\n");
