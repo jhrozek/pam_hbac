@@ -360,6 +360,7 @@ pam_hbac(enum pam_hbac_actions action, pam_handle_t *pamh,
         pam_ret = PAM_SYSTEM_ERR;
         goto done;
     }
+    logger(pamh, LOG_DEBUG, "ph_create_hbac_eval_req: OK");
 
     ret = ph_get_hbac_rules(ctx, targethost, &rules);
     if (ret != 0) {
@@ -367,20 +368,25 @@ pam_hbac(enum pam_hbac_actions action, pam_handle_t *pamh,
         pam_ret = PAM_SYSTEM_ERR;
         goto done;
     }
+    logger(pamh, LOG_DEBUG, "ph_get_hbac_rules: OK");
 
     hbac_eval_result = hbac_evaluate(rules, eval_req, &info);
     switch (hbac_eval_result) {
     case HBAC_EVAL_ALLOW:
+        logger(pamh, LOG_DEBUG, "Allowing access\n");
         pam_ret = PAM_SUCCESS;
         break;
     case HBAC_EVAL_DENY:
         pam_ret = PAM_AUTH_ERR;
         break;
     case HBAC_EVAL_OOM:
+        logger(pamh, LOG_ERR, "Out of memory!\n");
         pam_ret = PAM_BUF_ERR;
         break;
     case HBAC_EVAL_ERROR:
     default:
+        logger(pamh, LOG_ERR,
+               "hbac_evaluate returned %d\n", hbac_eval_result);
         pam_ret = PAM_SYSTEM_ERR;
         break;
     }
