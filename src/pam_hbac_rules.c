@@ -53,6 +53,7 @@ static void free_hbac_rule(struct hbac_rule *rule)
     free_hbac_rule_element(rule->users);
     free_hbac_rule_element(rule->targethosts);
     free_hbac_rule_element(rule->services);
+    free_hbac_rule_element(rule->srchosts);
 
     free_const(rule->name);
     free(rule);
@@ -212,6 +213,28 @@ el_fill_category(pam_handle_t *pamh,
            "Setting category ALL for %s\n",
            ph_member_el_type2str(el_type));
     el->category |= HBAC_CATEGORY_ALL;
+    return 0;
+}
+
+static int
+add_empty_rule_element(struct hbac_rule_element **_el)
+{
+    struct hbac_rule_element *el;
+
+    el = calloc(1, sizeof(struct hbac_rule_element));
+    if (el == NULL) {
+        return ENOMEM;
+    }
+
+    el->names = calloc(1, sizeof(char *));
+    el->groups = calloc(1, sizeof(char *));
+    if (el->names == NULL || el->groups == NULL) {
+        free_hbac_rule_element(el);
+        return ENOMEM;
+    }
+    el->category |= HBAC_CATEGORY_ALL;
+
+    *_el = el;
     return 0;
 }
 
@@ -401,6 +424,18 @@ entry_to_hbac_rule(pam_handle_t *pamh,
     if (ret != 0) {
         logger(pamh, LOG_ERR,
                "Cannot add target host data to rule [%d]: %s\n",
+               ret, strerror(ret));
+        free_hbac_rule(rule);
+        return ret;
+    }
+
+    /* We don't support srchosts, but we need to provide an empty array,
+     * otherwise libhbac would barf
+     */
+    ret = add_empty_rule_element(&rule->srchosts);
+    if (ret != 0) {
+        logger(pamh, LOG_ERR,
+               "Cannot add source host data to rule [%d]: %s\n",
                ret, strerror(ret));
         free_hbac_rule(rule);
         return ret;

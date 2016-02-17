@@ -100,6 +100,20 @@ test_get_rules_teardown(void **state)
 }
 
 static void
+assert_srchosts(struct hbac_rule_element *el)
+{
+    assert_non_null(el);
+
+    assert_non_null(el->names);
+    assert_null(el->names[0]);
+
+    assert_non_null(el->groups);
+    assert_null(el->groups[0]);
+
+    assert_true(el->category & HBAC_CATEGORY_ALL);
+}
+
+static void
 assert_hbac_rule(struct hbac_rule *rule,
                  const char *name,
                  const char *user_names[], const char *user_groups[],
@@ -118,7 +132,7 @@ assert_hbac_rule(struct hbac_rule *rule,
     assert_true((rule->users->category ^ user_category) == 0);
     assert_true((rule->services->category ^ service_category) == 0);
     assert_true((rule->targethosts->category ^ host_category) == 0);
-    assert_null(rule->srchosts);
+    assert_srchosts(rule->srchosts);
 }
 
 static void
