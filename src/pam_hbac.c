@@ -21,6 +21,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <errno.h>
+#include <stdarg.h>
 #include <sys/types.h>
 #include <sys/time.h>
 
@@ -147,6 +148,42 @@ print_pam_items(pam_handle_t *pamh, struct pam_items *pi, int flags)
            "Rhost: %s", CHECK_AND_RETURN_PI_STRING(pi->pam_rhost));
 }
 
+static pam_handle_t *global_pam_handle;
+
+void hbac_debug_messages(const char *file, int line,
+                         enum hbac_debug_level level,
+                         const char *fmt, ...)
+{
+    int severity;
+    va_list ap;
+
+    switch(level) {
+    case HBAC_DBG_FATAL:
+        severity = LOG_CRIT;
+        break;
+    case HBAC_DBG_ERROR:
+        severity = LOG_ERR;
+        break;
+    case HBAC_DBG_WARNING:
+        severity = LOG_WARNING;
+        break;
+    case HBAC_DBG_INFO:
+        severity = LOG_NOTICE;
+        break;
+    case HBAC_DBG_TRACE:
+        severity = LOG_DEBUG;
+        break;
+    default:
+        severity = LOG_NOTICE;
+        break;
+    }
+
+
+    va_start(ap, fmt);
+    pam_vsyslog(global_pam_handle, severity, fmt, ap);
+    va_end(ap);
+}
+
 static struct pam_hbac_ctx *
 ph_init(pam_handle_t *pamh,
         const char *config_file)
@@ -209,6 +246,9 @@ pam_hbac(enum pam_hbac_actions action, pam_handle_t *pamh,
     struct hbac_info *info;
 
     (void) pam_flags; /* unused */
+
+    global_pam_handle = pamh;
+    hbac_enable_debug(hbac_debug_messages);
 
     logger(pamh, LOG_DEBUG, "Hello world!\n");
 
