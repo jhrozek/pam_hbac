@@ -32,7 +32,7 @@ pam_hbac_la_SOURCES = \
 		     src/pam_hbac_eval_req.c \
 		     src/pam_hbac_dnparse.c \
 		     src/pam_hbac_utils.c \
-		     src/libipa_hbac/hbac_evaluator.c \
+		     src/libhbac/hbac_evaluator.c \
 		     $(NULL)
 
 pam_hbac_la_LDFLAGS = \
