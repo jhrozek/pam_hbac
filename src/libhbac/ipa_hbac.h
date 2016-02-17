@@ -124,6 +124,8 @@ struct hbac_rule_element {
 
     /**
      * List of group members of this rule component
+     * FIXME - the documentation should explicitly state
+     * this is a NULL-pointer terminated array.
      *
      *  - Users:    user groups (POSIX or non-POSIX)
      *  - Hosts:    hostgroups
@@ -186,6 +188,8 @@ struct hbac_request_element {
      *  - Users:    user groups (POSIX or non-POSIX)
      *  - Hosts:    hostgroups
      *  - Services: PAM service groups.
+     *  FIXME - const is a bad choice, this is supposed to be freed by the
+     *  caller!
      */
     const char **groups;
 };
