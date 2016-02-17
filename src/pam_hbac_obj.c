@@ -259,7 +259,7 @@ ph_get_svc(struct pam_hbac_ctx *ctx,
 
     /* FIXME - GNU extenstion!! */
     ret = asprintf(&svc_filter, "%s=%s",
-                   ph_svc_attrs[PH_MAP_HOST_FQDN], svcname);
+                   ph_svc_attrs[PH_MAP_SVC_NAME], svcname);
     if (ret < 0) {
         return ENOMEM;
     }
@@ -284,7 +284,7 @@ ph_get_svc(struct pam_hbac_ctx *ctx,
     }
 
     /* check service validity */
-    svc_cn = ph_entry_get_attr(services[0], PH_MAP_HOST_FQDN);
+    svc_cn = ph_entry_get_attr(services[0], PH_MAP_SVC_NAME);
     if (svc_cn == NULL) {
         D(("Host %s has no FQDN attribute\n", hostname));
         ph_entry_array_free(services);
