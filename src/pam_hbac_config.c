@@ -18,7 +18,6 @@
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
-#include <syslog.h>
 #include <stdlib.h>
 #include <ctype.h>
 #include <limits.h>
@@ -104,7 +103,8 @@ strip(char *s)
 }
 
 static int
-get_key_value(const char *line,
+get_key_value(pam_handle_t *pamh,
+              const char *line,
               const char **_key,
               const char **_value)
 {
@@ -115,7 +115,7 @@ get_key_value(const char *line,
 
     sep = strchr(line, SEPARATOR);
     if (sep == NULL) {
-        D(("Malformed line; no separator\n"));
+        logger(pamh, LOG_ERR, "Malformed line; no separator\n");
         return EINVAL;
     }
 
@@ -134,7 +134,9 @@ get_key_value(const char *line,
 }
 
 static int
-read_config_line(const char *line, struct pam_hbac_config *conf)
+read_config_line(pam_handle_t *pamh,
+                 const char *line,
+                 struct pam_hbac_config *conf)
 {
     const char *key = NULL;
     const char *value = NULL;
@@ -154,26 +156,28 @@ read_config_line(const char *line, struct pam_hbac_config *conf)
         goto fail;
     }
 
-    ret = get_key_value(l, &key, &value);
+    ret = get_key_value(pamh, l, &key, &value);
     if (ret) {
+        logger(pamh, LOG_ERR,
+               "Cannot split \"%s\" into a key-value pair [%d]: %s\n",
+               l, ret, strerror(ret));
         goto fail;
     }
 
     if (strcasecmp(key, PAM_HBAC_CONFIG_URI) == 0) {
         conf->uri = value;
-        D(("URI: %s", conf->uri));
+        logger(pamh, LOG_DEBUG, "URI: %s", conf->uri);
     } else if (strcasecmp(key, PAM_HBAC_CONFIG_BIND_DN) == 0) {
         conf->bind_dn = value;
-        D(("bind dn: %s", conf->bind_dn));
+        logger(pamh, LOG_DEBUG, "bind dn: %s", conf->bind_dn);
     } else if (strcasecmp(key, PAM_HBAC_CONFIG_BIND_PW) == 0) {
         conf->bind_pw = value;
-        D(("bind pw: %s", conf->bind_pw));
     } else if (strcasecmp(key, PAM_HBAC_CONFIG_SEARCH_BASE) == 0) {
         conf->search_base = value;
-        D(("search base: %s", conf->search_base));
+        logger(pamh, LOG_DEBUG, "search base: %s", conf->search_base);
     } else if (strcasecmp(key, PAM_HBAC_CONFIG_HOST_NAME) == 0) {
         conf->hostname = discard_const(value);
-        D(("host name: %s", conf->hostname));
+        logger(pamh, LOG_DEBUG, "host name: %s", conf->hostname);
     } else {
         /* Skip unknown key/values */
         free_const(value);
@@ -183,21 +187,24 @@ read_config_line(const char *line, struct pam_hbac_config *conf)
     return 0;
 
 fail:
-    D(("cannot read config [%d]: %s\n", ret, strerror(ret)));
+    logger(pamh, LOG_CRIT,
+           "cannot read config [%d]: %s\n", ret, strerror(ret));
     free_const(key);
     free_const(value);
     return ret;
 }
 
 int
-ph_read_config(const char *config_file, struct pam_hbac_config **_conf)
+ph_read_config(pam_handle_t *pamh,
+               const char *config_file,
+               struct pam_hbac_config **_conf)
 {
     FILE *fp;
     int ret;
     char line[MAX_LINE];
     struct pam_hbac_config *conf;
 
-    D(("config file: %s", config_file));
+    logger(pamh, LOG_DEBUG, "config file: %s", config_file);
 
     errno = 0;
     fp = fopen(config_file, "r");
@@ -206,8 +213,9 @@ ph_read_config(const char *config_file, struct pam_hbac_config **_conf)
          * SHOULD be logged at LOG_ALERT level
          */
         ret = errno;
-        syslog(LOG_ALERT, "pam_hbac: cannot open config file %s [%d]: %s\n",
-                           config_file, ret, strerror(ret));
+        logger(pamh, LOG_ALERT,
+               "pam_hbac: cannot open config file %s [%d]: %s\n",
+               config_file, ret, strerror(ret));
         return ret;
     }
 
@@ -219,10 +227,13 @@ ph_read_config(const char *config_file, struct pam_hbac_config **_conf)
 
     while (fgets(line, sizeof(line), fp) != NULL) {
         /* Try to parse a line */
-        ret = read_config_line(line, conf);
+        ret = read_config_line(pamh, line, conf);
         if (ret == EAGAIN) {
             continue;
         } else if (ret != 0) {
+            logger(pamh, LOG_ERR,
+                   "couldn't read from the config file [%d]: %s",
+                   ret, strerror(ret));
             goto done;
         }
     }

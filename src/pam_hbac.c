@@ -197,10 +197,10 @@ ph_init(pam_handle_t *pamh,
     }
 
     if (config_file != NULL) {
-        logger(NULL, LOG_DEBUG, "Using config file %s\n", config_file);
-        ret = ph_read_config(config_file, &ctx->pc);
+        logger(pamh, LOG_DEBUG, "Using config file %s\n", config_file);
+        ret = ph_read_config(pamh, config_file, &ctx->pc);
     } else {
-        ret = ph_read_dfl_config(&ctx->pc);
+        ret = ph_read_dfl_config(pamh, &ctx->pc);
     }
     if (ret != 0) {
         logger(pamh, LOG_DEBUG,
@@ -356,7 +356,9 @@ pam_hbac(enum pam_hbac_actions action, pam_handle_t *pamh,
 
     ret = ph_create_hbac_eval_req(user, targethost, service, &eval_req);
     if (ret != 0) {
-        D(("ph_create_eval_req returned error: %s", strerror(ret)));
+        logger(pamh, LOG_ERR,
+               "ph_create_eval_req returned error [%d]: %s",
+               ret, strerror(ret));
         pam_ret = PAM_SYSTEM_ERR;
         goto done;
     }
@@ -364,7 +366,9 @@ pam_hbac(enum pam_hbac_actions action, pam_handle_t *pamh,
 
     ret = ph_get_hbac_rules(ctx, targethost, &rules);
     if (ret != 0) {
-        D(("ph_get_hbac_rules returned error: %s", strerror(ret)));
+        logger(pamh, LOG_ERR,
+               "ph_get_hbac_rules returned error [%d]: %s",
+               ret, strerror(ret));
         pam_ret = PAM_SYSTEM_ERR;
         goto done;
     }

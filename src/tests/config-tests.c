@@ -31,7 +31,7 @@ read_test_config(const char *filename)
     int ret = 0;
     struct pam_hbac_config *conf = NULL;
 
-    ret = ph_read_config(filename, &conf);
+    ret = ph_read_config(NULL, filename, &conf);
     assert_int_equal(ret, 0);
     assert_non_null(conf);
 
