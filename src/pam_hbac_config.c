@@ -54,7 +54,7 @@ default_config(struct pam_hbac_config *conf)
         conf->uri = strdup(PAM_HBAC_DEFAULT_URI);
     }
     if (conf->search_base == NULL) {
-        conf->uri = strdup(PAM_HBAC_DEFAULT_SEARCH_BASE);
+        conf->search_base = strdup(PAM_HBAC_DEFAULT_SEARCH_BASE);
     }
 
     if (conf->search_base == NULL ||
