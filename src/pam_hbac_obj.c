@@ -194,7 +194,6 @@ ph_get_host(struct pam_hbac_ctx *ctx,
 
     num = ph_num_entries(hosts);
     if (num == 0) {
-        /* FIXME: So..would we have ENOENT earlier or 0 entries here? */
         logger(ctx->pamh, LOG_WARNING, "No such host %s\n", hostname);
         ph_entry_array_free(hosts);
         return ENOENT;
@@ -263,6 +262,9 @@ ph_get_svc(struct pam_hbac_ctx *ctx,
     if (ret < 0) {
         return ENOMEM;
     }
+    logger(ctx->pamh, LOG_DEBUG,
+           "Searching for service %s using filter [%s]\n",
+           svcname, svc_filter);
 
     ret = ph_search(ctx->pamh, ctx->ld, ctx->pc,
                     &svc_search_obj, svc_filter, &services);
@@ -273,12 +275,11 @@ ph_get_svc(struct pam_hbac_ctx *ctx,
 
     num = ph_num_entries(services);
     if (num == 0) {
-        /* FIXME: So..would we have ENOENT earlier or 0 entries here? */
-        D(("No such service %s\n", svcname));
+        logger(ctx->pamh, LOG_WARNING, "No such service %s\n", svcname);
         ph_entry_array_free(services);
         return ENOENT;
     } else if (num > 1) {
-        D(("Got more than one service entry\n"));
+        logger(ctx->pamh, LOG_ERR, "Got more than one service entry\n");
         ph_entry_array_free(services);
         return E2BIG;
     }
@@ -286,17 +287,21 @@ ph_get_svc(struct pam_hbac_ctx *ctx,
     /* check service validity */
     svc_cn = ph_entry_get_attr(services[0], PH_MAP_SVC_NAME);
     if (svc_cn == NULL) {
-        D(("Host %s has no FQDN attribute\n", hostname));
+        logger(ctx->pamh, LOG_WARNING,
+               "Service %s has no name attribute\n", svcname);
         ph_entry_array_free(services);
         return EINVAL;
     }
 
     if (svc_cn->nvals != 1) {
-        D(("Expected 1 host name, got %d\n", svc_cn->nvals));
+        logger(ctx->pamh, LOG_ERR,
+               "Expected 1 service name, got %d\n", svc_cn->nvals);
         ph_entry_array_free(services);
         return EINVAL;
     }
 
+    logger(ctx->pamh, LOG_DEBUG,
+           "Found service entry %s\n", svc_cn->vals[0]->bv_val);
     *_svc = services[0];
     ph_entry_array_shallow_free(services);
     return 0;
