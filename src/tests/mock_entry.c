@@ -174,6 +174,34 @@ mock_ph_svc(struct ph_entry *svc,
     return 0;
 }
 
+static int
+mock_member_attr(struct ph_entry *rule,
+                 int attr_index,
+                 const char *ldap_attr_name,
+                 const char *members[],
+                 const char *member_groups[])
+{
+    if (members != NULL) {
+        rule->attrs[attr_index] = mock_ph_attr_str_array(
+                                                        ldap_attr_name,
+                                                        members);
+        if (rule->attrs[attr_index] == NULL) {
+            return ENOMEM;
+        }
+    }
+
+    if (member_groups != NULL) {
+        rule->attrs[attr_index] = mock_ph_attr_str_array(
+                                                        ldap_attr_name,
+                                                        member_groups);
+        if (rule->attrs[attr_index] == NULL) {
+            return ENOMEM;
+        }
+    }
+
+    return 0;
+}
+
 int
 mock_ph_rule(struct ph_entry *rule,
              const char *cn,
@@ -221,14 +249,10 @@ mock_ph_rule(struct ph_entry *rule,
         goto fail;
     }
 
-    if (member_user != NULL) {
-        rule->attrs[PH_MAP_RULE_MEMBER_USER] = mock_ph_attr_str_array(
-                                                        "memberUser",
-                                                        member_user);
-        if (rule->attrs[PH_MAP_RULE_MEMBER_USER] == NULL) {
-            ret = ENOMEM;
-            goto fail;
-        }
+    ret = mock_member_attr(rule, PH_MAP_RULE_MEMBER_USER, "memberUser",
+                           member_user, member_user_groups);
+    if (ret != 0) {
+        goto fail;
     }
 
     if (user_category != NULL) {
@@ -241,14 +265,10 @@ mock_ph_rule(struct ph_entry *rule,
         }
     }
 
-    if (member_service != NULL) {
-        rule->attrs[PH_MAP_RULE_MEMBER_SVC] = mock_ph_attr_str_array(
-                                                        "memberService",
-                                                        member_service);
-        if (rule->attrs[PH_MAP_RULE_MEMBER_SVC] == NULL) {
-            ret = ENOMEM;
-            goto fail;
-        }
+    ret = mock_member_attr(rule, PH_MAP_RULE_MEMBER_SVC, "memberService",
+                           member_service, member_service_groups);
+    if (ret != 0) {
+        goto fail;
     }
 
     if (service_category != NULL) {
@@ -261,14 +281,10 @@ mock_ph_rule(struct ph_entry *rule,
         }
     }
 
-    if (member_host != NULL) {
-        rule->attrs[PH_MAP_RULE_MEMBER_HOST] = mock_ph_attr_str_array(
-                                                        "memberHost",
-                                                        member_host);
-        if (rule->attrs[PH_MAP_RULE_MEMBER_HOST] == NULL) {
-            ret = ENOMEM;
-            goto fail;
-        }
+    ret = mock_member_attr(rule, PH_MAP_RULE_MEMBER_HOST, "memberHost",
+                           member_host, member_host_groups);
+    if (ret != 0) {
+        goto fail;
     }
 
     if (host_category != NULL) {

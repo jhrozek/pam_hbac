@@ -221,6 +221,7 @@ rules_tests_SOURCES = \
 	src/pam_hbac_utils.c \
 	src/pam_hbac_entry.c \
 	src/pam_hbac_dnparse.c \
+	src/libhbac/hbac_evaluator.c \
 	$(NULL)
 rules_tests_CFLAGS = \
 	$(AM_CFLAGS) \

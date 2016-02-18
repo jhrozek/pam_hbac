@@ -249,6 +249,7 @@ attr_to_rule_element(pam_handle_t *pamh,
     size_t i;
     size_t ni;
     size_t gi;
+    size_t nvals;
     int ret;
     const char *member_name;
 
@@ -266,22 +267,18 @@ attr_to_rule_element(pam_handle_t *pamh,
     }
 
     a = el_member_attr(rule_entry, el_type);
-    if (a == NULL) {
-        /* FIXME - test an empty element? */
-        logger(pamh, LOG_DEBUG, "No members\n");
-        *_el = el;
-        return 0;
-    }
+    nvals = a ? a->nvals : 0;
+    logger(pamh, LOG_DEBUG, "Found %zu members\n", nvals);
 
-    el->names = calloc(a->nvals + 1, sizeof(char *));
-    el->groups = calloc(a->nvals + 1, sizeof(char *));
+    el->names = calloc(nvals + 1, sizeof(char *));
+    el->groups = calloc(nvals + 1, sizeof(char *));
     if (el->names == NULL || el->groups == NULL) {
         free_hbac_rule_element(el);
         return ENOMEM;
     }
 
     ni = gi = 0;
-    for (i = 0; i < a->nvals; i++) {
+    for (i = 0; i < nvals; i++) {
         member_name = NULL;
 
         ret = ph_name_from_dn(a->vals[i]->bv_val, el_type, &member_name);
@@ -377,6 +374,8 @@ entry_to_hbac_rule(pam_handle_t *pamh,
 {
     struct hbac_rule *rule = NULL;
     int ret;
+    bool ok;
+    uint32_t missing_attrs;
 
     rule = calloc(1, sizeof(struct hbac_rule));
     if (rule == NULL) {
@@ -439,6 +438,13 @@ entry_to_hbac_rule(pam_handle_t *pamh,
                ret, strerror(ret));
         free_hbac_rule(rule);
         return ret;
+    }
+
+    /* Sanity check */
+    ok = hbac_rule_is_complete(rule, &missing_attrs);
+    if (!ok) {
+        logger(pamh, LOG_ERR, "Missing attributes: %X\n", missing_attrs);
+        return EFAULT;
     }
 
     *_rule = rule;
