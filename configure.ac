@@ -47,6 +47,16 @@ AC_CHECK_LIB([pam_misc], [misc_conv],
     [PAM_MISC_LIBS="-lpam_misc"])
 AC_SUBST(PAM_MISC_LIBS)
 
+dnl save LIBS to restore later
+save_LIBS="$LIBS"
+LIBS="$PAM_LIBS"
+
+dnl Check for optional PAM fnuctions
+AC_CHECK_FUNCS(pam_syslog pam_vsyslog)
+
+dnl restore LIBS
+LIBS="$save_LIBS"
+
 #Set the PAM module install path
 AC_ARG_ENABLE([pammoddir], [AS_HELP_STRING([--enable-pammoddir],
               [Where to install pam modules ($libdir/security)])],
