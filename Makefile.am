@@ -183,6 +183,12 @@ ldap_tests_LDFLAGS = \
 	-Wl,-wrap,ldap_get_dn \
 	-Wl,-wrap,ldap_memfree \
 	-Wl,-wrap,ber_free \
+	-Wl,-wrap,ldap_start_tls \
+	-Wl,-wrap,ldap_get_option \
+	-Wl,-wrap,ldap_result \
+	-Wl,-wrap,ldap_parse_result \
+	-Wl,-wrap,ldap_tls_inplace \
+	-Wl,-wrap,ldap_install_tls \
 	$(NULL)
 ldap_tests_LDADD = \
 	-lldap \

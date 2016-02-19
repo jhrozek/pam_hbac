@@ -72,6 +72,17 @@ class IpaClientlessTestDriver(object):
                                  context=self.ssl_ctx)
         return result.getcode()
 
+
+    def fetch_cert(self, dest):
+        url = "http://" + self.hostname + "/ipa/config/ca.crt"
+        self.ca_cert = os.path.join(dest, "ca.crt")
+        urllib.urlretrieve(url, self.ca_cert)
+
+
+    def rm_cert(self):
+        os.unlink(self.ca_cert)
+
+
     def run_cmd(self, method, params):
         cmd = json.dumps({"method":method, "params":[params,{}], "id":"0"})
         return self._json_request(cmd)
@@ -103,6 +114,11 @@ class PamHbacTestCase(unittest.TestCase):
     def setUp(self):
         self._pwrap_setup()
         self._driver_setup()
+        self.driver.fetch_cert(self.pwrap_runtimedir)
+
+
+    def tearDown(self):
+        self.driver.rm_cert()
 
 
     def assertPamReturns(self, user, service, rc):
@@ -187,6 +203,7 @@ class PamHbacTestCase(unittest.TestCase):
         confd['BASE'] = base_dn
         confd['BIND_DN'] = "uid=admin,cn=users,cn=accounts," + base_dn
         confd['BIND_PW'] = self.driver.password
+        confd['CA_CERT'] = self.driver.ca_cert
 
         client_hostname = os.getenv("HOST_NAME")
         if client_hostname:

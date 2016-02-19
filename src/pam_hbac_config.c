@@ -178,6 +178,9 @@ read_config_line(pam_handle_t *pamh,
     } else if (strcasecmp(key, PAM_HBAC_CONFIG_HOST_NAME) == 0) {
         conf->hostname = discard_const(value);
         logger(pamh, LOG_DEBUG, "host name: %s", conf->hostname);
+    } else if (strcasecmp(key, PAM_HBAC_CONFIG_CA_CERT) == 0) {
+        conf->ca_cert = discard_const(value);
+        logger(pamh, LOG_DEBUG, "ca cert: %s", conf->ca_cert);
     } else {
         /* Skip unknown key/values */
         free_const(value);

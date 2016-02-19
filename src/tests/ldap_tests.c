@@ -248,6 +248,56 @@ __wrap_ldap_search_ext_s(LDAP *ld, const char *base, int scope,
     return ph_mock_type(int);
 }
 
+int
+__wrap_ldap_tls_inplace(LDAP *ld)
+{
+    return 0;
+}
+
+int
+__wrap_ldap_start_tls(LDAP *ld,
+                      LDAPControl **serverctrls,
+                      LDAPControl **clientctrls,
+                      int *msgidp)
+{
+    return LDAP_SUCCESS;
+}
+
+int
+__wrap_ldap_install_tls(LDAP *ld)
+{
+    return LDAP_SUCCESS;
+}
+
+int 
+__wrap_ldap_get_option(LDAP *ld, int option, void *outvalue)
+{
+    if (option == PH_DIAGNOSTIC_MESSAGE) {
+        *(char **) outvalue = ph_mock_ptr_type(char *);
+    }
+
+    return LDAP_SUCCESS;
+}
+
+int
+__wrap_ldap_parse_result(LDAP *ld, LDAPMessage *result,
+                         int *errcodep, char **matcheddnp, char **errmsgp,
+                         char ***referralsp, LDAPControl ***serverctrlsp,
+                         int freeit)
+{
+    *errcodep = ph_mock_type(int);
+    *errmsgp = ph_mock_ptr_type(char *);
+
+    return LDAP_SUCCESS;
+}
+
+int
+__wrap_ldap_result(LDAP *ld, int msgid, int all,
+                   struct timeval *timeout, LDAPMessage **result)
+{
+    return ph_mock_type(int);
+}
+
 static void
 set_dummy_config(struct pam_hbac_config *conf)
 {
@@ -258,10 +308,21 @@ set_dummy_config(struct pam_hbac_config *conf)
 }
 
 static void
+mock_tls(int ldap_result, int errcode, const char *message)
+{
+    will_return(__wrap_ldap_result, ldap_result);
+    if (ldap_result == LDAP_RES_EXTENDED) {
+        will_return(__wrap_ldap_parse_result, errcode);
+        will_return(__wrap_ldap_parse_result, message);
+    }
+}
+
+static void
 assert_connect(struct pam_hbac_ctx *ctx)
 {
     int ret;
 
+    mock_tls(LDAP_RES_EXTENDED, LDAP_SUCCESS, "Success");
     ret = ph_connect(ctx);
     assert_int_equal(ret, 0);
     assert_non_null(ctx->ld);
@@ -558,6 +619,7 @@ test_connect(void **state)
 
     /* wrong password */
     pc.bind_pw = "blablabla";
+    mock_tls(LDAP_RES_EXTENDED, LDAP_SUCCESS, "Success");
     ret = ph_connect(&ctx);
     assert_int_equal(ret, EACCES);
     assert_null(ctx.ld);

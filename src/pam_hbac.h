@@ -62,6 +62,7 @@
 #define PAM_HBAC_CONFIG_HOST_NAME       "HOST_NAME"
 #define PAM_HBAC_CONFIG_BIND_DN         "BIND_DN"
 #define PAM_HBAC_CONFIG_BIND_PW         "BIND_PW"
+#define PAM_HBAC_CONFIG_CA_CERT         "CA_CERT"
 
 struct pam_hbac_ctx {
     pam_handle_t *pamh;
@@ -75,6 +76,7 @@ struct pam_hbac_config {
     const char *search_base;
     const char *bind_dn;
     const char *bind_pw;
+    const char *ca_cert;
     char *hostname;
     int timeout;
 };

@@ -23,6 +23,16 @@
 #include "pam_hbac.h"
 #include "pam_hbac_entry.h"
 
+#ifdef LDAP_OPT_DIAGNOSTIC_MESSAGE
+#define PH_DIAGNOSTIC_MESSAGE LDAP_OPT_DIAGNOSTIC_MESSAGE
+#else
+#ifdef LDAP_OPT_ERROR_STRING
+#define PH_DIAGNOSTIC_MESSAGE LDAP_OPT_ERROR_STRING
+#else
+#error No extended diagnostic message available
+#endif
+#endif
+
 struct ph_search_ctx {
     const char *sub_base;
     const char **attrs;

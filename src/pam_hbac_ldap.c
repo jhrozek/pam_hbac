@@ -343,12 +343,109 @@ done:
     return ret;
 }
 
+static int
+start_tls(pam_handle_t *ph, LDAP *ldap, const char *ca_cert)
+{
+    int lret;
+    int msgid;
+    int optret;
+    char *errmsg = NULL;
+    char *diag_msg = NULL;
+    int ldaperr;
+    LDAPMessage *result = NULL;
+
+    if (ca_cert != NULL) {
+        lret = ldap_set_option(NULL, LDAP_OPT_X_TLS_CACERTFILE, ca_cert);
+        if (lret != LDAP_SUCCESS) {
+            logger(ph, LOG_ERR, "Cannot set ca cert: %d\n");
+            return lret;
+        }
+
+        logger(ph, LOG_DEBUG, "CA cert set to: %s\n", ca_cert);
+    }
+
+    lret = ldap_start_tls(ldap, NULL, NULL, &msgid);
+    if (lret != LDAP_SUCCESS) {
+        optret = ldap_get_option(ldap, PH_DIAGNOSTIC_MESSAGE, (void*)&errmsg);
+        if (optret != LDAP_SUCCESS) {
+            logger(ph, LOG_ERR,
+                   "Cannot start TLS [%d]: %s\n",
+                   lret, ldap_err2string(lret));
+        } else {
+            logger(ph, LOG_ERR,
+                   "Cannot start TLS [%d]: %s diagnostic message: %s\n",
+                   lret, ldap_err2string(lret), errmsg);
+            ldap_memfree(errmsg);
+        }
+        goto done;
+    }
+
+    lret = ldap_result(ldap, msgid, 1, NULL, &result);
+    if (lret != LDAP_RES_EXTENDED) {
+        logger(ph, LOG_ERR,
+              "Unexpected ldap_result, expected [%lu] got [%d].\n",
+               LDAP_RES_EXTENDED, lret);
+        lret = LDAP_PARAM_ERROR;
+        goto done;
+    }
+
+    lret = ldap_parse_result(ldap, result, &ldaperr, NULL,
+                             &errmsg, NULL, NULL, 0);
+    if (lret != LDAP_SUCCESS) {
+        logger(ph, LOG_ERR,
+              "ldap_parse_result failed (%d) [%d][%s]\n", msgid, lret,
+              ldap_err2string(lret));
+        goto done;
+    }
+
+    logger(ph, LOG_DEBUG,
+           "START TLS result: %s(%d), %s\n",
+           ldap_err2string(ldaperr), ldaperr, errmsg);
+
+    if (ldap_tls_inplace(ldap)) {
+        logger(ph, LOG_DEBUG, "SSL/TLS handler already in place.\n");
+        lret = LDAP_SUCCESS;
+        goto done;
+    }
+
+    lret = ldap_install_tls(ldap);
+    if (lret != LDAP_SUCCESS) {
+        optret = ldap_get_option(ldap, PH_DIAGNOSTIC_MESSAGE, (void*)&diag_msg);
+        if (optret == LDAP_SUCCESS) {
+            logger(ph, LOG_ERR,
+                   "ldap_install_tls failed: [%s] [%s]\n",
+                   ldap_err2string(lret), diag_msg);
+        } else {
+            logger(ph, LOG_ERR, "ldap_install_tls failed: [%s]\n",
+                   ldap_err2string(lret));
+        }
+
+        goto done;
+    }
+
+    lret = LDAP_SUCCESS;
+done:
+    if (result) {
+        ldap_msgfree(result);
+    }
+
+    if (errmsg) {
+        ldap_memfree(errmsg);
+    }
+
+    if (diag_msg) {
+        ldap_memfree(diag_msg);
+    }
+    return lret;
+}
+
 int
 ph_connect(struct pam_hbac_ctx *ctx)
 {
     int ret;
     LDAP *ld;
     struct berval password = {0, NULL};
+    int ldap_vers = LDAP_VERSION3;
 
     if (ctx == NULL) {
         return EINVAL;
@@ -358,6 +455,22 @@ ph_connect(struct pam_hbac_ctx *ctx)
     if (ret != LDAP_SUCCESS) {
         logger(ctx->pamh, LOG_ERR,
                "ldap_initialize failed [%d]: %s\n",
+               ret, ldap_err2string(ret));
+        return EIO;
+    }
+
+    ret = ldap_set_option(ld, LDAP_OPT_PROTOCOL_VERSION, &ldap_vers);
+    if (ret != LDAP_SUCCESS) {
+        logger(ctx->pamh, LOG_ERR,
+               "ldap_set_option failed [%d]: %s\n",
+               ret, ldap_err2string(ret));
+        return EIO;
+    }
+
+    ret = start_tls(ctx->pamh, ld, ctx->pc->ca_cert);
+    if (ret != LDAP_SUCCESS) {
+        logger(ctx->pamh, LOG_ERR,
+               "start_tls failed [%d]: %s\n",
                ret, ldap_err2string(ret));
         return EIO;
     }
