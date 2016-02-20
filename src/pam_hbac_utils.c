@@ -21,9 +21,9 @@
 
 #include <security/pam_modules.h>
 #include <syslog.h>
-#include <security/pam_ext.h>
 
 #include "pam_hbac.h"
+#include "pam_hbac_compat.h"
 
 void
 free_string_clist(const char **list)
