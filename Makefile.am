@@ -60,10 +60,11 @@ dist_noinst_HEADERS = \
 		      $(NULL)
 
 dist_noinst_DATA = \
-		      src/tests/good1.conf \
-		      src/tests/eqwsp.conf \
-		      src/tests/lwsp.conf \
-		      src/tests/twsp.conf \
+		      src/tests/configs/good1.conf \
+		      src/tests/configs/eqwsp.conf \
+		      src/tests/configs/lwsp.conf \
+		      src/tests/configs/twsp.conf \
+		      src/tests/configs/noeq.conf \
 		      src/tests/cwrap/passwd \
 		      src/tests/cwrap/group \
 		      $(NULL)
