@@ -101,10 +101,23 @@ void test_trailing_whitespace(void **state)
 
     (void) state; /* unused */
 
-    conf = read_test_config(TEST_CONF_DIR"/src/tests/twsp.conf");
+    conf = read_test_config(TEST_CONF_DIR"/src/tests/configs/twsp.conf");
     print_config(conf);
     check_example_result(conf);
     ph_cleanup_config(conf);
+}
+
+void test_no_equal_sign(void **state)
+{
+    struct pam_hbac_config *conf;
+    int ret;
+
+    (void) state; /* unused */
+
+    ret = ph_read_config(NULL,
+                         TEST_CONF_DIR"/src/tests/configs/noeq.conf",
+                         &conf);
+    assert_int_not_equal(ret, 0);
 }
 
 int main(void)
@@ -114,6 +127,7 @@ int main(void)
         cmocka_unit_test(test_whitespace_around_equal_sign),
         cmocka_unit_test(test_leading_whitespace),
         cmocka_unit_test(test_trailing_whitespace),
+        cmocka_unit_test(test_no_equal_sign),
     };
 
     return cmocka_run_group_tests(tests, NULL, NULL);
