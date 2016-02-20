@@ -49,13 +49,6 @@ default_config(struct pam_hbac_config *conf)
 {
     int ret;
 
-    if (conf->uri == NULL) {
-        conf->uri = strdup(PAM_HBAC_DEFAULT_URI);
-    }
-    if (conf->search_base == NULL) {
-        conf->search_base = strdup(PAM_HBAC_DEFAULT_SEARCH_BASE);
-    }
-
     if (conf->search_base == NULL ||
             conf->uri == NULL) {
         goto fail;

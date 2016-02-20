@@ -45,8 +45,6 @@
 #define PAM_HBAC_CONFIG                PAM_HBAC_CONF_DIR"/"PAM_HBAC_CONFIG_FILE_NAME
 
 /* config defaults */
-#define PAM_HBAC_DEFAULT_URI            "ldap://localhost:389"
-#define PAM_HBAC_DEFAULT_SEARCH_BASE    "dc=localhost,dc=com"
 #define PAM_HBAC_DEFAULT_TIMEOUT        5
 
 /* default attributes */
