@@ -1,7 +1,6 @@
 AC_PREREQ(2.59)
 
 m4_include([version.m4])
-m4_include([external/attribute.m4])
 m4_include([external/libcmocka.m4])
 m4_include([external/cwrap.m4])
 
@@ -24,8 +23,6 @@ AC_CONFIG_MACRO_DIR([m4])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES])
 
 AM_CONDITIONAL([HAVE_GCC], [test "$ac_cv_prog_gcc" = yes])
-CC_ATTRIBUTE_NONNULL
-CC_ATTRIBUTE_UNUSED
 
 #Check for PAM headers
 AC_CHECK_HEADERS([security/pam_appl.h security/pam_modules.h],
