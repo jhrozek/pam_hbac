@@ -12,7 +12,6 @@ AC_CONFIG_AUX_DIR([build])
 
 AM_INIT_AUTOMAKE([-Wall foreign subdir-objects])
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
-AM_PROG_AR
 AM_PROG_CC_C_O
 AC_DISABLE_STATIC
 AC_PROG_INSTALL
