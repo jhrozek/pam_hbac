@@ -25,12 +25,16 @@ m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES])
 AM_CONDITIONAL([HAVE_GCC], [test "$ac_cv_prog_gcc" = yes])
 
 #Check for PAM headers
-AC_CHECK_HEADERS([security/pam_appl.h security/pam_modules.h],
-    [AC_CHECK_LIB([pam], [pam_get_item],
-        [PAM_LIBS="-lpam"],
-        [AC_MSG_ERROR([PAM must support pam_get_item])])],
-    [AC_MSG_ERROR([PAM development libraries not installed])]
-)
+AC_CHECK_HEADERS([security/pam_appl.h])
+AC_CHECK_HEADERS([security/pam_modules.h],,,[
+      #ifdef HAVE_SECURITY_PAM_APPL_H
+      #include <security/pam_appl.h>
+      #endif
+    ])
+
+AC_CHECK_LIB([pam], [pam_get_item],
+             [PAM_LIBS="-lpam"],
+             [AC_MSG_ERROR([PAM must support pam_get_item])])
 
 AC_CHECK_HEADERS([security/pam_ext.h security/pam_modutil.h])
 AC_CHECK_HEADERS([security/pam_misc.h security/_pam_macros.h])
