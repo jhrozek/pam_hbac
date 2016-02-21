@@ -121,7 +121,7 @@ parse_entry(pam_handle_t *pamh,
     char *a;
     struct berval **vals;
     struct ph_attr *attr;
-    int index;
+    int idx;
     int ret;
     char *dn;
     size_t num_attrs;
@@ -140,8 +140,8 @@ parse_entry(pam_handle_t *pamh,
          a != NULL;
          a = ldap_next_attribute(ld, entry, ber)) {
 
-        index = want_attrname(a, obj);
-        if (index == -1) {
+        idx = want_attrname(a, obj);
+        if (idx == -1) {
             ldap_memfree(a);
             continue;
         }
@@ -156,7 +156,7 @@ parse_entry(pam_handle_t *pamh,
         }
         /* attr owns vals and a now */
 
-        ret = ph_entry_set_attr(pentry, attr, index);
+        ret = ph_entry_set_attr(pentry, attr, idx);
         if (ret) {
             ph_attr_free(attr);
             return ret;
