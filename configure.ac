@@ -58,6 +58,16 @@ AC_CHECK_FUNCS(pam_syslog pam_vsyslog)
 dnl restore LIBS
 LIBS="$save_LIBS"
 
+dnl check for LDAP libraries
+AC_CHECK_HEADERS([lber.h])
+AC_CHECK_HEADERS([ldap.h],
+                 [],
+                 AC_MSG_ERROR([could not locate <ldap.h>]),
+                 [ #if HAVE_LBER_H
+                   #include <lber.h>
+                   #endif
+                 ])
+
 #Set the PAM module install path
 AC_ARG_ENABLE([pammoddir], [AS_HELP_STRING([--enable-pammoddir],
               [Where to install pam modules ($libdir/security)])],
