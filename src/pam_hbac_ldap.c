@@ -99,7 +99,9 @@ entry_has_oc(pam_handle_t *pamh, LDAP *ld, LDAPMessage *entry, const char *oc)
 static int
 want_attrname(const char *attr, struct ph_search_ctx *obj)
 {
-    for (size_t i = 0; i < obj->num_attrs; i++) {
+    size_t i;
+
+    for (i = 0; i < obj->num_attrs; i++) {
         if (strcasecmp(obj->attrs[i], attr) == 0) {
             return i;
         }

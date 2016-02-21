@@ -104,13 +104,14 @@ ph_entry_array_alloc(size_t num_entry_attrs,
                      size_t num_entries)
 {
     struct ph_entry **e;
+    size_t i;
 
     e = calloc(num_entries + 1, sizeof(struct ph_entry *));
     if (e == NULL) {
         return NULL;
     }
 
-    for (size_t i = 0; i < num_entries; i++) {
+    for (i = 0; i < num_entries; i++) {
         e[i] = ph_entry_alloc(num_entry_attrs);
         if (e[i] == NULL) {
             ph_entry_array_free(e);
@@ -176,12 +177,13 @@ ph_entry_get_attr(struct ph_entry *e,
 
 void ph_entry_array_free(struct ph_entry **entry_list)
 {
+    size_t i;
 
     if (entry_list == NULL) {
         return;
     }
 
-    for (size_t i = 0; entry_list[i]; i++) {
+    for (i = 0; entry_list[i]; i++) {
         ph_entry_free(entry_list[i]);
     }
     free(entry_list);

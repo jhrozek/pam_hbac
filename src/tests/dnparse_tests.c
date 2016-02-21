@@ -37,9 +37,11 @@ static void ph_test_rdn_from_dn(rdn_getter_fn getter,
 {
     int ret;
     const char *rdn_val = NULL;
+    size_t i;
+    size_t ii;
 
-    for (size_t i = 0; i <= DN_TYPE_SVC; i++) {
-        for (size_t ii = 0; ii <= DN_TYPE_SVC; ii++) {
+    for (i = 0; i <= DN_TYPE_SVC; i++) {
+        for (ii = 0; ii <= DN_TYPE_SVC; ii++) {
             rdn_val = NULL;
 
             ret = getter(dn_list[i], ii, &rdn_val);

@@ -38,6 +38,7 @@ mock_user_obj(const char *name,
     va_list ap_copy;
     const char *v;
     size_t num_groups = 0;
+    size_t i;
 
     va_copy(ap_copy, ap);
 
@@ -65,7 +66,7 @@ mock_user_obj(const char *name,
     }
 
     va_start(ap, name);
-    for (size_t i=0; (v = va_arg(ap, const char *)) != NULL; i++) {
+    for (i=0; (v = va_arg(ap, const char *)) != NULL; i++) {
         user->group_names[i] = strdup(v);
         if (user->group_names[i] == NULL) {
             ph_free_user(user);

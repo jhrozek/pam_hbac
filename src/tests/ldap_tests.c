@@ -394,13 +394,14 @@ assert_entry_attr_vals(struct ph_entry *e,
                        const char *vals[])
 {
     struct ph_attr *a;
+    size_t i;
 
     a = ph_entry_get_attr(e, attr_index);
     assert_non_null(a);
 
     assert_int_equal(a->nvals, null_cstring_array_size(vals));
 
-    for (size_t i = 0; i < a->nvals; i++) {
+    for (i = 0; i < a->nvals; i++) {
         assert_string_equal(a->vals[i]->bv_val, vals[i]);
     }
 }
