@@ -26,7 +26,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+
 #include "ipa_hbac.h"
+#include "sss_compat.h"
+#include "sss_utf8.h"
 
 #ifndef HAVE_ERRNO_T
 #define HAVE_ERRNO_T
@@ -35,10 +38,6 @@ typedef int errno_t;
 
 #ifndef EOK
 #define EOK 0
-#endif
-
-#ifndef ENOMATCH
-#define ENOMATCH ENOENT
 #endif
 
 /* HBAC logging system */
@@ -86,18 +85,6 @@ enum hbac_eval_result_int {
     HBAC_EVAL_MATCHED,
     HBAC_EVAL_UNMATCHED
 };
-
-static errno_t sss_utf8_case_eq(const uint8_t *s1, const uint8_t *s2)
-{
-    errno_t ret;
-
-    ret = ENOMATCH;
-    if (strcasecmp((const char *) s1, (const char *) s2) == 0) {
-        ret = EOK;
-    }
-
-    return ret;
-}
 
 static bool hbac_rule_element_is_complete(struct hbac_rule_element *el)
 {

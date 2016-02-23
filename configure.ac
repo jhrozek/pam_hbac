@@ -1,6 +1,8 @@
 AC_PREREQ(2.59)
 
 m4_include([version.m4])
+m4_include([src/conf_macros.m4])
+m4_include([src/build_macros.m4])
 m4_include([external/libcmocka.m4])
 m4_include([external/cwrap.m4])
 
@@ -72,6 +74,19 @@ AC_ARG_ENABLE([pammoddir], [AS_HELP_STRING([--enable-pammoddir],
               [pammoddir=$enableval],
               [pammoddir=$libdir/security])
 AC_SUBST(pammoddir)
+
+# Detect the selected Unicode library
+WITH_UNICODE_LIB
+if test x$unicode_lib = xlibunistring; then
+    m4_include([external/libunistring.m4])
+    AC_DEFINE_UNQUOTED(HAVE_LIBUNISTRING, 1, [Using libunistring for unicode])
+    UNICODE_LIBS=$UNISTRING_LIBS
+else
+    m4_include([external/glib.m4])
+    AC_DEFINE_UNQUOTED(HAVE_GLIB2, 1, [Using glib2 for unicode])
+    UNICODE_LIBS=$GLIB2_LIBS
+fi
+AC_SUBST(UNICODE_LIBS)
 
 # Optional build dependencies - Unit tests
 AM_CHECK_CMOCKA

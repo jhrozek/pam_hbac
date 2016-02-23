@@ -1,11 +1,15 @@
 pamlibdir = @pammoddir@
 pam_hbac_conf_dir = $(sysconfdir)
 
+UNICODE_LIBS=@UNICODE_LIBS@
+
 AM_CFLAGS =
 if HAVE_GCC
 AM_CFLAGS += -Wall -Wshadow -Wstrict-prototypes -Wpointer-arith \
 	     -Wcast-qual -Wcast-align -Wwrite-strings \
-	     -Werror-implicit-function-declaration
+	     -Werror-implicit-function-declaration \
+	     $(GLIB2_CFLAGS) \
+	     $(NULL)
 endif
 PAM_MISC_LIBS=@PAM_MISC_LIBS@
 
@@ -33,9 +37,11 @@ pam_hbac_la_SOURCES = \
 		     src/pam_hbac_dnparse.c \
 		     src/pam_hbac_utils.c \
 		     src/libhbac/hbac_evaluator.c \
+		     src/libhbac/sss_utf8.c \
 		     $(NULL)
 
 pam_hbac_la_LDFLAGS = \
+		     $(UNICODE_LIBS) \
 		     -llber \
 		     -lldap \
 		     -lpam \
@@ -55,6 +61,8 @@ dist_noinst_HEADERS = \
 		      src/pam_hbac_obj.h \
 		      src/pam_hbac_obj_int.h \
 		      src/libhbac/ipa_hbac.h \
+		      src/libhbac/sss_utf8.h \
+		      src/libhbac/sss_compat.h \
 		      src/tests/common_mock.h \
 		      src/tests/ph_tests.h \
 		      $(NULL)
@@ -229,6 +237,7 @@ rules_tests_SOURCES = \
 	src/pam_hbac_entry.c \
 	src/pam_hbac_dnparse.c \
 	src/libhbac/hbac_evaluator.c \
+	src/libhbac/sss_utf8.c \
 	$(NULL)
 rules_tests_CFLAGS = \
 	$(AM_CFLAGS) \
@@ -242,6 +251,7 @@ rules_tests_LDADD = \
 	-llber \
 	-lpam \
 	$(CMOCKA_LIBS) \
+	$(UNICODE_LIBS) \
 	$(NULL)
 
 if HAVE_CMOCKA
