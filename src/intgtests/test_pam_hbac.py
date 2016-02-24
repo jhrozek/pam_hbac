@@ -340,6 +340,23 @@ class PamHbacTestCase(unittest.TestCase):
         content = content + "\n"
         return content
 
+    def create_direct_entries(self, direct_user_name,
+                              rule_host, non_rule_host):
+        self.tuser = IpaClientlessPamHbacUser(self.driver, direct_user_name)
+        self.tuser.add()
+
+        self.client = IpaClientlessPamHbacHost(self.driver, rule_host)
+        self.client.add()
+        self.nonrule_client = IpaClientlessPamHbacHost(self.driver,
+                                                       non_rule_host)
+        self.nonrule_client.add()
+
+    def remove_direct_entries(self):
+        self.tuser.remove()
+        self.client.remove()
+        self.nonrule_client.remove()
+        self.trule.remove()
+
 
 class PamHbacTestAllowAll(PamHbacTestCase):
     def setUp(self):
@@ -364,17 +381,9 @@ class PamHbacTestDirect(PamHbacTestCase):
         super(PamHbacTestDirect, self).setUp()
         self.allow_all = IpaClientlessPamHbacRule(self.driver, "allow_all")
         self.allow_all.disable()
+        self.create_direct_entries("tuser", "rulehost", "nonrulehost")
 
-        self.tuser = IpaClientlessPamHbacUser(self.driver, "tuser")
-        self.tuser.add()
-
-        self.client = IpaClientlessPamHbacHost(self.driver, "rulehost")
-        self.client.add()
-        self.nonrule_client = IpaClientlessPamHbacHost(self.driver,
-                                                       "nonrulehost")
-        self.nonrule_client.add()
-
-        self.rule_svc = "sshd"  # Built-in service, safe to assume it's here
+        self.rule_svc = "sshd"  # Built-in service
 
         self.trule = IpaClientlessPamHbacRule(self.driver, "trule")
         self.trule.add()
@@ -385,10 +394,7 @@ class PamHbacTestDirect(PamHbacTestCase):
 
     def tearDown(self):
         self.allow_all.enable()
-        self.tuser.remove()
-        self.client.remove()
-        self.nonrule_client.remove()
-        self.trule.remove()
+        self.remove_direct_entries()
         super(PamHbacTestDirect, self).tearDown()
 
     def test_allow_rule_user(self):
@@ -435,27 +441,17 @@ class PamHbacTestGroup(PamHbacTestCase):
         self.allow_all = IpaClientlessPamHbacRule(self.driver, "allow_all")
         self.allow_all.disable()
 
-        # Add a user who is part of a hostgroup we'll reference from
-        # the rule
-        self.tuser = IpaClientlessPamHbacUser(self.driver, "tuser")
-        self.tuser.add()
+        self.create_direct_entries("tuser", "rulehost", "nonrulehost")
+
         self.tgroup = IpaClientlessPamHbacUserGroup(self.driver, "tgroup")
         self.tgroup.add()
         self.tgroup.add_member(self.tuser.name)
 
-        # Add a client who is part of a hostgroup we'll reference from
-        # the rule
-        self.client = IpaClientlessPamHbacHost(self.driver, "rulehost")
-        self.client.add()
         self.rule_hg = IpaClientlessPamHbacHostGroup(self.driver,
                                                      "rulehostgroup")
         self.rule_hg.add()
         self.rule_hg.add_member(self.client.name)
 
-        # Add a client for negative testing
-        self.nonrule_client = IpaClientlessPamHbacHost(self.driver,
-                                                       "nonrulehost")
-        self.nonrule_client.add()
         self.non_rule_hg = IpaClientlessPamHbacHostGroup(self.driver,
                                                          "nonrulehostgroup")
         self.non_rule_hg.add()
@@ -472,13 +468,10 @@ class PamHbacTestGroup(PamHbacTestCase):
 
     def tearDown(self):
         self.allow_all.enable()
-        self.tuser.remove()
+        self.remove_direct_entries()
         self.tgroup.remove()
-        self.client.remove()
         self.rule_hg.remove()
-        self.nonrule_client.remove()
         self.non_rule_hg.remove()
-        self.trule.remove()
         super(PamHbacTestGroup, self).tearDown()
 
     def test_allow_rule_group_user(self):
