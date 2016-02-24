@@ -234,13 +234,23 @@ class PamHbacTestCase(unittest.TestCase):
         self._driver_setup()
         self.driver.fetch_cert(self.pwrap_runtimedir)
 
+        self.client_shortname = "pamhbacclient"
+        self.client_hostname = "pamhbacclient" + "." + self.driver.realm
+        self.host = IpaClientlessPamHbacHost(self.driver,
+                                             self.client_shortname)
+        self.host.add()
+
 
     def tearDown(self):
+        self.host.remove()
         self.driver.rm_cert()
 
 
-    def assertPamReturns(self, user, service, rc):
-        self._config_setup()
+    def assertPamReturns(self, user, service, rc, host=None):
+        if host == None:
+            host = self.client_hostname
+        self._config_setup(host)
+
         svc_file = self._write_pam_svc_file(service,
                                             self.ph_abspath,
                                             self.config_file.name)
@@ -251,24 +261,21 @@ class PamHbacTestCase(unittest.TestCase):
             os.unlink(svc_file.name)
 
 
-    def assertPamReturnsHost(self, user, service, rc, host=None):
-        old_hostname = None
+    def assertPamReturnsForHost(self, user, service, rc, host=None):
         if host != None:
-            old_hostname = os.environ["HOST_NAME"]
             os.environ["HOST_NAME"] = host
         try:
-            self.assertPamReturns(user, service, rc)
+            self.assertPamReturns(user, service, rc, host)
         finally:
-            if old_hostname:
-                os.environ["HOST_NAME"] = old_hostname
+            os.environ["HOST_NAME"] = self.client_hostname
 
 
     def assertAllowed(self, user, service, host=None):
-        self.assertPamReturnsHost(user, service, 0, host)
+        self.assertPamReturnsForHost(user, service, 0, host)
 
 
     def assertDenied(self, user, service, host=None):
-        self.assertPamReturnsHost(user, service, 6, host)
+        self.assertPamReturnsForHost(user, service, 6, host)
 
 
     def _run_pwrap_test(self, tc, user, service):
@@ -322,7 +329,7 @@ class PamHbacTestCase(unittest.TestCase):
         return f
 
 
-    def _config_setup(self):
+    def _config_setup(self, host):
         self.config_file = None
 
         config_path = os.getenv("PAM_HBAC_CONFIG_PATH")
@@ -339,10 +346,7 @@ class PamHbacTestCase(unittest.TestCase):
         confd['BIND_DN'] = "uid=admin,cn=users,cn=accounts," + base_dn
         confd['BIND_PW'] = self.driver.password
         confd['CA_CERT'] = self.driver.ca_cert
-
-        client_hostname = os.getenv("HOST_NAME")
-        if client_hostname:
-            confd['HOST_NAME'] = client_hostname
+        confd['HOST_NAME'] = host
 
         self.config_file = self._config_write(config_path, confd)
 
@@ -367,6 +371,7 @@ class PamHbacTestCase(unittest.TestCase):
 class PamHbacTestAllowAll(PamHbacTestCase):
     def setUp(self):
         super(PamHbacTestAllowAll, self).setUp()
+        self.allow_all = IpaClientlessPamHbacRule(self.driver, "allow_all")
 
 
     def tearDown(self):
@@ -374,16 +379,14 @@ class PamHbacTestAllowAll(PamHbacTestCase):
 
 
     def test_allow_all(self):
-        rule = IpaClientlessPamHbacRule(self.driver, "allow_all")
-        rule.enable()
+        self.allow_all.enable()
         self.assertAllowed("admin", "sshd")
 
 
     def test_allow_all_disabled(self):
-        rule = IpaClientlessPamHbacRule(self.driver, "allow_all")
-        rule.disable()
+        self.allow_all.disable()
         self.assertDenied("admin", "sshd")
-        rule.enable()
+        self.allow_all.enable()
 
 
 class PamHbacTestDirect(PamHbacTestCase):
