@@ -104,6 +104,30 @@ class IpaClientlessPamHbacHost(object):
     def remove(self):
         self.driver.run_cmd("host_del", [ self.name ])
 
+
+class IpaClientlessPamHbacHostGroup(object):
+    def __init__(self, driver, name):
+        self.driver = driver
+        self.name = name
+
+
+    def add(self):
+        self.driver.run_cmd("hostgroup_add", [ self.name ])
+
+
+    def remove(self):
+        self.driver.run_cmd("hostgroup_del", [ self.name ])
+
+
+    def add_member(self, host=None, hostgroup=None):
+        args = dict()
+        if host:
+            args['host'] = [ host ]
+        if hostgroup:
+            args['hostgroup'] = [ hostgroup ]
+        self.driver.run_cmd("hostgroup_add_member", [ self.name ], args)
+
+
 class IpaClientlessPamHbacUser(object):
     def __init__(self, driver, name):
         self.driver = driver
@@ -133,6 +157,28 @@ class IpaClientlessPamHbacUser(object):
     def remove(self):
         self.driver.run_cmd("user_del", [ self.name ])
 
+class IpaClientlessPamHbacUserGroup(object):
+    def __init__(self, driver, name):
+        self.driver = driver
+        self.name = name
+
+
+    def add(self):
+        self.driver.run_cmd("group_add", [ self.name ])
+
+
+    def remove(self):
+        self.driver.run_cmd("group_del", [ self.name ])
+
+
+    def add_member(self, user=None, group=None):
+        args = dict()
+        if user:
+            args['user'] = [ user ]
+        if user:
+            args['group'] = [ group ]
+        self.driver.run_cmd("group_add_member", [ self.name ], args)
+
 
 class IpaClientlessPamHbacRule(object):
     def __init__(self, driver, name):
@@ -144,7 +190,7 @@ class IpaClientlessPamHbacRule(object):
         self.driver.run_cmd("hbacrule_add", [ self.name ])
 
     def remove(self):
-        self.driver.run_cmd("hbacrule_remove", [ self.name ])
+        self.driver.run_cmd("hbacrule_del", [ self.name ])
 
 
     def add_svc(self, svc=None, svcgroup=None):
@@ -161,7 +207,7 @@ class IpaClientlessPamHbacRule(object):
         if user:
             args['user'] = [ user ]
         if usergroup:
-            args['usergroup'] = [ usergroup ]
+            args['group'] = [ usergroup ]
         self.driver.run_cmd("hbacrule_add_user", [ self.name ], args)
 
 
@@ -366,12 +412,12 @@ class PamHbacTestDirect(PamHbacTestCase):
 
 
     def tearDown(self):
-        super(PamHbacTestDirect, self).tearDown()
         self.allow_all.enable()
         self.tuser.remove()
         self.client.remove()
         self.nonrule_client.remove()
         self.trule.remove()
+        super(PamHbacTestDirect, self).tearDown()
 
 
     def test_allow_rule_user(self):
@@ -380,6 +426,10 @@ class PamHbacTestDirect(PamHbacTestCase):
         referenced in the rule using the service referenced in the rule
         """
         self.assertAllowed(self.tuser.name, self.rule_svc, self.client.name)
+        # Sanity-check: Access must be denied if the rule is disabled
+        self.trule.disable()
+        self.assertDenied(self.tuser.name, self.rule_svc, self.client.name)
+        self.trule.enable()
 
 
     def test_deny_non_rule_user(self):
@@ -397,7 +447,7 @@ class PamHbacTestDirect(PamHbacTestCase):
         the host referenced in the rule using a different service than
         the one referenced in the rule
         """
-        self.assertDenied(self.tuser.name, "login")
+        self.assertDenied(self.tuser.name, "login", self.client.name)
 
 
     def test_deny_non_rule_host(self):
@@ -410,6 +460,101 @@ class PamHbacTestDirect(PamHbacTestCase):
                           self.rule_svc,
                           self.nonrule_client.name)
 
+
+class PamHbacTestGroup(PamHbacTestCase):
+    def setUp(self):
+        super(PamHbacTestGroup, self).setUp()
+        self.allow_all = IpaClientlessPamHbacRule(self.driver, "allow_all")
+        self.allow_all.disable()
+
+        # Add a user who is part of a hostgroup we'll reference from
+        # the rule
+        self.tuser = IpaClientlessPamHbacUser(self.driver, "tuser")
+        self.tuser.add()
+        self.tgroup = IpaClientlessPamHbacUserGroup(self.driver, "tgroup")
+        self.tgroup.add()
+        self.tgroup.add_member(self.tuser.name)
+
+        # Add a client who is part of a hostgroup we'll reference from
+        # the rule
+        self.client = IpaClientlessPamHbacHost(self.driver, "rulehost")
+        self.client.add()
+        self.rule_hg = IpaClientlessPamHbacHostGroup(self.driver,
+                                                     "rulehostgroup")
+        self.rule_hg.add()
+        self.rule_hg.add_member(self.client.name)
+
+        # Add a client for negative testing
+        self.nonrule_client = IpaClientlessPamHbacHost(self.driver,
+                                                       "nonrulehost")
+        self.nonrule_client.add()
+        self.non_rule_hg = IpaClientlessPamHbacHostGroup(self.driver,
+                                                         "nonrulehostgroup")
+        self.non_rule_hg.add()
+        self.non_rule_hg.add_member(self.nonrule_client.name)
+
+        self.rule_svc = "vsftpd"    # Built-in service, safe to assume it's here
+        self.rule_svc_group = "ftp" # Built-in service group, safe to assume it's here
+
+        self.trule = IpaClientlessPamHbacRule(self.driver, "group_rule")
+        self.trule.add()
+        self.trule.add_svc(svcgroup = self.rule_svc_group)
+        self.trule.add_user(usergroup = self.tgroup.name)
+        self.trule.add_host(hostgroup = self.rule_hg.name)
+
+
+    def tearDown(self):
+        self.allow_all.enable()
+        self.tuser.remove()
+        self.tgroup.remove()
+        self.client.remove()
+        self.rule_hg.remove()
+        self.nonrule_client.remove()
+        self.non_rule_hg.remove()
+        self.trule.remove()
+        super(PamHbacTestGroup, self).tearDown()
+
+
+    def test_allow_rule_group_user(self):
+        """
+        The user who is a member of a group assigned to the rule should
+        be allowed to log in the host that is a member of the hostgroup
+        referenced in the rule using a service that is a member of a
+        service group referenced in the rule
+        """
+        self.assertAllowed(self.tuser.name, self.rule_svc, self.client.name)
+        # Sanity-check: Access must be denied if the rule is disabled
+        self.trule.disable()
+        self.assertDenied(self.tuser.name, self.rule_svc, self.client.name)
+        self.trule.enable()
+
+    def test_deny_non_rule_group_user(self):
+        """
+        A user who is a not member of a group assigned to the rule should
+        not be allowed to log in the host that is a member of the hostgroup
+        referenced in the rule using a service that is a member of a
+        service group referenced in the rule
+        """
+        self.assertDenied("admin", self.rule_svc, self.client.name)
+
+
+    def test_deny_non_rule_svc(self):
+        """
+        The user who is assigned to the rule should not be allowed to log in
+        the host referenced in the rule using a different service than
+        the one referenced in the rule via svcgroup
+        """
+        self.assertDenied(self.tuser.name, "login", self.client.name)
+
+    def test_deny_non_rule_host(self):
+        """
+        The user who is assigned to the rule should not be allowed to log
+        in to another host than the one referenced in the rule using the
+        service referenced in the rule
+        """
+        self.assertDenied(self.tuser.name,
+                          self.rule_svc,
+                          self.nonrule_client.name)
 
 class PamHbacTestErrorConditions(PamHbacTestCase):
     def setUp(self):
