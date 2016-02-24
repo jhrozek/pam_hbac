@@ -1,1 +1,2 @@
-admins:x:5678:sup_groups
+admins:x:5678:
+tgroup:x:6789:

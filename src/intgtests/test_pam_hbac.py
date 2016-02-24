@@ -14,9 +14,10 @@ import pypamtest
 
 class IpaClientlessTestDriver(object):
     def __init__(self,
-                 hostname, password,
+                 hostname, realm, password,
                  username='admin', insecure=False):
         self.hostname = hostname
+        self.realm = realm
         self.password = password
         self.username = username
         self.referer = "https://" + self.hostname + "/ipa"
@@ -83,32 +84,103 @@ class IpaClientlessTestDriver(object):
         os.unlink(self.ca_cert)
 
 
-    def run_cmd(self, method, params):
-        cmd = json.dumps({"method":method, "params":[params,{}], "id":"0"})
+    def run_cmd(self, method, params, args={}):
+        # FIXME - create the list from positional arguments only here
+        cmd = json.dumps({"method":method, "params":[params, args], "id":"0"})
         return self._json_request(cmd)
+
+class IpaClientlessPamHbacHost(object):
+    def __init__(self, driver, name):
+        self.driver = driver
+        self.name = "%s.%s" % (name, self.driver.realm)
+
+
+    def add(self):
+        args = dict()
+        args['force'] = 'true'
+        self.driver.run_cmd("host_add", [ self.name ], args)
+
+
+    def remove(self):
+        self.driver.run_cmd("host_del", [ self.name ])
+
+class IpaClientlessPamHbacUser(object):
+    def __init__(self, driver, name):
+        self.driver = driver
+        self.name = name
+
+
+    def add(self, first=None, last=None):
+        args = dict()
+        if not first:
+            first = self.name
+        if not last:
+            last = self.name
+
+        args['cn'] = "%s %s" % (first, last)
+        args['displayname'] = "%s %s" % (first, last)
+        args['gecos'] = "%s %s" % (first, last)
+        args['givenname'] = first
+        args['sn'] = last
+        args['initials'] = "%s%s" % (first[0], last[0])
+        args['krbprincipalname'] = "%s@%s" % (self.name, self.driver.realm)
+        args['noprivate'] = 'false'
+        args['random'] = 'false'
+
+        self.driver.run_cmd("user_add", [ self.name ], args)
+
+
+    def remove(self):
+        self.driver.run_cmd("user_del", [ self.name ])
+
 
 class IpaClientlessPamHbacRule(object):
     def __init__(self, driver, name):
         self.driver = driver
         self.name = name
 
-    def create(self, usercat=None, hostcat=None, servicecat=None):
-        pass
 
-    def add_svc(self, svcs=None, svcgroups=None):
-        pass
+    def add(self):
+        self.driver.run_cmd("hbacrule_add", [ self.name ])
 
-    def add_user(self, users=None, usergroups=None):
-        pass
+    def remove(self):
+        self.driver.run_cmd("hbacrule_remove", [ self.name ])
 
-    def add_host(self, hosts=None, hostgroups=None):
-        pass
+
+    def add_svc(self, svc=None, svcgroup=None):
+        args =  { }
+        if svc:
+            args['hbacsvc'] = [ svc ]
+        if svcgroup:
+            args['hbacsvcgroup'] = [ svcgroup ]
+        self.driver.run_cmd("hbacrule_add_service", [ self.name ], args)
+
+
+    def add_user(self, user=None, usergroup=None):
+        args =  { }
+        if user:
+            args['user'] = [ user ]
+        if usergroup:
+            args['usergroup'] = [ usergroup ]
+        self.driver.run_cmd("hbacrule_add_user", [ self.name ], args)
+
+
+    def add_host(self, host=None, hostgroup=None):
+        args =  { }
+        if host:
+            args['host'] = [ host ]
+        if hostgroup:
+            args['hostgroup'] = [ hostgroup ]
+        self.driver.run_cmd("hbacrule_add_host", [ self.name ], args)
+
 
     def enable(self):
         self.driver.run_cmd("hbacrule_enable", [ self.name ])
 
+
     def disable(self):
         self.driver.run_cmd("hbacrule_disable", [ self.name ])
+
 
 class PamHbacTestCase(unittest.TestCase):
     def setUp(self):
@@ -133,12 +205,24 @@ class PamHbacTestCase(unittest.TestCase):
             os.unlink(svc_file.name)
 
 
-    def assertAllowed(self, user, service):
-        self.assertPamReturns(user, service, 0)
+    def assertPamReturnsHost(self, user, service, rc, host=None):
+        old_hostname = None
+        if host != None:
+            old_hostname = os.environ["HOST_NAME"]
+            os.environ["HOST_NAME"] = host
+        try:
+            self.assertPamReturns(user, service, rc)
+        finally:
+            if old_hostname:
+                os.environ["HOST_NAME"] = old_hostname
 
 
-    def assertDenied(self, user, service):
-        self.assertPamReturns(user, service, 6)
+    def assertAllowed(self, user, service, host=None):
+        self.assertPamReturnsHost(user, service, 0, host)
+
+
+    def assertDenied(self, user, service, host=None):
+        self.assertPamReturnsHost(user, service, 6, host)
 
 
     def _run_pwrap_test(self, tc, user, service):
@@ -150,6 +234,10 @@ class PamHbacTestCase(unittest.TestCase):
         if ipa_hostname == None:
             raise ValueError("IPA server hostname to test against is not set!\n")
 
+        ipa_realm = os.getenv("IPA_REALM")
+        if ipa_realm == None:
+            raise ValueError("IPA server realm to test against is not set!\n")
+
         admin_password = os.getenv("ADMIN_PASSWORD")
         if admin_password == None:
             raise ValueError("IPA admin password is not set!\n")
@@ -159,6 +247,7 @@ class PamHbacTestCase(unittest.TestCase):
             insecure = True
 
         self.driver = IpaClientlessTestDriver(ipa_hostname,
+                                              ipa_realm,
                                               admin_password,
                                               insecure=True)
 
@@ -243,11 +332,84 @@ class PamHbacTestAllowAll(PamHbacTestCase):
         rule.enable()
         self.assertAllowed("admin", "sshd")
 
+
     def test_allow_all_disabled(self):
         rule = IpaClientlessPamHbacRule(self.driver, "allow_all")
         rule.disable()
         self.assertDenied("admin", "sshd")
         rule.enable()
+
+
+class PamHbacTestDirect(PamHbacTestCase):
+    def setUp(self):
+        super(PamHbacTestDirect, self).setUp()
+        self.allow_all = IpaClientlessPamHbacRule(self.driver, "allow_all")
+        self.allow_all.disable()
+
+        self.tuser = IpaClientlessPamHbacUser(self.driver, "tuser")
+        self.tuser.add()
+
+        self.client = IpaClientlessPamHbacHost(self.driver, "rulehost")
+        self.client.add()
+        self.nonrule_client = IpaClientlessPamHbacHost(self.driver,
+                                                       "nonrulehost")
+        self.nonrule_client.add()
+
+        self.rule_svc = "sshd" # Built-in service, safe to assume it's here
+
+        self.trule = IpaClientlessPamHbacRule(self.driver, "trule")
+        self.trule.add()
+        # it would be better to pass the objects, not just strings maybe?
+        self.trule.add_svc(self.rule_svc)
+        self.trule.add_user(self.tuser.name)
+        self.trule.add_host(self.client.name)
+
+
+    def tearDown(self):
+        super(PamHbacTestDirect, self).tearDown()
+        self.allow_all.enable()
+        self.tuser.remove()
+        self.client.remove()
+        self.nonrule_client.remove()
+        self.trule.remove()
+
+
+    def test_allow_rule_user(self):
+        """
+        The user who is assigned to the rule should be allowed to log in the host
+        referenced in the rule using the service referenced in the rule
+        """
+        self.assertAllowed(self.tuser.name, self.rule_svc, self.client.name)
+
+
+    def test_deny_non_rule_user(self):
+        """
+        A different user who is assigned to the rule should not be allowed to
+        log in the host referenced in the rule using the service referenced
+        in the rule
+        """
+        self.assertDenied("admin", self.rule_svc, self.client.name)
+
+
+    def test_deny_non_rule_svc(self):
+        """
+        The user who is assigned to the rule should not be allowed to log in
+        the host referenced in the rule using a different service than
+        the one referenced in the rule
+        """
+        self.assertDenied(self.tuser.name, "login")
+
+
+    def test_deny_non_rule_host(self):
+        """
+        The user who is assigned to the rule should not be allowed to log
+        in to another host than the one referenced in the rule using the
+        service referenced in the rule
+        """
+        self.assertDenied(self.tuser.name,
+                          self.rule_svc,
+                          self.nonrule_client.name)
+
 
 class PamHbacTestErrorConditions(PamHbacTestCase):
     def setUp(self):
@@ -278,12 +440,7 @@ class PamHbacTestErrorConditions(PamHbacTestCase):
         """"
         Unknown host should just deny access
         """
-        old_hostname = os.environ["HOST_NAME"]
-        os.environ["HOST_NAME"] = "no_such_host"
-        try:
-            self.assertPamReturns("admin", "sshd", 6)
-        finally:
-            os.environ["HOST_NAME"] = old_hostname
+        self.assertDenied("admin", "sshd", "no_such_host")
 
 
 if __name__ == "__main__":
