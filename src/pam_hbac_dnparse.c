@@ -15,6 +15,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#define _GNU_SOURCE     /* strndup() */
+
 #include <string.h>
 #include <ctype.h>
 #include <stdbool.h>
