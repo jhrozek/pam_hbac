@@ -223,11 +223,14 @@ __wrap_ldap_sasl_bind_s(LDAP *ld, const char *dn, const char *mechanism,
 }
 
 int
+__real_ldap_unbind_ext(LDAP *ld, LDAPControl *sctrls[],
+                       LDAPControl *cctrls[]);
+int
 __wrap_ldap_unbind_ext(LDAP *ld, LDAPControl *sctrls[],
                        LDAPControl *cctrls[])
 {
     assert_non_null(ld);
-    ldap_destroy(ld);
+    __real_ldap_unbind_ext(ld, NULL, NULL);
 
     return 0;
 }
