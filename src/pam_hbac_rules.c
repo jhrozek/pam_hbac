@@ -88,7 +88,23 @@ static struct ph_search_ctx rule_search_obj = {
 };
 
 static char *
-create_rules_filter(pam_handle_t *pamh, struct ph_entry *host)
+create_host_dn(const char *fqdn, const char *basedn)
+{
+    char *dn;
+    int ret;
+
+    ret = asprintf(&dn, "fqdn=%s,cn=computers,cn=accounts,%s", fqdn, basedn);
+    if (ret < 0) {
+        return NULL;
+    }
+
+    return dn;
+}
+
+static char *
+create_rules_filter(pam_handle_t *pamh,
+                    const char *base_dn,
+                    struct ph_entry *host)
 {
     char *prev;
     char *filter;
@@ -96,6 +112,7 @@ create_rules_filter(pam_handle_t *pamh, struct ph_entry *host)
     size_t i;
     struct ph_attr *hostname;
     struct ph_attr *hostgroups;
+    char *host_dn;
 
     hostname = ph_entry_get_attr(host, PH_MAP_HOST_FQDN);
     if (hostname == NULL || hostname->nvals != 1) {
@@ -103,12 +120,19 @@ create_rules_filter(pam_handle_t *pamh, struct ph_entry *host)
         return NULL;
     }
 
+    host_dn = create_host_dn((const char *)hostname->vals[0]->bv_val,
+                             base_dn);
+    if (host_dn == NULL) {
+        logger(pamh, LOG_ERR, "Cannot construct host DN\n");
+        return NULL;
+    }
+
     ret = asprintf(&filter, "&(%s=%s)(%s=%s)(|(%s=%s)(%s=%s)",
                    ph_rule_attrs[PH_MAP_RULE_ENABLED_FLAG], PAM_HBAC_TRUE_VALUE,
                    ph_rule_attrs[PH_MAP_RULE_ACCESS_RULE_TYPE], PAM_HBAC_ALLOW_VALUE,
                    ph_rule_attrs[PH_MAP_RULE_HOST_CAT], PAM_HBAC_ALL_VALUE,
-                   ph_rule_attrs[PH_MAP_RULE_MEMBER_HOST],
-                   (const char *) hostname->vals[0]->bv_val);
+                   ph_rule_attrs[PH_MAP_RULE_MEMBER_HOST], host_dn);
+    free(host_dn);
     if (ret < 0) {
         return NULL;
     }
@@ -469,7 +493,7 @@ ph_get_hbac_rules(struct pam_hbac_ctx *ctx,
         return EINVAL;
     }
 
-    rule_filter = create_rules_filter(ctx->pamh, targethost);
+    rule_filter = create_rules_filter(ctx->pamh, ctx->pc->search_base, targethost);
     if (rule_filter == NULL) {
         logger(ctx->pamh, LOG_CRIT, "Cannot create filter\n");
         return ENOMEM;

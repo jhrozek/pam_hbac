@@ -65,6 +65,7 @@ mock_ph_search(int ret, struct ph_entry **entries)
 
 struct get_rules_ctx {
     struct pam_hbac_ctx ctx;
+    struct pam_hbac_config pc;
     struct ph_entry *targethost;
     struct hbac_rule **rules;
 };
@@ -78,6 +79,10 @@ test_get_rules_setup(void **state)
     if (test_ctx == NULL) {
         return 1;
     }
+
+    test_ctx->pc.search_base = "rules.test";
+
+    test_ctx->ctx.pc = &test_ctx->pc;
 
     test_ctx->targethost = ph_entry_alloc(PH_MAP_HOST_END);
     if (test_ctx->targethost == NULL) {
