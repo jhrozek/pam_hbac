@@ -14,10 +14,10 @@ import pypamtest
 
 class IpaClientlessTestDriver(object):
     def __init__(self,
-                 hostname, realm, password,
+                 hostname, domain, password,
                  username='admin', insecure=False):
         self.hostname = hostname
-        self.realm = realm
+        self.domain = domain
         self.password = password
         self.username = username
         self.referer = "https://" + self.hostname + "/ipa"
@@ -92,7 +92,7 @@ class IpaClientlessTestDriver(object):
 class IpaClientlessPamHbacHost(object):
     def __init__(self, driver, name):
         self.driver = driver
-        self.name = "%s.%s" % (name, self.driver.realm)
+        self.name = "%s.%s" % (name, self.driver.domain)
 
 
     def add(self):
@@ -147,7 +147,7 @@ class IpaClientlessPamHbacUser(object):
         args['givenname'] = first
         args['sn'] = last
         args['initials'] = "%s%s" % (first[0], last[0])
-        args['krbprincipalname'] = "%s@%s" % (self.name, self.driver.realm)
+        args['krbprincipalname'] = "%s@%s" % (self.name, self.driver.domain.upper())
         args['noprivate'] = 'false'
         args['random'] = 'false'
 
@@ -235,7 +235,7 @@ class PamHbacTestCase(unittest.TestCase):
         self.driver.fetch_cert(self.pwrap_runtimedir)
 
         self.client_shortname = "pamhbacclient"
-        self.client_hostname = "pamhbacclient" + "." + self.driver.realm
+        self.client_hostname = "pamhbacclient" + "." + self.driver.domain
         self.host = IpaClientlessPamHbacHost(self.driver,
                                              self.client_shortname)
         self.host.add()
@@ -287,9 +287,9 @@ class PamHbacTestCase(unittest.TestCase):
         if ipa_hostname == None:
             raise ValueError("IPA server hostname to test against is not set!\n")
 
-        ipa_realm = os.getenv("IPA_REALM")
-        if ipa_realm == None:
-            raise ValueError("IPA server realm to test against is not set!\n")
+        ipa_domain = os.getenv("IPA_DOMAIN")
+        if ipa_domain == None:
+            raise ValueError("IPA server domain to test against is not set!\n")
 
         admin_password = os.getenv("ADMIN_PASSWORD")
         if admin_password == None:
@@ -300,7 +300,7 @@ class PamHbacTestCase(unittest.TestCase):
             insecure = True
 
         self.driver = IpaClientlessTestDriver(ipa_hostname,
-                                              ipa_realm,
+                                              ipa_domain,
                                               admin_password,
                                               insecure=True)
 
