@@ -243,7 +243,7 @@ pam_hbac(enum pam_hbac_actions action, pam_handle_t *pamh,
     struct hbac_eval_req *eval_req = NULL;
     struct hbac_rule **rules = NULL;
     enum hbac_eval_result hbac_eval_result;
-    struct hbac_info *info;
+    struct hbac_info *info = NULL;
 
     (void) pam_flags; /* unused */
 
@@ -400,6 +400,7 @@ done:
     logger(pamh, LOG_DEBUG,
            "returning [%d]: %s", pam_ret, pam_strerror(pamh, pam_ret));
 
+    hbac_free_info(info);
     ph_free_hbac_rules(rules);
     ph_free_hbac_eval_req(eval_req);
     ph_free_user(user);
