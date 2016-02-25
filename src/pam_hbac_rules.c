@@ -509,7 +509,7 @@ ph_get_hbac_rules(struct pam_hbac_ctx *ctx,
     }
 
     num_rule_entries = ph_num_entries(rule_entries);
-    rules = calloc(num_rule_entries + 1, sizeof(struct hbac_rule));
+    rules = calloc(num_rule_entries + 1, sizeof(struct hbac_rule *));
     if (rules == NULL) {
         ph_entry_array_free(rule_entries);
         logger(ctx->pamh, LOG_CRIT, "Cannot allocate entries\n");
