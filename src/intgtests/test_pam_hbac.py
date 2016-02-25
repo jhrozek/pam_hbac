@@ -16,11 +16,14 @@ import pypamtest
 class IpaClientlessTestDriver(object):
     def __init__(self,
                  hostname, domain, password,
+                 bind_dn, bind_pw,
                  username='admin', insecure=False):
         self.hostname = hostname
         self.domain = domain
         self.password = password
         self.username = username
+        self.bind_dn = bind_dn
+        self.bind_pw = bind_pw
         self.referer = "https://" + self.hostname + "/ipa"
 
         self.cj = CookieJar()
@@ -277,9 +280,19 @@ class PamHbacTestCase(unittest.TestCase):
         if insecure is not None:
             insecure = True
 
+        bind_dn = os.getenv("BIND_DN")
+        if bind_dn is None:
+            raise ValueError("The bind user is not set\n")
+
+        bind_pw = os.getenv("BIND_PW")
+        if bind_pw is None:
+            raise ValueError("The bind password is not set\n")
+
         self.driver = IpaClientlessTestDriver(ipa_hostname,
                                               ipa_domain,
                                               admin_password,
+                                              bind_dn,
+                                              bind_pw,
                                               insecure=True)
 
     def _pwrap_setup(self):
@@ -318,8 +331,8 @@ class PamHbacTestCase(unittest.TestCase):
         confd = {}
         confd['URI'] = "ldap://" + self.driver.hostname
         confd['BASE'] = base_dn
-        confd['BIND_DN'] = "uid=admin,cn=users,cn=accounts," + base_dn
-        confd['BIND_PW'] = self.driver.password
+        confd['BIND_DN'] = self.driver.bind_dn
+        confd['BIND_PW'] = self.driver.bind_pw
         confd['CA_CERT'] = self.driver.ca_cert
         confd['HOST_NAME'] = host
 

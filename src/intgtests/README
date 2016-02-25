@@ -7,20 +7,26 @@ for tests, set up pam_hbac with the help of pam_wrapper and run tests.
 For more information about the JSON-RPC communication, see:
     https://vda.li/en/posts/2015/05/28/talking-to-freeipa-api-with-sessions/
 
-To run the tests, point them at your IPA server:
-    make intgcheck IPA_HOSTNAME="unidirect.ipa.test" \
-                   IPA_DOMAIN="ipa.test" \
-                   IPA_BASEDN="dc=ipa,dc=test"
-                   ADMIN_PASSWORD="blablabla" \
-                   INSECURE_TESTS=1
-
-The parameter meaning is as follows:
+To run the tests, point them at your IPA server and define the following
+parameters:
     IPA_HOSTNAME - the host name of your IPA server
     IPA_DOMAIN - the domain of your IPA server.
     IPA_BASEDN - the base DN of your IPA server
+    BIND_DN - the user pam_hbac will be authenticating as
+    BIND_PW - the password of the bind user
     ADMIN_PASSWORD - the password of the 'admin' user on your IPA server
     INSECURE_TESTS - define this to '1' if your system doesn't trust the
                      IPA's CA. This parameter is used to establish
                      communication over JSON-RPC towards the IPA server,
                      which is used to create objects on the server, not
                      during the pam_hbac tests themselves
+
+For example:
+    make intgcheck IPA_HOSTNAME="unidirect.ipa.test" \
+                   IPA_DOMAIN="ipa.test" \
+                   IPA_BASEDN="dc=ipa,dc=test"
+                   ADMIN_PASSWORD="blablabla" \
+                   BIND_DN=uid=hbac,cn=sysaccounts,cn=etc,dc=ipa,dc=test \
+                   BIND_PW=Secret123 \
+                   INSECURE_TESTS=1
+
