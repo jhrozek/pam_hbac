@@ -490,7 +490,6 @@ ph_get_hbac_rules(struct pam_hbac_ctx *ctx,
     size_t num_rules;
 
     if (ctx == NULL || targethost == NULL || _rules == NULL) {
-        logger(ctx->pamh, LOG_ERR, "Invalid input\n");
         return EINVAL;
     }
 
