@@ -87,6 +87,7 @@ test_get_rules_setup(void **state)
     test_ctx->targethost = ph_entry_alloc(PH_MAP_HOST_END);
     if (test_ctx->targethost == NULL) {
         free(test_ctx);
+        return 1;
     }
 
     *state = test_ctx;
