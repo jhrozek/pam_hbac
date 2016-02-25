@@ -84,11 +84,13 @@ eval_req_test_setup(void **state)
                                                            NULL);
     if (test_ctx->targethost->attrs[PH_MAP_HOST_OC] == NULL ||
             test_ctx->targethost->attrs[PH_MAP_HOST_FQDN] == NULL) {
+        ph_entry_free(test_ctx->targethost);
         return 1;
     }
 
     test_ctx->service = ph_entry_alloc(PH_MAP_SVC_END);
     if (test_ctx->service == NULL) {
+        ph_entry_free(test_ctx->targethost);
         return 1;
     }
     test_ctx->service->attrs[PH_MAP_SVC_OC] = mock_ph_attr("objectClass",
@@ -99,6 +101,8 @@ eval_req_test_setup(void **state)
                                                          NULL);
     if (test_ctx->service->attrs[PH_MAP_SVC_OC] == NULL ||
             test_ctx->service->attrs[PH_MAP_SVC_NAME] == NULL) {
+        ph_entry_free(test_ctx->service);
+        ph_entry_free(test_ctx->targethost);
         return 1;
     }
 
