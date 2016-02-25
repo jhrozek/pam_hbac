@@ -70,6 +70,7 @@ mock_user_obj(const char *name,
         user->group_names[i] = strdup(v);
         if (user->group_names[i] == NULL) {
             ph_free_user(user);
+            va_end(ap);
             return NULL;
         }
     }
