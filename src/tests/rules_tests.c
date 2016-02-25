@@ -178,8 +178,6 @@ test_get_rules_allow_all(void **state)
                      NULL, NULL, HBAC_CATEGORY_ALL,
                      NULL, NULL, HBAC_CATEGORY_ALL,
                      NULL, NULL, HBAC_CATEGORY_ALL);
-
-    ph_entry_array_free(ldap_rules);
 }
 
 static void
@@ -244,8 +242,6 @@ test_get_rules_user_svc_host(void **state)
                      exp_names, NULL, 0,
                      exp_services, NULL, 0,
                      exp_hosts, NULL, 0);
-
-    ph_entry_array_free(ldap_rules);
 }
 
 static void
@@ -283,6 +279,9 @@ test_get_rules_groups(void **state)
     assert_int_equal(ret, 0);
     /* FIXME - add hostgroups and check them in the filter */
 
+    /* Intentionally don't free ldap_rules here, let the ph_get_hbac_rules()
+     * function free it
+     */
     ldap_rules = ph_entry_array_alloc(PH_MAP_RULE_END, 1);
     assert_non_null(ldap_rules);
     ret = mock_ph_rule(ldap_rules[0],
@@ -305,8 +304,6 @@ test_get_rules_groups(void **state)
                      NULL, exp_group_names, 0,
                      NULL, exp_svc_groups, 0,
                      NULL, exp_host_groups, 0);
-
-    ph_entry_array_free(ldap_rules);
 }
 
 int

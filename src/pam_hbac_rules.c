@@ -527,6 +527,7 @@ ph_get_hbac_rules(struct pam_hbac_ctx *ctx,
         num_rules++;
     }
 
+    ph_entry_array_free(rule_entries);
     *_rules = rules;
     return 0;
 }
