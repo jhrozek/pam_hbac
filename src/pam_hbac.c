@@ -37,9 +37,6 @@
 
 #define CHECK_AND_RETURN_PI_STRING(s) ((s != NULL && *s != '\0')? s : "(not available)")
 
-#define PAM_DEBUG_ARG       0x0001
-
-#define PH_OPT_DEBUG       "debug"
 #define PH_OPT_CONFIG      "config="
 
 enum pam_hbac_actions {
@@ -72,10 +69,7 @@ parse_args(pam_handle_t *pamh,
     /* step through arguments */
     for (; argc-- > 0; ++argv) {
         /* generic options */
-        if (strcmp(*argv, PH_OPT_DEBUG) == 0) {
-            flags |= PAM_DEBUG_ARG;
-            logger(pamh, LOG_DEBUG, "pam_debug found");
-        } else if (strncmp(*argv, PH_OPT_CONFIG, strlen(PH_OPT_CONFIG)) == 0) {
+        if (strncmp(*argv, PH_OPT_CONFIG, strlen(PH_OPT_CONFIG)) == 0) {
             if (*(*argv+strlen(PH_OPT_CONFIG)) == '\0') {
                 return EINVAL;
             } else {
