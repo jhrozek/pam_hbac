@@ -172,6 +172,7 @@ __wrap_ph_search(pam_handle_t *pamh,
                                                            "ipaHbacService",
                                                            NULL);
         if (entry_list[0]->attrs[PH_MAP_SVC_OC] == NULL) {
+            ph_entry_array_free(entry_list);
             return ENOMEM;
         }
     } else {
