@@ -468,6 +468,7 @@ entry_to_hbac_rule(pam_handle_t *pamh,
     ok = hbac_rule_is_complete(rule, &missing_attrs);
     if (!ok) {
         logger(pamh, LOG_ERR, "Missing attributes: %X\n", missing_attrs);
+        free_hbac_rule(rule);
         return EFAULT;
     }
 
