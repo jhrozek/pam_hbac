@@ -102,7 +102,7 @@ get_key_value(pam_handle_t *pamh,
               const char **_value)
 {
     char *sep;
-    const char *key;
+    char *key;
     char *value;
     char *l;
 
@@ -117,7 +117,9 @@ get_key_value(pam_handle_t *pamh,
     key = strdup(strip(l));
     value = strdup(strip(sep+1));
     free(l);
-    if (!key || !value) {
+    if (key == NULL || value == NULL) {
+        free(key);
+        free(value);
         return ENOMEM;
     }
 
