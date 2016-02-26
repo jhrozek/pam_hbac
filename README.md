@@ -10,29 +10,32 @@ SSSD can't be installed.
 Supported platforms
 ===================
 pam_hbac was tested on the following operating systems and releases:
-    * Linux (RHEL-5 and newer)
-        * I tested RHEL-5 and newer Red Hat based distributions. Ubuntu is
-          used as a CI platform, but no functional testing was done there.
+  * Linux (RHEL-5 and newer)
+    * I tested RHEL-5 and newer Red Hat based distributions. Ubuntu is
+      used as a CI platform, but no functional testing was done there.
 
 Building from source
 ====================
 To build it, make sure the dependencies are installed. Except the usual
-build dependencies such as autotools, pkg-config or a compiler, the only
+build dependencies such as `autotools`, `pkg-config` or a compiler, the only
 required packages are the LDAP and PAM development libraries and a UTF-8
-library. Currently libunistring and glib are supported as UTF-8 libraries,
+library. Currently `libunistring` and `glib` are supported as UTF-8 libraries,
 with glib being the default.
 
-In order to build man pages, the tool a2x is an optional build dependency.
+In order to build man pages, the tool `a2x` is an optional build dependency.
 
-Unit tests require the cmocka unit test framework as well as nss_wrapper and
-pam_wrapper tools from the cwrap.org project.
+The Unit tests require the [cmocka](https://cmocka.org/) unit test
+framework as well as `nss_wrapper` and `pam_wrapper` tools from the
+[cwrap.org](https://cwrap.org/) project.
 
 Documentation
 =============
-Please see the pam_hbac(5) man page distributed along with pam_hbac for
-documentation on setting up the module itself. The module is configured
-with a configuration file as well, its options are described in a separate
-man page pam_hbac.conf(5).
+Please see the
+[pam_hbac(8)](https://github.com/jhrozek/pam_hbac/blob/master/doc/pam_hbac.8.txt)
+man page distributed along with pam_hbac for documentation on setting up
+the module itself. The module is configured with a configuration file as
+well, its options are described in a separate man page
+[pam_hbac.conf(5)](https://github.com/jhrozek/pam_hbac/blob/master/doc/pam_hbac.conf.5.txt)
 
 Build Status
 ============
