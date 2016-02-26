@@ -87,7 +87,7 @@ AC_SUBST(UNICODE_LIBS)
 
 # Optional build dependencies - man pages generation
 CHECK_ASCIIDOC_TOOLS
-AM_CONDITIONAL([HAVE_MANPAGES], [test "x$A2X" != "xno"])
+AM_CONDITIONAL([HAVE_MANPAGES], [test "x$A2X" != "x"])
 
 # Optional build dependencies - Unit tests
 AM_CHECK_CMOCKA

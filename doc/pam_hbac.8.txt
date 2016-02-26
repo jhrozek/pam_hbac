@@ -31,5 +31,15 @@ system and version. On most systems, the PAM configuration would be simply:
 account     sufficient    pam_localuser.so
 account     required      pam_hbac.so
 
-Adding the *pam_localuser.so* module ensures that pam_hbac wouldn't be
+Adding the `pam_localuser.so` module ensures that pam_hbac wouldn't be
 called for local users defined in /etc/passwd.
+
+PLATFORM-SPECIFIC DOCUMENTATION
+-------------------------------
+Your distribution should contain files specific to a certain platform. The files
+are named README.$platform (for example, README.RHEL-5) and are typically located
+in a docs directory. On Linux, that would be `/usr/share/doc/pam_hbac/`.
+
+SEE ALSO
+--------
+* *pam_hbac.conf(5)* - The configuration file of the pam_hbac.so access module

@@ -1,0 +1,73 @@
+pam_hbac.conf(5)
+================
+:revdate: 2016-02-26
+
+NAME
+----
+pam_hbac.conf - The configuration file of the pam_hbac.so access module
+
+FILE FORMAT
+-----------
+The pam_hbac.conf configuration uses a simple key=value format. Whitespace
+on the beginning of the line, at the end of the line and around the equal
+sign is ignored. The case of the keys does not matter. The values should not
+be quoted as the quotes are not removed and the values are used verbatim.
+
+CONFIGURATION OPTIONS
+---------------------
+ * URI - the LDAP URI pointing to the IPA server. At the moment, only one
+ value is supported. This is a required option.
+    ** Example: URI = ldap://dc.ipa.domain.test
+
+ * BASE - the LDAP search base of your IPA server. This is a required option.
+    ** Example: BASE = dc=ipa,dc=domain,dc=test
+
+ * BIND_DN - The default bind DN to use for performing LDAP searches. It
+ is recommended to create a bind user (see below). This is a required option.
+    ** Example: BIND_DN = uid=hbac,cn=sysaccounts,cn=etc,dc=ipa,dc=domain,dc=test
+
+ * BIND_PW - The cleartext password of the account specified in the
+ `BIND_DN` option. Please note that the pam_hbac.conf file is normally
+ world-readable, so please don't include a valuable account's password
+ here. This is a required option.
+    ** Example: BIND_PW = thisisasecret
+
+ * HOST_NAME - the host name of the client machine. You should only set
+ this option if *hostname(1)* reports a different host name than this client
+ machine has registered with the IPA server
+    ** Example: HOST_NAME = client.ipa.domain.test
+
+ * CA_CERT - Specifies the file that contains certificates for all of the
+ Certificate Authorities that pam_hbac will recognize. If this option is not
+ set, libldap defaults will be used. Most configurations won't need to set this
+ option as you'll probably want to configure the CA that issued the IPA server
+ certificate system-wide.
+    ** Example: CA_CERT = /etc/openldap/cacerts/ipa.crt
+
+CREATING A BIND USER
+--------------------
+Most of the data that pam_hbac reads from the IPA server requires an
+authenticated connection. Because at the moment, only a simple bind with a
+DN and a password is supported, you might want to create a special bind user
+for pam_hbac. To do so, prepare an LDIF file with the following contents:
+
+[source,bash]
+dn: uid=hbac,cn=sysaccounts,cn=etc,$DC
+objectClass: account
+objectClass: simplesecurityobject
+objectClass: top
+uid: sudo
+userPassword: $PASSWORD
+
+Replace the $PASSWORD value with the desired password of the bind user
+and $DC with the base DN of your IPA server. Then add this LDIF to the IPA server:
+
+[source,bash]
+ldapadd -ZZ -H ldap://$IPA_HOSTNAME -D"cn=Directory Manager" -W < hbac_sysuser.ldif
+
+You will be asked for the Directory Manager password.
+
+SEE ALSO
+--------
+* *pam_hbac(8)* - A PAM account module that evaluates HBAC rules stored
+on an IPA server
