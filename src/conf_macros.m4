@@ -11,9 +11,24 @@ AC_DEFUN([WITH_UNICODE_LIB],
     fi
 
     if test x"$unicode_lib" != x"libunistring" -a x"$unicode_lib" != x"glib2"; then
-		AC_MSG_ERROR([Unsupported unicode library])
+        AC_MSG_ERROR([Unsupported unicode library])
     fi
 
     AM_CONDITIONAL([WITH_LIBUNISTRING], test x"$unicode_lib" = x"libunistring")
     AM_CONDITIONAL([WITH_GLIB], test x"$unicode_lib" = x"glib2")
+  ])
+
+AC_DEFUN([WITH_PAM_MOD_DIR],
+  [ AC_ARG_WITH([pammoddir],
+                [AC_HELP_STRING([--with-pammoddir=<path>],
+                                [Where to install pam modules ($libdir/security)]
+                               )
+                ]
+               )
+
+    pammoddir="${libdir}/security"
+    if test x"$with_pammoddir" != x; then
+        pammoddir=$with_pammoddir
+    fi
+    AC_SUBST(pammoddir)
   ])

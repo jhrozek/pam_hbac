@@ -70,11 +70,7 @@ AC_CHECK_HEADERS([ldap.h],
                  ])
 
 #Set the PAM module install path
-AC_ARG_ENABLE([pammoddir], [AS_HELP_STRING([--enable-pammoddir],
-              [Where to install pam modules ($libdir/security)])],
-              [pammoddir=$enableval],
-              [pammoddir=$libdir/security])
-AC_SUBST(pammoddir)
+WITH_PAM_MOD_DIR
 
 # Detect the selected Unicode library
 WITH_UNICODE_LIB
