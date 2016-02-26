@@ -1,0 +1,47 @@
+This file describes how to configure pam_hbac for access control on a
+RHEL-5 machine.
+
+Disclaimer
+==========
+Please note that if your IPA domain does not have a trust relationship
+established with an AD server, then SSSD is capable of enforcing HBAC
+rules already. You should only use pam_hbac on RHEL-5 if you use the "legacy"
+setup with "id_provider=ldap". Typically, this setup would be created with
+the help of the "ipa-advise" tool.
+
+Prerequisities
+==============
+Please make sure your RHEL-5 client is able to resolve and authenticate
+the AD users. For example:
+    $ id administrator@win.trust.test
+    $ su - administrator@win.trust.test
+
+Make sure pam_hbac is installed on the system, either via RPM binary packages
+(preferred) or from source. On RHEL-5, the module should be installed
+to /lib64/security (or /lib/security on a 32-bit system).
+
+When building from source, the location is specified using the --with-pammoddir
+configure option, so you'll want to add:
+    --with-pammoddir=/lib64/security
+to the configure invocation.
+
+Configuration
+=============
+You need to configure the module itself, then include the module in the
+PAM stack. Please see the pam_hbac.conf(5) man page for the available
+configuration options.
+
+When the config file is created, put the following into the
+/etc/pam.d/system-auth and/or /etc/pam.d/password-auth:
+    account     [default=bad success=ok user_unknown=ignore] pam_hbac.so
+
+Since pam_hbac looks up the user entries with NSS libc library calls,
+not by looking them up in LDAP, it might be a good idea to add:
+    account     sufficient    pam_localuser.so
+Just before the line with pam_hbac.so.  Adding the pam_localuser.so
+module ensures that pam_hbac wouldn't be called for local users defined
+in /etc/passwd.
+
+Before making any changes to the PAM stack, please make sure to have a root
+console open until you finish testing of pam_hbac setup, to make sure you
+don't lock yourself out of the system!
