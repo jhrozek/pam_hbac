@@ -5,6 +5,7 @@ m4_include([src/conf_macros.m4])
 m4_include([src/build_macros.m4])
 m4_include([external/libcmocka.m4])
 m4_include([external/cwrap.m4])
+m4_include([external/a2x.m4])
 
 AC_INIT([pam_hbac],
         VERSION_NUMBER,
@@ -88,12 +89,19 @@ else
 fi
 AC_SUBST(UNICODE_LIBS)
 
+# Optional build dependencies - man pages generation
+CHECK_ASCIIDOC_TOOLS
+AM_CONDITIONAL([HAVE_MANPAGES], [test "x$A2X" != "xno"])
+
 # Optional build dependencies - Unit tests
 AM_CHECK_CMOCKA
 AM_CHECK_NSS_WRAPPER
 AM_CHECK_PAM_WRAPPER
 
 AC_CONFIG_HEADER(config.h)
-AC_CONFIG_FILES([Makefile src/intgtests/Makefile src/intgtests/test_pam_services/ph_test_svc])
+AC_CONFIG_FILES([Makefile
+                 doc/Makefile
+                 src/intgtests/Makefile
+                 src/intgtests/test_pam_services/ph_test_svc])
 AC_OUTPUT
 

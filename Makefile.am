@@ -276,6 +276,11 @@ noinst_PROGRAMS = pam_test_client
 pam_test_client_SOURCES = src/tests/pam_test_client.c
 pam_test_client_LDFLAGS = -lpam $(PAM_MISC_LIBS)
 
+### Man pages
+if HAVE_MANPAGES
+SUBDIRS += doc
+endif
+
 ### Targets
 tests: all $(check_PROGRAMS)
 

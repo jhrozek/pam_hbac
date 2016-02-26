@@ -1,0 +1,35 @@
+pam_hbac(8)
+===========
+:revdate: 2016-02-25
+
+NAME
+----
+pam_hbac - A PAM account module that evaluates HBAC rules stored on an
+IPA server
+
+SYNOPSIS
+--------
+pam_hbac.so [...]
+
+OPTIONS
+-------
+* *config=/path/to/file* - the path to a non-default config file. Most
+installations should not use this option, but rather use the config file
+at the default location. Please see the *pam_hbac.conf(5)* man page for
+more details about the configuration file.
+
+MODULE TYPES PROVIDED
+---------------------
+Only the *account* module type is supported.
+
+EXAMPLE
+-------
+Please note the particular PAM configuration depends on your operating
+system and version. On most systems, the PAM configuration would be simply:
+
+[source,bash]
+account     sufficient    pam_localuser.so
+account     required      pam_hbac.so
+
+Adding the *pam_localuser.so* module ensures that pam_hbac wouldn't be
+called for local users defined in /etc/passwd.
