@@ -15,6 +15,7 @@ pam_test_client
 .deps
 .dirstamp
 stamp-h1
+m4
 
 # http://www.gnu.org/software/autoconf
 
