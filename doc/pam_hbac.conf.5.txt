@@ -6,6 +6,10 @@ NAME
 ----
 pam_hbac.conf - The configuration file of the pam_hbac.so access module
 
+SYNOPSIS
+--------
+This man page describes the pam_hbac config file, its format and options
+
 FILE FORMAT
 -----------
 The pam_hbac.conf configuration uses a simple key=value format. Whitespace
