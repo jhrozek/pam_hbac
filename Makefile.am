@@ -291,9 +291,3 @@ tests: all $(check_PROGRAMS)
 
 intgcheck:
 	(cd src/intgtests && $(MAKE) $(AM_MAKEFLAGS) $@) || exit 1;
-
-debug:
-if HAVE_GCC
-    AM_CFLAGS += -DPAM_DEBUG
-endif
-	$(MAKE) all
