@@ -6,6 +6,7 @@ m4_include([src/build_macros.m4])
 m4_include([external/libcmocka.m4])
 m4_include([external/cwrap.m4])
 m4_include([external/a2x.m4])
+m4_include([external/ax_valgrind_check.m4])
 
 AC_INIT([pam_hbac],
         VERSION_NUMBER,
@@ -93,6 +94,7 @@ AM_CONDITIONAL([HAVE_MANPAGES], [test "x$A2X" != "x"])
 AM_CHECK_CMOCKA
 AM_CHECK_NSS_WRAPPER
 AM_CHECK_PAM_WRAPPER
+AX_VALGRIND_CHECK
 
 AC_CONFIG_HEADER(config.h)
 AC_CONFIG_FILES([Makefile

@@ -98,6 +98,8 @@ TESTS_ENVIRONMENT = \
 	. $(srcdir)/src/tests/cwrap_test_setup.sh; \
 	$(NULL)
 
+@VALGRIND_CHECK_RULES@
+
 config_tests_SOURCES = \
 		      src/tests/config-tests.c \
 		      src/pam_hbac_config.c \

@@ -43,6 +43,7 @@ pushd _build_test
 ../configure
 make
 make check
+make check-valgrind
 popd
 
 export CFLAGS="-g -O2 -Wall"
