@@ -81,6 +81,15 @@ dist_noinst_SCRIPTS = \
 		      src/tests/cwrap_test_setup.sh \
 		      $(NULL)
 
+# Documentation
+dist_doc_DATA = \
+		COPYING \
+		README.md \
+		doc/README.FreeBSD \
+		doc/README.RHEL-5 \
+		doc/README.RHEL-6 \
+		$(NULL)
+
 ### Unit tests
 TESTS_ENVIRONMENT = \
 	CWRAP_TEST_SRCDIR=$(abs_srcdir)/src/tests/cwrap \
