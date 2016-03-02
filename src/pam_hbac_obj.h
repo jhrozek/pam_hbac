@@ -26,7 +26,8 @@
 
 struct ph_user;
 
-struct ph_user *ph_get_user(const char *username);
+struct ph_user *
+ph_get_user(pam_handle_t *ph, const char *username);
 void ph_free_user(struct ph_user *user);
 
 struct ph_entry;

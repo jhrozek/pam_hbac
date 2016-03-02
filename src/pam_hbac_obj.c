@@ -120,22 +120,31 @@ get_user_int(const char *username, const size_t bufsize, const int maxgroups)
 }
 
 struct ph_user *
-ph_get_user(const char *username)
+ph_get_user(pam_handle_t *ph, const char *username)
 {
     int bufsize;
     int maxgroups;
+    struct ph_user *pu;
 
     bufsize = sysconf(_SC_GETPW_R_SIZE_MAX);
     if (bufsize == -1) {
+        logger(ph, LOG_ERR, "Cannot get the value of _SC_GETPW_R_SIZE_MAX\n");
         return NULL;
     }
 
     maxgroups = sysconf(_SC_NGROUPS_MAX);
     if (maxgroups == -1) {
+        logger(ph, LOG_ERR, "Cannot get the value of _SC_NGROUPS_MAX\n");
         return NULL;
     }
 
-    return get_user_int(username, bufsize, maxgroups);
+    pu = get_user_int(username, bufsize, maxgroups);
+    if (pu == NULL) {
+        logger(ph, LOG_ERR, "Cannot get the value of _SC_NGROUPS_MAX\n");
+        return NULL;
+    }
+
+    return pu;
 }
 
 void

@@ -39,7 +39,7 @@ test_ph_get_user_no_sup_groups(void **state)
 
     (void) state; /* unused */
 
-    u = ph_get_user("no_sup_groups");
+    u = ph_get_user(NULL, "no_sup_groups");
     assert_non_null(u);
 
     assert_non_null(u->name);
@@ -62,7 +62,7 @@ test_ph_get_user_sup_groups(void **state)
 
     (void) state; /* unused */
 
-    u = ph_get_user("sup_groups");
+    u = ph_get_user(NULL, "sup_groups");
     assert_non_null(u);
 
     assert_non_null(u->name);
@@ -87,7 +87,7 @@ test_ph_get_user_unknown(void **state)
 
     (void) state; /* unused */
 
-    u = ph_get_user("nosuchuser");
+    u = ph_get_user(NULL, "nosuchuser");
     assert_null(u);
 }
 

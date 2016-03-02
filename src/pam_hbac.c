@@ -295,7 +295,7 @@ pam_hbac(enum pam_hbac_actions action, pam_handle_t *pamh,
     /* Run info on the user from NSS, otherwise we can't support AD users since
      * they are not in IPA LDAP.
      */
-    user = ph_get_user(pi.pam_user);
+    user = ph_get_user(pamh, pi.pam_user);
     if (user == NULL) {
         logger(pamh, LOG_NOTICE,
                "Did not find user %s\n", pi.pam_user);
