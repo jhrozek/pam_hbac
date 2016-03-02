@@ -6,6 +6,11 @@ TESTS_ENVIRONMENT = \
 	$(NULL)
 
 dist_noinst_DATA = \
+		   nss_data/passwd \
+		   nss_data/group \
+		   $(NULL)
+
+dist_noinst_SCRIPTS = \
 		      intgtest_runner.sh \
 		      test_pam_hbac.py \
 		      $(NULL)

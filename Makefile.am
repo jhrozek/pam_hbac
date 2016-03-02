@@ -78,6 +78,8 @@ dist_noinst_DATA = \
 		      $(NULL)
 
 dist_noinst_SCRIPTS = \
+		      ci/semaphoreci.sh \
+		      ci/coverity.sh \
 		      src/tests/cwrap_test_setup.sh \
 		      $(NULL)
 
