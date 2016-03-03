@@ -47,7 +47,7 @@ getgroupname(gid_t gid)
 
     bufsize = sysconf(_SC_GETGR_R_SIZE_MAX);
     if (bufsize == -1) {
-        return NULL;
+        bufsize = FALLBACK_GETGR_R_SIZE_MAX;
     }
 
     buffer = malloc(bufsize);
@@ -136,13 +136,18 @@ ph_get_user(pam_handle_t *ph, const char *username)
 
     bufsize = sysconf(_SC_GETPW_R_SIZE_MAX);
     if (bufsize == -1) {
-        logger(ph, LOG_ERR, "Cannot get the value of _SC_GETPW_R_SIZE_MAX\n");
-        return NULL;
+        logger(ph, LOG_NOTICE,
+               "Cannot get the value of _SC_GETPW_R_SIZE_MAX, "
+               "using fallback\n");
+        bufsize = FALLBACK_GETPW_R_SIZE_MAX;
     }
 
     maxgroups = sysconf(_SC_NGROUPS_MAX);
     if (maxgroups == -1) {
-        logger(ph, LOG_ERR, "Cannot get the value of _SC_NGROUPS_MAX\n");
+        logger(ph, LOG_NOTICE,
+               "Cannot get the value of _SC_NGROUPS_MAX, "
+               "using fallback\n");
+        maxgroups = FALLBACK_NGROUPS_MAX;
         return NULL;
     }
 
