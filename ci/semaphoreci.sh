@@ -11,7 +11,7 @@ sudo apt-get update
 sudo pip install cpp-coveralls
 
 # BuildRequires
-sudo apt-get -y -q install gcc make automake autopoint autoconf gettext
+sudo apt-get -y -q install gcc make automake autopoint autoconf gettext valgrind
 sudo apt-get -y -q install libpam0g-dev libldap2-dev libglib2.0-dev asciidoc
 
 # Build a newer cmocka than Ubuntu 14.04 has
