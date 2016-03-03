@@ -38,24 +38,32 @@
 static char *
 getgroupname(gid_t gid)
 {
+    int ret;
+    char *buffer;
     int bufsize;
     struct group grp;
     struct group *result = NULL;
+    char *name;
 
     bufsize = sysconf(_SC_GETGR_R_SIZE_MAX);
     if (bufsize == -1) {
         return NULL;
     }
 
-    int ret;
-    char buffer[bufsize];
-
-    ret = getgrgid_r(gid, &grp, buffer, bufsize, &result);
-    if (ret != 0 || result == NULL) {
+    buffer = malloc(bufsize);
+    if (buffer == NULL) {
         return NULL;
     }
 
-    return strdup(grp.gr_name);
+    ret = getgrgid_r(gid, &grp, buffer, bufsize, &result);
+    if (ret != 0 || result == NULL) {
+        free(buffer);
+        return NULL;
+    }
+
+    name = strdup(grp.gr_name);
+    free(buffer);
+    return name;
 }
 
 struct ph_user *
