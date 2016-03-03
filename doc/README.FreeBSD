@@ -1,0 +1,43 @@
+This file describes how to configure pam_hbac for access control on a
+FreeBSD machine.
+
+Disclaimer
+==========
+Please note that recent FreeBSD versions ship with SSSD. You should only use
+pam_hbac if for some reason you can't use SSSD on your FreeBSD machine.
+
+Prerequisities
+==============
+Please make sure your RHEL-5 client is able to resolve and authenticate
+the AD users. For example:
+    $ id administrator@win.trust.test
+    $ su - administrator@win.trust.test
+A good starting point for this configuration is to run:
+    $ ipa-advise config-freebsd-nss-pam-ldapd
+on an IPA server.
+
+On FreeBSD, the third-party PAM modules are normally located in
+/usr/local/lib. When building from source, you'll want to add:
+    --with-pammoddir=/usr/local/lib/
+to the configure invocation.
+
+Configuration
+=============
+You need to configure the module itself, then include the module in the
+PAM stack. Please see the pam_hbac.conf(5) man page for the available
+configuration options.
+
+When the config file is created, put the following into /etc/pam.d/system
+or just the particular PAM service you would like secure:
+    account    required    pam_hbac.so    ignore_unknown_user
+
+Adding the option `ignore_unknown_user` is important on FreeBSD for the same
+reason Linux systems normally use `pam_localuser.so` - pam_hbac looks up
+accounts using NSS calls and failure to look up a user would deny access,
+because no rules would apply. Additionally, pam_hbac returns PAM_UNKNOWN_USER
+for root, which might e impractical if you decide to put the module into
+the system-wide configuration.
+
+Before making any changes to the PAM stack, please make sure to have a root
+console open until you finish testing of pam_hbac setup, to make sure you
+don't lock yourself out of the system!
