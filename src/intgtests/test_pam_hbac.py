@@ -232,14 +232,18 @@ class PamHbacTestCase(unittest.TestCase):
         self.host.remove()
         self.driver.rm_cert()
 
-    def assertPamReturns(self, user, service, rc, host=None):
+    def assertPamReturns(self, user, service, rc,
+                         host=None, pam_mod_opts=None,
+                         additional_modules=None):
         if host is None:
             host = self.client_hostname
         self._config_setup(host)
 
         svc_file = self._write_pam_svc_file(service,
                                             self.ph_abspath,
-                                            self.config_file.name)
+                                            self.config_file.name,
+                                            pam_mod_opts,
+                                            additional_modules)
         try:
             tc = pypamtest.TestCase(pypamtest.PAMTEST_ACCOUNT, rc)
             self._run_pwrap_test(tc, user, service)
@@ -338,19 +342,33 @@ class PamHbacTestCase(unittest.TestCase):
 
         self.config_file = self._config_write(config_path, confd)
 
-    def _write_pam_svc_file(self, svc_name, module_abspath, config_file=None):
+    def _write_pam_svc_file(self, svc_name, module_abspath,
+                            config_file=None, pam_mod_opts=None,
+                            additional_modules=None):
         svcfile = os.path.join(self.pwrap_runtimedir, svc_name)
         f = open(svcfile, 'w')
-        content = self._gen_pam_svc_file(module_abspath, config_file)
+        content = self._gen_pam_svc_file(module_abspath,
+                                         config_file,
+                                         pam_mod_opts,
+                                         additional_modules)
         f.write(content)
         f.flush()
         return f
 
-    def _gen_pam_svc_file(self, module_abspath, config_file=None):
+    def _gen_pam_svc_file(self, module_abspath,
+                          config_file=None,
+                          pam_mod_opts=None,
+                          additional_modules=None):
         content = "account required %s" % module_abspath
         if config_file is not None:
             content = content + " config=%s" % config_file
+        if pam_mod_opts is not None:
+            content = content + " " + " ".join([opt for opt in pam_mod_opts])
         content = content + "\n"
+        if additional_modules is not None:
+            for mod_kv in additional_modules:
+                for module, action in mod_kv.items():
+                    content = content + "account %s %s\n" % (action, module)
         return content
 
     def create_direct_entries(self, direct_user_name,
@@ -542,10 +560,21 @@ class PamHbacTestErrorConditions(PamHbacTestCase):
         """
         self.assertPamReturns("no_such_user", "sshd", 10)
 
+    def test_ignore_unknown_user(self):
+        """"
+        Unknown user should return 25 = Ignore underlying account
+        module, at least on Linux. By adding pam_permit, this test will
+        return PAM_SUCCESS as a whole, otherwise it would return permission
+        denied.
+        """
+        self.assertPamReturns("no_such_user_ignore", "sshd", 0,
+                              pam_mod_opts=["ignore_unknown_user"],
+                              additional_modules=[ { "pam_permit.so":"required"}])
+
     def test_no_such_service(self):
         """"
         Unknown user should return 10 = User not known to the underlying
-        module, at least on Linux
+        module, at least on Linux. But since there is no other
         """
         self.assertPamReturns("admin", "no_such_service", 6)
 

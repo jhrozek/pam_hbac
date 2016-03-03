@@ -18,6 +18,10 @@ installations should not use this option, but rather use the config file
 at the default location. Please see the *pam_hbac.conf(5)* man page for
 more details about the configuration file.
 
+* *ignore_unknown_user* - by default, `pam_hbac` returns `PAM_UNKNOWN_USER`
+if the user requesting access is not found. If this option is enabled, `pam_hbac`
+will return `PAM_IGNORE` instead, causing the PAM stack to ignore this module.
+
 MODULE TYPES PROVIDED
 ---------------------
 Only the *account* module type is supported.

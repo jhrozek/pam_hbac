@@ -37,7 +37,10 @@
 
 #define CHECK_AND_RETURN_PI_STRING(s) ((s != NULL && *s != '\0')? s : "(not available)")
 
-#define PH_OPT_CONFIG      "config="
+#define PAM_IGNORE_UNKNOWN_USER_ARG     0x0001
+
+#define PH_OPT_IGNORE_UNKNOWN_USER      "ignore_unknown_user"
+#define PH_OPT_CONFIG                   "config="
 
 enum pam_hbac_actions {
     PAM_HBAC_ACCOUNT,
@@ -69,7 +72,10 @@ parse_args(pam_handle_t *pamh,
     /* step through arguments */
     for (; argc-- > 0; ++argv) {
         /* generic options */
-        if (strncmp(*argv, PH_OPT_CONFIG, strlen(PH_OPT_CONFIG)) == 0) {
+        if (strcmp(*argv, PH_OPT_IGNORE_UNKNOWN_USER) == 0) {
+            flags |= PAM_IGNORE_UNKNOWN_USER_ARG;
+            logger(pamh, LOG_DEBUG, "ignore_unknown_user found");
+        } else if (strncmp(*argv, PH_OPT_CONFIG, strlen(PH_OPT_CONFIG)) == 0) {
             if (*(*argv+strlen(PH_OPT_CONFIG)) == '\0') {
                 return EINVAL;
             } else {
@@ -85,7 +91,7 @@ parse_args(pam_handle_t *pamh,
 }
 
 static int
-pam_hbac_get_items(pam_handle_t *pamh, struct pam_items *pi)
+pam_hbac_get_items(pam_handle_t *pamh, struct pam_items *pi, int flags)
 {
     int ret;
 
@@ -103,6 +109,9 @@ pam_hbac_get_items(pam_handle_t *pamh, struct pam_items *pi)
 
     if (strcmp(pi->pam_user, "root") == 0) {
         logger(pamh, LOG_NOTICE, "pam_hbac will not handle root.");
+        if (flags & PAM_IGNORE_UNKNOWN_USER_ARG) {
+            return PAM_IGNORE;
+        } 
         return PAM_USER_UNKNOWN;
     }
     pi->pam_user_size = strlen(pi->pam_user) + 1;
@@ -263,7 +272,7 @@ pam_hbac(enum pam_hbac_actions action, pam_handle_t *pamh,
         goto done;
     }
 
-    pam_ret = pam_hbac_get_items(pamh, &pi);
+    pam_ret = pam_hbac_get_items(pamh, &pi, flags);
     if (pam_ret != PAM_SUCCESS) {
         logger(pamh, LOG_ERR,
                "pam_hbac_get_items returned error: %s",
@@ -298,7 +307,11 @@ pam_hbac(enum pam_hbac_actions action, pam_handle_t *pamh,
     if (user == NULL) {
         logger(pamh, LOG_NOTICE,
                "Did not find user %s\n", pi.pam_user);
-        pam_ret = PAM_USER_UNKNOWN;
+        if (flags & PAM_IGNORE_UNKNOWN_USER_ARG) {
+            pam_ret = PAM_IGNORE;
+        } else {
+            pam_ret = PAM_USER_UNKNOWN;
+        }
         goto done;
     }
     logger(pamh, LOG_DEBUG, "ph_get_user: OK");
