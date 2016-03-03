@@ -127,23 +127,17 @@ valgrind_quiet_ = $(valgrind_quiet_$(AM_DEFAULT_VERBOSITY))
 valgrind_quiet_0 = --quiet
 
 # Support running with and without libtool.
-ifneq ($(LIBTOOL),)
-valgrind_lt = $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=execute
-else
-valgrind_lt =
-endif
 
 # Use recursive makes in order to ignore errors during check
 check-valgrind:
-ifeq ($(VALGRIND_ENABLED),yes)
-	-$(foreach tool,$(valgrind_tools), \
-		$(if $(VALGRIND_HAVE_TOOL_$(tool))$(VALGRIND_HAVE_TOOL_exp_$(tool)), \
-			$(MAKE) $(AM_MAKEFLAGS) -k check-valgrind-tool VALGRIND_TOOL=$(tool); \
-		) \
-	)
-else
-	@echo "Need to reconfigure with --enable-valgrind"
-endif
+	if test "x"$(LIBTOOL) != "x"; then \
+            valgrind_lt="$(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=execute;"; \
+        fi;
+	if test "x"$(VALGRIND_ENABLED) = "xyes"; then \
+                $(MAKE) $(AM_MAKEFLAGS) -k check-valgrind-tool VALGRIND_TOOL="memcheck"; \
+        else \
+                echo "Please recompile with --enable-valgrind"; \
+        fi;
 
 # Valgrind running
 VALGRIND_TESTS_ENVIRONMENT = \
@@ -157,15 +151,16 @@ VALGRIND_LOG_COMPILER = \
 	$(VALGRIND) $(VALGRIND_SUPPRESSIONS) --error-exitcode=1 $(VALGRIND_FLAGS)
 
 check-valgrind-tool:
-ifeq ($(VALGRIND_ENABLED),yes)
-	$(MAKE) check-TESTS \
-		TESTS_ENVIRONMENT="$(VALGRIND_TESTS_ENVIRONMENT)" \
-		LOG_COMPILER="$(VALGRIND_LOG_COMPILER)" \
-		LOG_FLAGS="$(valgrind_$(VALGRIND_TOOL)_flags)" \
-		TEST_SUITE_LOG=test-suite-$(VALGRIND_TOOL).log
-else
-	@echo "Need to reconfigure with --enable-valgrind"
-endif
+	if test "x"$(VALGRIND_ENABLED) = "xyes"; then \
+                $(MAKE) check-TESTS \
+                        TESTS_ENVIRONMENT="$(VALGRIND_TESTS_ENVIRONMENT)" \
+                        LOG_COMPILER="$(VALGRIND_LOG_COMPILER)" \
+                        LOG_FLAGS="$(valgrind_$(VALGRIND_TOOL)_flags)" \
+                        TEST_SUITE_LOG=test-suite-$(VALGRIND_TOOL).log; \
+        else \
+                echo "Need to reconfigure with --enable-valgrind"; \
+        fi;
+
 
 A''M_DISTCHECK_CONFIGURE_FLAGS ?=
 A''M_DISTCHECK_CONFIGURE_FLAGS += --disable-valgrind
