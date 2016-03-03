@@ -571,6 +571,16 @@ class PamHbacTestErrorConditions(PamHbacTestCase):
                               pam_mod_opts=["ignore_unknown_user"],
                               additional_modules=[ { "pam_permit.so":"required"}])
 
+    def test_root(self):
+        """
+        Root is a special case and should be tested separately
+        """
+        self.assertPamReturns("root", "sshd", 10)
+        self.assertPamReturns("root", "sshd", 0,
+                              pam_mod_opts=["ignore_unknown_user"],
+                              additional_modules=[ { "pam_permit.so":"required"}])
+
+
     def test_no_such_service(self):
         """"
         Unknown user should return 10 = User not known to the underlying
