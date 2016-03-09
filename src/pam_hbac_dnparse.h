@@ -35,4 +35,3 @@ int ph_name_from_dn(const char *dn,
 const char *ph_member_el_type2str(const enum member_el_type el_type);
 
 #endif /* __PAM_HBAC_DNPARSE_H__ */
-
