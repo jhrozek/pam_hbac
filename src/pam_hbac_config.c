@@ -256,6 +256,13 @@ done:
     return ret;
 }
 
+static void
+log_string_opt(pam_handle_t *pamh, const char *name, const char *value)
+{
+    /* Better to be secure about passing NULL. */
+    logger(pamh, LOG_DEBUG, "%s: %s\n", name, value ? value : "not set");
+}
+
 void
 ph_dump_config(pam_handle_t *pamh, struct pam_hbac_config *conf)
 {
@@ -264,9 +271,11 @@ ph_dump_config(pam_handle_t *pamh, struct pam_hbac_config *conf)
         return;
     }
 
-    logger(pamh, LOG_DEBUG, "URI: %s\n", conf->uri);
-    logger(pamh, LOG_DEBUG, "search base %s\n", conf->search_base);
-    logger(pamh, LOG_DEBUG, "bind DN %s\n", conf->bind_dn);
+    log_string_opt(pamh, "URI", conf->uri);
+    log_string_opt(pamh, "search base", conf->search_base);
+    log_string_opt(pamh, "bind DN", conf->bind_dn);
+    /* Don't dump password */
+    log_string_opt(pamh, "client hostname", conf->hostname);
+    log_string_opt(pamh, "cert", conf->ca_cert);
     logger(pamh, LOG_DEBUG, "timeout %d\n", conf->timeout);
-    logger(pamh, LOG_DEBUG, "client hostname %s\n", conf->hostname);
 }
