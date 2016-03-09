@@ -120,6 +120,26 @@ void test_no_equal_sign(void **state)
     assert_int_not_equal(ret, 0);
 }
 
+void test_empty_lines(void **state)
+{
+    struct pam_hbac_config *conf;
+    int ret;
+    const char *files[] = {
+        TEST_CONF_DIR"/src/tests/configs/empty_lines.conf",
+        TEST_CONF_DIR"/src/tests/configs/trailing_empty_lines.conf",
+        NULL
+    };
+    const char **f;
+
+    (void) state; /* unused */
+
+    for (f = files; *f != NULL; f++) {
+        ret = ph_read_config(NULL, *f, &conf);
+        assert_int_equal(ret, 0);
+        ph_cleanup_config(conf);
+    }
+}
+
 int main(void)
 {
     const struct CMUnitTest tests[] = {
@@ -128,6 +148,7 @@ int main(void)
         cmocka_unit_test(test_leading_whitespace),
         cmocka_unit_test(test_trailing_whitespace),
         cmocka_unit_test(test_no_equal_sign),
+        cmocka_unit_test(test_empty_lines),
     };
 
     return cmocka_run_group_tests(tests, NULL, NULL);

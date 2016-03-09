@@ -148,8 +148,8 @@ read_config_line(pam_handle_t *pamh,
         ++l;
     }
 
-    /* Skip comments */
-    if (*l == '#') {
+    /* Skip comments and empty lines */
+    if (*l == '#' || *l == '\0') {
         ret = EAGAIN;
         goto fail;
     }

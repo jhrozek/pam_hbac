@@ -73,6 +73,8 @@ dist_noinst_DATA = \
 		      src/tests/configs/lwsp.conf \
 		      src/tests/configs/twsp.conf \
 		      src/tests/configs/noeq.conf \
+		      src/tests/configs/trailing_empty_lines.conf \
+		      src/tests/configs/empty_lines.conf \
 		      src/tests/cwrap/passwd \
 		      src/tests/cwrap/group \
 		      $(NULL)
