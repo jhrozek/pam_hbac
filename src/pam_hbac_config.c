@@ -39,6 +39,9 @@ ph_cleanup_config(struct pam_hbac_config *conf)
 
     free_const(conf->uri);
     free_const(conf->search_base);
+    free_const(conf->bind_dn);
+    free_const(conf->bind_pw);
+    free_const(conf->ca_cert);
     free(conf->hostname);
 
     free(conf);
