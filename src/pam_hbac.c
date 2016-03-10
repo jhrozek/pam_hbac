@@ -154,6 +154,7 @@ print_pam_items(pam_handle_t *pamh, struct pam_items *pi, int flags)
 static pam_handle_t *global_pam_handle;
 
 void hbac_debug_messages(const char *file, int line,
+                         const char *function,
                          enum hbac_debug_level level,
                          const char *fmt, ...)
 {
