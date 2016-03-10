@@ -7,6 +7,7 @@ m4_include([external/libcmocka.m4])
 m4_include([external/cwrap.m4])
 m4_include([external/a2x.m4])
 m4_include([external/ax_valgrind_check.m4])
+m4_include([external/attribute.m4])
 
 AC_INIT([pam_hbac],
         VERSION_NUMBER,
@@ -25,6 +26,9 @@ AC_CONFIG_MACRO_DIR([m4])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES])
 
 AM_CONDITIONAL([HAVE_GCC], [test "$ac_cv_prog_gcc" = yes])
+
+# Check if the compiler supports optional attributes
+CC_ATTRIBUTE_PRINTF
 
 #Check for PAM headers
 AC_CHECK_HEADERS([security/pam_appl.h])
