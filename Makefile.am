@@ -47,10 +47,10 @@ pam_hbac_la_LDFLAGS = \
 		     -lpam \
 		     -module \
 		     -avoid-version
-#if GNU_LD
-#pam_hbac_la_LDFLAGS += \
-#		     -Wl,--version-script,$(srcdir)/src/pam_hbac.exports
-#endif
+if HAVE_GNU_LD
+pam_hbac_la_LDFLAGS += \
+		     -Wl,--version-script,$(srcdir)/src/pam_hbac.exports
+endif
 
 dist_noinst_HEADERS = \
 		      src/pam_hbac.h \
@@ -68,6 +68,7 @@ dist_noinst_HEADERS = \
 		      $(NULL)
 
 dist_noinst_DATA = \
+		      src/pam_hbac.exports \
 		      src/tests/configs/good1.conf \
 		      src/tests/configs/eqwsp.conf \
 		      src/tests/configs/lwsp.conf \

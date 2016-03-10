@@ -26,6 +26,7 @@ AC_CONFIG_MACRO_DIR([m4])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES])
 
 AM_CONDITIONAL([HAVE_GCC], [test "$ac_cv_prog_gcc" = yes])
+AM_CONDITIONAL([HAVE_GNU_LD], [test "$lt_cv_prog_gnu_ld" = yes])
 
 # Check if the compiler supports optional attributes
 CC_ATTRIBUTE_PRINTF
