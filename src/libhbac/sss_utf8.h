@@ -31,6 +31,10 @@
 
 #include "sss_compat.h"
 
+#ifndef ENOMATCH
+#define ENOMATCH -1
+#endif
+
 void sss_utf8_free(void *ptr);
 
 /* The result must be freed with sss_utf8_free() */

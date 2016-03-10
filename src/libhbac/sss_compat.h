@@ -22,10 +22,6 @@
  * used through the SSSD code where libhbac comes from
  */
 
-#ifndef ENOMATCH
-#define ENOMATCH -1
-#endif
-
 #ifndef HAVE_ERRNO_T
 #define HAVE_ERRNO_T
 typedef int errno_t;
