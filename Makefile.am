@@ -73,6 +73,12 @@ dist_noinst_DATA = \
 		      src/tests/configs/lwsp.conf \
 		      src/tests/configs/twsp.conf \
 		      src/tests/configs/noeq.conf \
+		      src/tests/configs/missing_base_opt.conf \
+		      src/tests/configs/missing_binddn_opt.conf \
+		      src/tests/configs/missing_bindpw_opt.conf \
+		      src/tests/configs/missing_cacert_opt.conf \
+		      src/tests/configs/missing_hostname.conf \
+		      src/tests/configs/missing_uri_opt.conf \
 		      src/tests/configs/trailing_empty_lines.conf \
 		      src/tests/configs/empty_lines.conf \
 		      src/tests/cwrap/passwd \
@@ -112,6 +118,9 @@ config_tests_CFLAGS = \
 		      $(CMOCKA_CFLAGS) \
 		      -DTEST_CONF_DIR=\"$(abs_srcdir)/\" \
 		      $(NULL)
+config_tests_LDFLAGS = \
+	-Wl,-wrap,gethostname \
+	$(NULL)
 config_tests_LDADD = \
 		     -lpam \
 		     $(CMOCKA_LIBS) \

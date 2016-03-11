@@ -47,39 +47,86 @@ ph_cleanup_config(struct pam_hbac_config *conf)
     free(conf);
 }
 
-static struct pam_hbac_config *
-default_config(struct pam_hbac_config *conf)
+int check_mandatory_opt(pam_handle_t *pamh, const char *name, const char *value)
+{
+    if (value == NULL) {
+        logger(pamh, LOG_ERR,
+               "Missing mandatory option: %s in config file.\n", name);
+        return 1;
+    }
+    return 0;
+}
+
+static int
+check_config(pam_handle_t *pamh, struct pam_hbac_config *conf)
+{
+    int error = 0;
+
+    /* Mandatory options. */
+    error |= check_mandatory_opt(pamh, PAM_HBAC_CONFIG_URI, conf->uri);
+    error |= check_mandatory_opt(pamh, PAM_HBAC_CONFIG_SEARCH_BASE, conf->search_base);
+    error |= check_mandatory_opt(pamh, PAM_HBAC_CONFIG_BIND_DN, conf->bind_dn);
+    error |= check_mandatory_opt(pamh, PAM_HBAC_CONFIG_BIND_PW, conf->bind_pw);
+    error |= check_mandatory_opt(pamh, PAM_HBAC_CONFIG_CA_CERT, conf->ca_cert);
+
+    if (error != 0) {
+        return EINVAL;
+    }
+
+    return 0;
+}
+
+static int
+default_hostname(char **_hostname)
+{
+    char *hostname = NULL;
+    int ret;
+
+    hostname = malloc(HOST_NAME_MAX);
+    if (hostname == NULL) {
+        ret = ENOMEM;
+        goto done;
+    }
+
+    ret = gethostname(hostname, HOST_NAME_MAX);
+    if (ret == -1) {
+        ret = errno;
+        goto done;
+    }
+
+    /* Make sure that returned string is terminated. */
+    hostname[HOST_NAME_MAX-1] = '\0';
+
+    *_hostname = hostname;
+    ret = 0;
+
+done:
+    if (ret != 0) {
+        free(hostname);
+    }
+    return ret;
+}
+
+static int
+default_config(pam_handle_t *pamh, struct pam_hbac_config *conf)
 {
     int ret;
 
-    if (conf->search_base == NULL ||
-            conf->uri == NULL) {
-        goto fail;
-    }
-
     if (conf->hostname == NULL) {
-        conf->hostname = malloc(HOST_NAME_MAX);
-        if (conf->hostname == NULL) {
-            goto fail;
+        ret = default_hostname(&conf->hostname);
+        if (ret != 0) {
+            logger(pamh, LOG_ERR, "Failed to set default hostname [%d]: %s\n",
+                   ret, strerror(ret));
+            return ret;
         }
 
-        ret = gethostname(conf->hostname, HOST_NAME_MAX);
-        if (ret == -1) {
-            ret = errno;
-            goto fail;
-        }
-        conf->hostname[HOST_NAME_MAX-1] = '\0';
     }
 
     if (conf->timeout == 0) {
         conf->timeout = PAM_HBAC_DEFAULT_TIMEOUT;
     }
 
-    return conf;
-
-fail:
-    ph_cleanup_config(conf);
-    return NULL;
+    return 0;
 }
 
 static char *
@@ -239,10 +286,14 @@ ph_read_config(pam_handle_t *pamh,
         }
     }
 
+    ret = check_config(pamh, conf);
+    if (ret != 0) {
+        goto done;
+    }
+
     /* Set all values that were not set explicitly */
-    conf = default_config(conf);
-    if (conf == NULL) {
-        ret = ENOMEM;
+    ret = default_config(pamh, conf);
+    if (ret != 0) {
         goto done;
     }
 
