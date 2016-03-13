@@ -4,7 +4,7 @@ pam_hbac
 A PAM account module that evaluates HBAC rules stored on an IPA server.
 
 Before using pam_hbac, please make sure you really need it. If possible,
-please use SSSD! pam_hbac is meant is a fall-back solution for platforms where
+please use SSSD! pam_hbac is meant as a fall-back solution for platforms where
 SSSD can't be installed.
 
 Supported platforms

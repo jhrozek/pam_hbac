@@ -111,7 +111,7 @@ pam_hbac_get_items(pam_handle_t *pamh, struct pam_items *pi, int flags)
         logger(pamh, LOG_NOTICE, "pam_hbac will not handle root.");
         if (flags & PAM_IGNORE_UNKNOWN_USER_ARG) {
             return PAM_IGNORE;
-        } 
+        }
         return PAM_USER_UNKNOWN;
     }
     pi->pam_user_size = strlen(pi->pam_user) + 1;
@@ -180,7 +180,6 @@ void hbac_debug_messages(const char *file, int line,
         severity = LOG_NOTICE;
         break;
     }
-
 
     va_start(ap, fmt);
     pam_vsyslog(global_pam_handle, severity, fmt, ap);

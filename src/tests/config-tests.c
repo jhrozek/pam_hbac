@@ -21,6 +21,7 @@
 #include <stddef.h>
 #include <setjmp.h>
 #include <cmocka.h>
+#include <unistd.h>
 
 #include "pam_hbac.h"
 #include "tests/ph_tests.h"
@@ -120,6 +121,78 @@ void test_no_equal_sign(void **state)
     assert_int_not_equal(ret, 0);
 }
 
+void test_empty_lines(void **state)
+{
+    struct pam_hbac_config *conf;
+    int ret;
+    const char *files[] = {
+        TEST_CONF_DIR"/src/tests/configs/empty_lines.conf",
+        TEST_CONF_DIR"/src/tests/configs/trailing_empty_lines.conf",
+        NULL
+    };
+    const char **f;
+
+    (void) state; /* unused */
+
+    for (f = files; *f != NULL; f++) {
+        ret = ph_read_config(NULL, *f, &conf);
+        assert_int_equal(ret, 0);
+        ph_cleanup_config(conf);
+    }
+}
+
+void test_missing_opts(void **state)
+{
+    struct pam_hbac_config *conf;
+    int ret;
+    const char *files[] = {
+        TEST_CONF_DIR"/src/tests/configs/missing_uri_opt.conf",
+        TEST_CONF_DIR"/src/tests/configs/missing_base_opt.conf",
+        TEST_CONF_DIR"/src/tests/configs/missing_cacert_opt.conf",
+        TEST_CONF_DIR"/src/tests/configs/missing_binddn_opt.conf",
+        TEST_CONF_DIR"/src/tests/configs/missing_bindpw_opt.conf",
+        NULL
+    };
+    const char **f;
+
+    (void) state; /* unused */
+
+    for (f = files; *f != NULL; f++) {
+        ret = ph_read_config(NULL, *f, &conf);
+        assert_int_equal(ret, EINVAL);
+    }
+}
+
+const char *test_hostname = "server.domain.test";
+
+int __wrap_gethostname(char *name, size_t len)
+{
+    int n;
+
+    n = snprintf(name, len, test_hostname);
+    if (n != strlen(test_hostname)) {
+        errno = ENOMEM;
+        return -1;
+    }
+
+    return 0;
+}
+
+void test_missing_hostname(void **state)
+{
+    struct pam_hbac_config *conf;
+    int ret;
+
+    (void) state; /* unused */
+
+    ret = ph_read_config(NULL,
+                         TEST_CONF_DIR"/src/tests/configs/missing_hostname.conf",
+                         &conf);
+    assert_int_equal(ret, 0);
+    assert_string_equal(conf->hostname, test_hostname);
+    ph_cleanup_config(conf);
+}
+
 int main(void)
 {
     const struct CMUnitTest tests[] = {
@@ -128,6 +201,9 @@ int main(void)
         cmocka_unit_test(test_leading_whitespace),
         cmocka_unit_test(test_trailing_whitespace),
         cmocka_unit_test(test_no_equal_sign),
+        cmocka_unit_test(test_empty_lines),
+        cmocka_unit_test(test_missing_opts),
+        cmocka_unit_test(test_missing_hostname),
     };
 
     return cmocka_run_group_tests(tests, NULL, NULL);

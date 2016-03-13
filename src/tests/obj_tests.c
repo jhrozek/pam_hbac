@@ -31,7 +31,7 @@
 
 #include "common_mock.h"
 
-static void 
+static void
 test_ph_get_user_no_sup_groups(void **state)
 {
     struct ph_user *u;
@@ -54,7 +54,7 @@ test_ph_get_user_no_sup_groups(void **state)
     ph_free_user(u);
 }
 
-static void 
+static void
 test_ph_get_user_sup_groups(void **state)
 {
     struct ph_user *u;
@@ -80,7 +80,7 @@ test_ph_get_user_sup_groups(void **state)
     ph_free_user(u);
 }
 
-static void 
+static void
 test_ph_get_user_unknown(void **state)
 {
     struct ph_user *u;

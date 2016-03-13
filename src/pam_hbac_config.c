@@ -39,44 +39,94 @@ ph_cleanup_config(struct pam_hbac_config *conf)
 
     free_const(conf->uri);
     free_const(conf->search_base);
+    free_const(conf->bind_dn);
+    free_const(conf->bind_pw);
+    free_const(conf->ca_cert);
     free(conf->hostname);
 
     free(conf);
 }
 
-static struct pam_hbac_config *
-default_config(struct pam_hbac_config *conf)
+int check_mandatory_opt(pam_handle_t *pamh, const char *name, const char *value)
+{
+    if (value == NULL) {
+        logger(pamh, LOG_ERR,
+               "Missing mandatory option: %s in config file.\n", name);
+        return 1;
+    }
+    return 0;
+}
+
+static int
+check_config(pam_handle_t *pamh, struct pam_hbac_config *conf)
+{
+    int error = 0;
+
+    /* Mandatory options. */
+    error |= check_mandatory_opt(pamh, PAM_HBAC_CONFIG_URI, conf->uri);
+    error |= check_mandatory_opt(pamh, PAM_HBAC_CONFIG_SEARCH_BASE, conf->search_base);
+    error |= check_mandatory_opt(pamh, PAM_HBAC_CONFIG_BIND_DN, conf->bind_dn);
+    error |= check_mandatory_opt(pamh, PAM_HBAC_CONFIG_BIND_PW, conf->bind_pw);
+    error |= check_mandatory_opt(pamh, PAM_HBAC_CONFIG_CA_CERT, conf->ca_cert);
+
+    if (error != 0) {
+        return EINVAL;
+    }
+
+    return 0;
+}
+
+static int
+default_hostname(char **_hostname)
+{
+    char *hostname = NULL;
+    int ret;
+
+    hostname = malloc(HOST_NAME_MAX);
+    if (hostname == NULL) {
+        ret = ENOMEM;
+        goto done;
+    }
+
+    ret = gethostname(hostname, HOST_NAME_MAX);
+    if (ret == -1) {
+        ret = errno;
+        goto done;
+    }
+
+    /* Make sure that returned string is terminated. */
+    hostname[HOST_NAME_MAX-1] = '\0';
+
+    *_hostname = hostname;
+    ret = 0;
+
+done:
+    if (ret != 0) {
+        free(hostname);
+    }
+    return ret;
+}
+
+static int
+default_config(pam_handle_t *pamh, struct pam_hbac_config *conf)
 {
     int ret;
 
-    if (conf->search_base == NULL ||
-            conf->uri == NULL) {
-        goto fail;
-    }
-
     if (conf->hostname == NULL) {
-        conf->hostname = malloc(HOST_NAME_MAX);
-        if (conf->hostname == NULL) {
-            goto fail;
+        ret = default_hostname(&conf->hostname);
+        if (ret != 0) {
+            logger(pamh, LOG_ERR, "Failed to set default hostname [%d]: %s\n",
+                   ret, strerror(ret));
+            return ret;
         }
 
-        ret = gethostname(conf->hostname, HOST_NAME_MAX);
-        if (ret == -1) {
-            ret = errno;
-            goto fail;
-        }
-        conf->hostname[HOST_NAME_MAX-1] = '\0';
     }
 
     if (conf->timeout == 0) {
         conf->timeout = PAM_HBAC_DEFAULT_TIMEOUT;
     }
 
-    return conf;
-
-fail:
-    ph_cleanup_config(conf);
-    return NULL;
+    return 0;
 }
 
 static char *
@@ -145,8 +195,8 @@ read_config_line(pam_handle_t *pamh,
         ++l;
     }
 
-    /* Skip comments */
-    if (*l == '#') {
+    /* Skip comments and empty lines */
+    if (*l == '#' || *l == '\0') {
         ret = EAGAIN;
         goto fail;
     }
@@ -236,10 +286,14 @@ ph_read_config(pam_handle_t *pamh,
         }
     }
 
+    ret = check_config(pamh, conf);
+    if (ret != 0) {
+        goto done;
+    }
+
     /* Set all values that were not set explicitly */
-    conf = default_config(conf);
-    if (conf == NULL) {
-        ret = ENOMEM;
+    ret = default_config(pamh, conf);
+    if (ret != 0) {
         goto done;
     }
 
@@ -253,6 +307,13 @@ done:
     return ret;
 }
 
+static void
+log_string_opt(pam_handle_t *pamh, const char *name, const char *value)
+{
+    /* Better to be secure about passing NULL. */
+    logger(pamh, LOG_DEBUG, "%s: %s\n", name, value ? value : "not set");
+}
+
 void
 ph_dump_config(pam_handle_t *pamh, struct pam_hbac_config *conf)
 {
@@ -261,9 +322,11 @@ ph_dump_config(pam_handle_t *pamh, struct pam_hbac_config *conf)
         return;
     }
 
-    logger(pamh, LOG_DEBUG, "URI: %s\n", conf->uri);
-    logger(pamh, LOG_DEBUG, "search base %s\n", conf->search_base);
-    logger(pamh, LOG_DEBUG, "bind DN %s\n", conf->bind_dn);
+    log_string_opt(pamh, "URI", conf->uri);
+    log_string_opt(pamh, "search base", conf->search_base);
+    log_string_opt(pamh, "bind DN", conf->bind_dn);
+    /* Don't dump password */
+    log_string_opt(pamh, "client hostname", conf->hostname);
+    log_string_opt(pamh, "cert", conf->ca_cert);
     logger(pamh, LOG_DEBUG, "timeout %d\n", conf->timeout);
-    logger(pamh, LOG_DEBUG, "client hostname %s\n", conf->hostname);
 }

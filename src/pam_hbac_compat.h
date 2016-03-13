@@ -86,5 +86,3 @@ do {                             \
 #define FALLBACK_NGROUPS_MAX        128
 
 #endif /* __PAM_HBAC_COMPAT_H__ */
-
-

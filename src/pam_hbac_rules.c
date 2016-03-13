@@ -415,7 +415,7 @@ entry_to_hbac_rule(pam_handle_t *pamh,
     }
 
     /* FIXME - This only makes sense to check if there is exactly one value
-     * of enabled flag, should we do the same for accessRuleType? 
+     * of enabled flag, should we do the same for accessRuleType?
      */
     ret = fill_rule_enabled(pamh, rule_entry, rule);
     if (ret != 0) {
