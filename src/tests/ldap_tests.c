@@ -272,7 +272,7 @@ __wrap_ldap_install_tls(LDAP *ld)
     return LDAP_SUCCESS;
 }
 
-int 
+int
 __wrap_ldap_get_option(LDAP *ld, int option, void *outvalue)
 {
     if (option == PH_DIAGNOSTIC_MESSAGE) {
