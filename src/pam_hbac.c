@@ -68,6 +68,8 @@ parse_args(pam_handle_t *pamh,
            const char **_config)
 {
     int flags = 0;
+    /* Make sure that config is set if function succeeds */
+    const char *config = NULL;
 
     /* step through arguments */
     for (; argc-- > 0; ++argv) {
@@ -79,13 +81,14 @@ parse_args(pam_handle_t *pamh,
             if (*(*argv+strlen(PH_OPT_CONFIG)) == '\0') {
                 return EINVAL;
             } else {
-                *_config = *argv+strlen(PH_OPT_CONFIG);
+                config = *argv+strlen(PH_OPT_CONFIG);
             }
         } else {
             logger(pamh, LOG_ERR, "unknown option: %s", *argv);
         }
     }
 
+    *_config = config;
     *_flags = flags;
     return 0;
 }
