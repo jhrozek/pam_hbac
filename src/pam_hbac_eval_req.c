@@ -71,7 +71,8 @@ alloc_sized_request_element(size_t ngroups)
 static struct hbac_request_element *
 entry_to_eval_req_el(struct ph_attr *name,
                      struct ph_attr *memberof,
-                     enum member_el_type el_type)
+                     enum member_el_type el_type,
+                     const char *basedn)
 {
     struct hbac_request_element *el;
     size_t i, gi;
@@ -98,8 +99,9 @@ entry_to_eval_req_el(struct ph_attr *name,
     gi = 0;
     for (i=0; i < n_memberof; i++) {
         ret = ph_group_name_from_dn((const char *) memberof->vals[i]->bv_val,
-                                     el_type,
-                                     &el->groups[gi]);
+                                    el_type,
+                                    basedn,
+                                    &el->groups[gi]);
         switch (ret) {
             case 0:
                 break;
@@ -120,7 +122,7 @@ entry_to_eval_req_el(struct ph_attr *name,
 }
 
 static struct hbac_request_element *
-user_to_eval_req_el(struct ph_user *user)
+user_to_eval_req_el(struct ph_user *user, const char *basedn)
 {
     struct hbac_request_element *el;
     size_t ngroups;
@@ -144,7 +146,7 @@ user_to_eval_req_el(struct ph_user *user)
 }
 
 static struct hbac_request_element *
-svc_to_eval_req_el(struct ph_entry *svc)
+svc_to_eval_req_el(struct ph_entry *svc, const char *basedn)
 {
     struct ph_attr *svcname;
     struct ph_attr *svcgroups;
@@ -152,11 +154,11 @@ svc_to_eval_req_el(struct ph_entry *svc)
     svcname = ph_entry_get_attr(svc, PH_MAP_SVC_NAME);
     svcgroups = ph_entry_get_attr(svc, PH_MAP_SVC_MEMBEROF);
 
-    return entry_to_eval_req_el(svcname, svcgroups, DN_TYPE_SVC);
+    return entry_to_eval_req_el(svcname, svcgroups, DN_TYPE_SVC, basedn);
 }
 
 static struct hbac_request_element *
-tgt_host_to_eval_req_el(struct ph_entry *host)
+tgt_host_to_eval_req_el(struct ph_entry *host, const char *basedn)
 {
     struct ph_attr *fqdn;
     struct ph_attr *hostgroups;
@@ -164,7 +166,7 @@ tgt_host_to_eval_req_el(struct ph_entry *host)
     fqdn = ph_entry_get_attr(host, PH_MAP_HOST_FQDN);
     hostgroups = ph_entry_get_attr(host, PH_MAP_HOST_MEMBEROF);
 
-    return entry_to_eval_req_el(fqdn, hostgroups, DN_TYPE_HOST);
+    return entry_to_eval_req_el(fqdn, hostgroups, DN_TYPE_HOST, basedn);
 }
 
 void
@@ -184,6 +186,7 @@ int
 ph_create_hbac_eval_req(struct ph_user *user,
                         struct ph_entry *targethost,
                         struct ph_entry *service,
+                        const char *basedn,
                         struct hbac_eval_req **_req)
 {
     int ret;
@@ -199,19 +202,19 @@ ph_create_hbac_eval_req(struct ph_user *user,
         return ENOMEM;
     }
 
-    req->user = user_to_eval_req_el(user);
+    req->user = user_to_eval_req_el(user, basedn);
     if (req->user == NULL) {
         ret = ENOMEM;
         goto fail;
     }
 
-    req->service = svc_to_eval_req_el(service);
+    req->service = svc_to_eval_req_el(service, basedn);
     if (req->service == NULL) {
         ret = ENOMEM;
         goto fail;
     }
 
-    req->targethost = tgt_host_to_eval_req_el(targethost);
+    req->targethost = tgt_host_to_eval_req_el(targethost, basedn);
     if (req->targethost == NULL) {
         ret = ENOMEM;
         goto fail;

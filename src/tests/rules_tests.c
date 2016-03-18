@@ -80,7 +80,7 @@ test_get_rules_setup(void **state)
         return 1;
     }
 
-    test_ctx->pc.search_base = "rules.test";
+    test_ctx->pc.search_base = "dc=ipa,dc=test";
 
     test_ctx->ctx.pc = &test_ctx->pc;
 
