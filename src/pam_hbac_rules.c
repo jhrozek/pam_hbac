@@ -148,7 +148,6 @@ create_rules_filter(pam_handle_t *pamh,
                         (const char *) hostgroups->vals[i]->bv_val);
             free(prev);
             if (ret < 0) {
-                free(filter);
                 return NULL;
             }
         }
@@ -159,7 +158,6 @@ create_rules_filter(pam_handle_t *pamh,
     ret = asprintf(&filter, "%s)", prev);
     free(prev);
     if (ret < 0) {
-        free(filter);
         return NULL;
     }
 
