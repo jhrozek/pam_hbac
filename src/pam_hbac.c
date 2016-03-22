@@ -230,6 +230,19 @@ ph_cleanup(struct pam_hbac_ctx *ctx)
     free(ctx);
 }
 
+void
+ph_destroy_secret(struct pam_hbac_ctx *ctx)
+{
+    if (ctx == NULL || ctx->pc == NULL || ctx->pc->bind_pw == NULL) {
+        return;
+    }
+
+    _pam_overwrite(discard_const(ctx->pc->bind_pw));
+    free_const(ctx->pc->bind_pw);
+    /* To avoid double free */
+    ctx->pc->bind_pw = NULL;
+}
+
 /* FIXME - return more sensible return codes */
 static int
 pam_hbac(enum pam_hbac_actions action, pam_handle_t *pamh,
@@ -293,6 +306,8 @@ pam_hbac(enum pam_hbac_actions action, pam_handle_t *pamh,
     ph_dump_config(pamh, ctx->pc);
 
     ret = ph_connect(ctx);
+    /* Destroy secret as soon as possible */
+    ph_destroy_secret(ctx);
     if (ret != 0) {
         logger(pamh, LOG_NOTICE,
                "ph_connect returned error: %s", strerror(ret));
