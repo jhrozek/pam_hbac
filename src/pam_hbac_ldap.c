@@ -279,7 +279,6 @@ compose_search_filter(struct ph_search_ctx *s,
         ret = asprintf(&filter, "(&%s(%s))", oc_filter, obj_filter);
         free(oc_filter);
         if (ret < 0) {
-            free(filter);
             return NULL;
         }
     } else {
