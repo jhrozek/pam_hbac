@@ -15,6 +15,10 @@ AC_INIT([pam_hbac],
 
 AC_CONFIG_AUX_DIR([build])
 
+m4_ifdef([AC_USE_SYSTEM_EXTENSIONS],
+    [AC_USE_SYSTEM_EXTENSIONS],
+    [AC_GNU_SOURCE])
+
 AM_INIT_AUTOMAKE([-Wall foreign subdir-objects])
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 AM_PROG_CC_C_O
@@ -59,8 +63,14 @@ dnl save LIBS to restore later
 save_LIBS="$LIBS"
 LIBS="$PAM_LIBS"
 
-dnl Check for optional PAM fnuctions
+dnl Check for optional PAM functions
 AC_CHECK_FUNCS(pam_syslog pam_vsyslog)
+
+dnl Check for required GNU functions
+AC_CHECK_FUNCS([asprintf vsnprintf],
+               [],
+               [AC_MSG_ERROR([pam_hbac currently requires asprintf and vsnprintf to be present, see upstream issue 9])]
+               )
 
 dnl restore LIBS
 LIBS="$save_LIBS"
