@@ -1,5 +1,6 @@
 pamlibdir = @pammoddir@
 pam_hbac_conf_dir = $(sysconfdir)
+docdir = ${datadir}/doc/${PACKAGE}
 
 UNICODE_LIBS=@UNICODE_LIBS@
 
