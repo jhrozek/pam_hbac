@@ -40,7 +40,7 @@ export LDFLAGS="-fprofile-arcs -ftest-coverage"
 cd $SRC_DIR
 mkdir _build_test
 pushd _build_test
-../configure
+../configure --enable-valgrind
 make
 make check
 make check-valgrind
