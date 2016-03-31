@@ -21,6 +21,7 @@
 #include <security/pam_appl.h>
 
 #include "config.h"
+#include "portable/portable_system.h"
 
 #ifdef HAVE_SECURITY__PAM_MACROS_H
 # include <security/_pam_macros.h>
@@ -84,5 +85,25 @@ do {                             \
 #define FALLBACK_GETGR_R_SIZE_MAX   1024
 #define FALLBACK_GETPW_R_SIZE_MAX   128
 #define FALLBACK_NGROUPS_MAX        128
+
+#ifndef HAVE_ASPRINTF
+#define asprintf portable_asprintf
+#endif
+
+#ifndef HAVE_VASPRINTF
+#define vasprintf portable_vasprintf
+#endif
+
+#ifndef HAVE_VSNPRINTF
+#define vsnprintf portable_vsnprintf
+#endif
+
+#ifndef HAVE_SNPRINTF
+#define snprintf portable_snprintf
+#endif
+
+#ifndef HAVE_STRNDUP
+#define strndp portable_strndup
+#endif
 
 #endif /* __PAM_HBAC_COMPAT_H__ */
