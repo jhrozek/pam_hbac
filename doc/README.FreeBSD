@@ -8,8 +8,8 @@ pam_hbac if for some reason you can't use SSSD on your FreeBSD machine.
 
 Prerequisities
 ==============
-Please make sure your RHEL-5 client is able to resolve and authenticate
-the AD users. For example:
+Please make sure your FreeBSD client is able to resolve and authenticate
+the IPA or AD users. For example, for users coming from an AD trust:
     $ id administrator@win.trust.test
     $ su - administrator@win.trust.test
 A good starting point for this configuration is to run:
