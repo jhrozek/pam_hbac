@@ -231,6 +231,30 @@ ldap_tests_LDADD = \
 	$(CMOCKA_LIBS) \
 	$(NULL)
 
+secret_tests_SOURCES = \
+	src/pam_hbac_obj.c \
+	src/pam_hbac_config.c \
+	src/pam_hbac_entry.c \
+	src/pam_hbac_rules.c \
+	src/pam_hbac_ldap.c \
+	src/pam_hbac_eval_req.c \
+	src/pam_hbac_dnparse.c \
+	src/pam_hbac_utils.c \
+	src/libhbac/hbac_evaluator.c \
+	src/libhbac/sss_utf8.c \
+	src/tests/secret_tests.c \
+	$(NULL)
+secret_tests_CFLAGS = \
+	$(AM_CFLAGS) \
+	$(CMOCKA_CFLAGS) \
+	$(NULL)
+secret_tests_LDFLAGS = \
+	$(pam_hbac_la_LDFLAGS) \
+	$(NULL)
+secret_tests_LDADD = \
+	$(CMOCKA_LIBS) \
+	$(NULL)
+
 obj_tests_SOURCES = \
 	src/tests/obj_tests.c \
 	src/tests/mock_entry.c \
@@ -289,6 +313,7 @@ if HAVE_CMOCKA
 	ldap-tests \
 	obj-tests \
 	rules-tests \
+	secret-tests \
 	$(NULL)
 endif
 

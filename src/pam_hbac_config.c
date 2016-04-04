@@ -166,6 +166,8 @@ get_key_value(pam_handle_t *pamh,
     l[sep-line] = '\0';
     key = strdup(strip(l));
     value = strdup(strip(sep+1));
+    /* Some of the lines could contain secret data. */
+    _pam_overwrite(l);
     free(l);
     if (key == NULL || value == NULL) {
         free(key);
