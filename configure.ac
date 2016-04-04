@@ -31,6 +31,9 @@ AM_CONDITIONAL([HAVE_GNU_LD], [test "$lt_cv_prog_gnu_ld" = yes])
 # Check if the compiler supports optional attributes
 CC_ATTRIBUTE_PRINTF
 
+# Check if the compiler supports __thread key word
+CC_THREAD_KW
+
 #Check for PAM headers
 AC_CHECK_HEADERS([security/pam_appl.h])
 AC_CHECK_HEADERS([security/pam_modules.h],,,[

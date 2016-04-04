@@ -21,6 +21,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <stdarg.h>
 #include <errno.h>
 #include <syslog.h>
 
@@ -93,5 +94,7 @@ void free_string_list(char **list);
 size_t null_string_array_size(char *arr[]);
 size_t null_cstring_array_size(const char *arr[]);
 void logger(pam_handle_t *pamh, int level, const char *fmt, ...);
+void va_logger(pam_handle_t *pamh, int level, const char *fmt, va_list ap);
+void set_debug_mode(bool v);
 
 #endif /* __PAM_HBAC_H__ */
