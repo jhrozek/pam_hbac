@@ -244,6 +244,13 @@ class IpaClientlessPamHbacRule(object):
     def disable(self):
         self.driver.run_cmd("hbacrule_disable", [self.name])
 
+    def add_all_cats(self):
+        args = dict()
+        args['usercategory'] = ['all']
+        args['hostcategory'] = ['all']
+        args['servicecategory'] = ['all']
+        self.driver.run_cmd("hbacrule_mod", [self.name], args)
+
 
 class PamHbacTestCase(unittest.TestCase):
     def setUp(self):
@@ -433,6 +440,7 @@ class PamHbacTestAllowAll(PamHbacTestCase):
 
     def test_allow_all(self):
         self.allow_all.enable()
+        self.allow_all.add_all_cats()
         self.assertAllowed("admin", "sshd")
 
     def test_allow_all_disabled(self):
