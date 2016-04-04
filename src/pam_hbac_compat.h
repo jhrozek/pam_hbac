@@ -111,4 +111,11 @@ do {                             \
 #define strndp portable_strndup
 #endif
 
+#ifdef PAM_EXTERN
+#define PH_SM_PROTO PAM_EXTERN int
+#else
+/* Solaris PAM does not have PAM_EXTERN */
+#define PH_SM_PROTO int
+#endif
+
 #endif /* __PAM_HBAC_COMPAT_H__ */
