@@ -174,6 +174,35 @@ class IpaClientlessPamHbacUserGroup(object):
         self.driver.run_cmd("group_add_member", [self.name], args)
 
 
+class IpaClientlessPamHbacService(object):
+    def __init__(self, driver, name):
+        self.driver = driver
+        self.name = name
+
+    def add(self):
+        self.driver.run_cmd("hbacsvc_add", [self.name])
+
+    def remove(self):
+        self.driver.run_cmd("hbacsvc_del", [self.name])
+
+
+class IpaClientlessPamHbacServiceGroup(object):
+    def __init__(self, driver, name):
+        self.driver = driver
+        self.name = name
+
+    def add(self):
+        self.driver.run_cmd("hbacsvcgroup_add", [self.name])
+
+    def remove(self):
+        self.driver.run_cmd("hbacsvcgroup_del", [self.name])
+
+    def add_member(self, svc):
+        args = dict()
+        args['hbacsvc'] = [svc]
+        self.driver.run_cmd("hbacsvcgroup_add_member", [self.name], args)
+
+
 class IpaClientlessPamHbacRule(object):
     def __init__(self, driver, name):
         self.driver = driver
@@ -372,6 +401,7 @@ class PamHbacTestCase(unittest.TestCase):
         return content
 
     def create_direct_entries(self, direct_user_name,
+                              service_name,
                               rule_host, non_rule_host):
         self.tuser = IpaClientlessPamHbacUser(self.driver, direct_user_name)
         self.tuser.add()
@@ -382,11 +412,15 @@ class PamHbacTestCase(unittest.TestCase):
                                                        non_rule_host)
         self.nonrule_client.add()
 
+        self.rule_svc = IpaClientlessPamHbacService(self.driver, service_name)
+        self.rule_svc.add()
+
     def remove_direct_entries(self):
         self.tuser.remove()
         self.client.remove()
         self.nonrule_client.remove()
         self.trule.remove()
+        self.rule_svc.remove()
 
 
 class PamHbacTestAllowAll(PamHbacTestCase):
@@ -412,14 +446,12 @@ class PamHbacTestDirect(PamHbacTestCase):
         super(PamHbacTestDirect, self).setUp()
         self.allow_all = IpaClientlessPamHbacRule(self.driver, "allow_all")
         self.allow_all.disable()
-        self.create_direct_entries("tuser", "rulehost", "nonrulehost")
-
-        self.rule_svc = "sshd"  # Built-in service
+        self.create_direct_entries("tuser", "rulesvc", "rulehost", "nonrulehost")
 
         self.trule = IpaClientlessPamHbacRule(self.driver, "trule")
         self.trule.add()
         # it would be better to pass the objects, not just strings maybe?
-        self.trule.add_svc(self.rule_svc)
+        self.trule.add_svc(self.rule_svc.name)
         self.trule.add_user(self.tuser.name)
         self.trule.add_host(self.client.name)
 
@@ -433,10 +465,10 @@ class PamHbacTestDirect(PamHbacTestCase):
         The user who is assigned to the rule should be allowed to log in the
         host referenced in the rule using the service referenced in the rule
         """
-        self.assertAllowed(self.tuser.name, self.rule_svc, self.client.name)
+        self.assertAllowed(self.tuser.name, self.rule_svc.name, self.client.name)
         # Sanity-check: Access must be denied if the rule is disabled
         self.trule.disable()
-        self.assertDenied(self.tuser.name, self.rule_svc, self.client.name)
+        self.assertDenied(self.tuser.name, self.rule_svc.name, self.client.name)
         self.trule.enable()
 
     def test_deny_non_rule_user(self):
@@ -445,7 +477,7 @@ class PamHbacTestDirect(PamHbacTestCase):
         log in the host referenced in the rule using the service referenced
         in the rule
         """
-        self.assertDenied("admin", self.rule_svc, self.client.name)
+        self.assertDenied("admin", self.rule_svc.name, self.client.name)
 
     def test_deny_non_rule_svc(self):
         """
@@ -462,7 +494,7 @@ class PamHbacTestDirect(PamHbacTestCase):
         service referenced in the rule
         """
         self.assertDenied(self.tuser.name,
-                          self.rule_svc,
+                          self.rule_svc.name,
                           self.nonrule_client.name)
 
 
@@ -472,7 +504,7 @@ class PamHbacTestGroup(PamHbacTestCase):
         self.allow_all = IpaClientlessPamHbacRule(self.driver, "allow_all")
         self.allow_all.disable()
 
-        self.create_direct_entries("tuser", "rulehost", "nonrulehost")
+        self.create_direct_entries("tuser", "rulesvc", "rulehost", "nonrulehost")
 
         self.tgroup = IpaClientlessPamHbacUserGroup(self.driver, "tgroup")
         self.tgroup.add()
@@ -488,12 +520,14 @@ class PamHbacTestGroup(PamHbacTestCase):
         self.non_rule_hg.add()
         self.non_rule_hg.add_member(self.nonrule_client.name)
 
-        self.rule_svc = "vsftpd"     # Built-in service
-        self.rule_svc_group = "ftp"  # Built-in service group
+        self.rule_svc_group = IpaClientlessPamHbacServiceGroup(self.driver,
+                                                               "ruleservicegroup")
+        self.rule_svc_group.add()
+        self.rule_svc_group.add_member(self.rule_svc.name)
 
         self.trule = IpaClientlessPamHbacRule(self.driver, "group_rule")
         self.trule.add()
-        self.trule.add_svc(svcgroup=self.rule_svc_group)
+        self.trule.add_svc(svcgroup=self.rule_svc_group.name)
         self.trule.add_user(usergroup=self.tgroup.name)
         self.trule.add_host(hostgroup=self.rule_hg.name)
 
@@ -503,6 +537,7 @@ class PamHbacTestGroup(PamHbacTestCase):
         self.tgroup.remove()
         self.rule_hg.remove()
         self.non_rule_hg.remove()
+        self.rule_svc_group.remove()
         super(PamHbacTestGroup, self).tearDown()
 
     def test_allow_rule_group_user(self):
@@ -512,10 +547,10 @@ class PamHbacTestGroup(PamHbacTestCase):
         referenced in the rule using a service that is a member of a
         service group referenced in the rule
         """
-        self.assertAllowed(self.tuser.name, self.rule_svc, self.client.name)
+        self.assertAllowed(self.tuser.name, self.rule_svc.name, self.client.name)
         # Sanity-check: Access must be denied if the rule is disabled
         self.trule.disable()
-        self.assertDenied(self.tuser.name, self.rule_svc, self.client.name)
+        self.assertDenied(self.tuser.name, self.rule_svc.name, self.client.name)
         self.trule.enable()
 
     def test_deny_non_rule_group_user(self):
@@ -525,7 +560,7 @@ class PamHbacTestGroup(PamHbacTestCase):
         referenced in the rule using a service that is a member of a
         service group referenced in the rule
         """
-        self.assertDenied("admin", self.rule_svc, self.client.name)
+        self.assertDenied("admin", self.rule_svc.name, self.client.name)
 
     def test_deny_non_rule_svc(self):
         """
@@ -542,7 +577,7 @@ class PamHbacTestGroup(PamHbacTestCase):
         service referenced in the rule
         """
         self.assertDenied(self.tuser.name,
-                          self.rule_svc,
+                          self.rule_svc.name,
                           self.nonrule_client.name)
 
 
