@@ -264,6 +264,7 @@ static int
 attr_to_rule_element(pam_handle_t *pamh,
                      struct ph_entry *rule_entry,
                      enum member_el_type el_type,
+                     const char *basedn,
                      struct hbac_rule_element **_el)
 {
     struct ph_attr *a;
@@ -303,7 +304,7 @@ attr_to_rule_element(pam_handle_t *pamh,
     for (i = 0; i < nvals; i++) {
         member_name = NULL;
 
-        ret = ph_name_from_dn(a->vals[i]->bv_val, el_type, &member_name);
+        ret = ph_name_from_dn(a->vals[i]->bv_val, el_type, basedn, &member_name);
         if (ret == 0) {
             logger(pamh, LOG_DEBUG, "%s is a single member object\n", member_name);
             el->names[ni] = member_name;
@@ -311,7 +312,7 @@ attr_to_rule_element(pam_handle_t *pamh,
             continue;
         }
 
-        ret = ph_group_name_from_dn(a->vals[i]->bv_val, el_type, &member_name);
+        ret = ph_group_name_from_dn(a->vals[i]->bv_val, el_type, basedn, &member_name);
         if (ret == 0) {
             logger(pamh, LOG_DEBUG, "%s is a group member object\n", member_name);
             el->groups[gi] = member_name;
@@ -391,6 +392,7 @@ fill_rule_name(pam_handle_t *pamh,
 
 static int
 entry_to_hbac_rule(pam_handle_t *pamh,
+                   const char *basedn,
                    struct ph_entry *rule_entry,
                    struct hbac_rule **_rule)
 {
@@ -423,7 +425,7 @@ entry_to_hbac_rule(pam_handle_t *pamh,
         return ret;
     }
 
-    ret = attr_to_rule_element(pamh, rule_entry, DN_TYPE_USER, &rule->users);
+    ret = attr_to_rule_element(pamh, rule_entry, DN_TYPE_USER, basedn, &rule->users);
     if (ret != 0) {
         logger(pamh, LOG_ERR,
                "Cannot add user data to rule [%d]: %s\n",
@@ -432,7 +434,8 @@ entry_to_hbac_rule(pam_handle_t *pamh,
         return ret;
     }
 
-    ret = attr_to_rule_element(pamh, rule_entry, DN_TYPE_SVC, &rule->services);
+    ret = attr_to_rule_element(pamh, rule_entry, DN_TYPE_SVC, basedn,
+                               &rule->services);
     if (ret != 0) {
         logger(pamh, LOG_ERR,
                "Cannot add service data to rule [%d]: %s\n",
@@ -441,7 +444,8 @@ entry_to_hbac_rule(pam_handle_t *pamh,
         return ret;
     }
 
-    ret = attr_to_rule_element(pamh, rule_entry, DN_TYPE_HOST, &rule->targethosts);
+    ret = attr_to_rule_element(pamh, rule_entry, DN_TYPE_HOST,
+                               basedn, &rule->targethosts);
     if (ret != 0) {
         logger(pamh, LOG_ERR,
                "Cannot add target host data to rule [%d]: %s\n",
@@ -516,7 +520,8 @@ ph_get_hbac_rules(struct pam_hbac_ctx *ctx,
 
     num_rules = 0;
     for (i = 0; i < num_rule_entries; i++) {
-        ret = entry_to_hbac_rule(ctx->pamh, rule_entries[i], &rules[num_rules]);
+        ret = entry_to_hbac_rule(ctx->pamh, ctx->pc->search_base, rule_entries[i],
+                                 &rules[num_rules]);
         if (ret != 0) {
             logger(ctx->pamh, LOG_WARNING,
                    "Skipping malformed rule %d/%d\n", i+1, num_rule_entries);

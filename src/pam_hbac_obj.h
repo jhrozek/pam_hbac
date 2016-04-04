@@ -45,6 +45,7 @@ int ph_get_svc(struct pam_hbac_ctx *ctx,
 int ph_create_hbac_eval_req(struct ph_user *user,
                             struct ph_entry *targethost,
                             struct ph_entry *service,
+                            const char *basedn,
                             struct hbac_eval_req **_req);
 void ph_free_hbac_eval_req(struct hbac_eval_req *req);
 

@@ -378,7 +378,8 @@ pam_hbac(enum pam_hbac_actions action, pam_handle_t *pamh,
      * service. Not matching it is not an error, it can still match /all/.
      */
 
-    ret = ph_create_hbac_eval_req(user, targethost, service, &eval_req);
+    ret = ph_create_hbac_eval_req(user, targethost, service,
+                                  ctx->pc->search_base, &eval_req);
     if (ret != 0) {
         logger(pamh, LOG_ERR,
                "ph_create_eval_req returned error [%d]: %s",

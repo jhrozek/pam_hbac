@@ -27,11 +27,22 @@
 #include "pam_hbac.h"
 #include "pam_hbac_dnparse.h"
 
+#define TEST_BASEDN "dc=ipa,dc=test"
+#define TEST_BASEDN2 "dc=aaa,dc=bbb"
+#define TEST_BASEDN3 "d=ipa,dc=test"
+#define TEST_BASEDN4 "dc=ipaa,dc=test"
+#define TEST_BASEDN5 "dc=ipa,dc=tesd"
+#define TEST_BASEDN6 "cn=ipa,dc=test"
+#define TEST_BASEDN_short "dc=ipa"
+#define TEST_BASEDN_long "dc=ipa,dc=test,dc=xxx"
+
 typedef int (*rdn_getter_fn)(const char *,
                              enum member_el_type,
+                             const char *,
                              const char **);
 
 static void ph_test_rdn_from_dn(rdn_getter_fn getter,
+                                const char *basedn,
                                 const char *dn_list[],
                                 const char *rdn_list[])
 {
@@ -44,7 +55,7 @@ static void ph_test_rdn_from_dn(rdn_getter_fn getter,
         for (ii = 0; ii <= DN_TYPE_SVC; ii++) {
             rdn_val = NULL;
 
-            ret = getter(dn_list[i], ii, &rdn_val);
+            ret = getter(dn_list[i], ii, basedn, &rdn_val);
             if (i == ii) {
                 assert_int_equal(ret, 0);
                 assert_non_null(rdn_val);
@@ -76,7 +87,8 @@ test_ph_name_from_dn(void **state)
 {
     (void) state; /* unused */
 
-    ph_test_rdn_from_dn(ph_name_from_dn, ok_entry_dn, ok_entry_rdn);
+    ph_test_rdn_from_dn(ph_name_from_dn, TEST_BASEDN, ok_entry_dn,
+                        ok_entry_rdn);
 }
 
 static const char *ok_group_dn[] = {
@@ -95,7 +107,8 @@ static void
 test_ph_group_name_from_dn(void **state)
 {
     (void) state; /* unused */
-    ph_test_rdn_from_dn(ph_group_name_from_dn, ok_group_dn, ok_group_rdn);
+    ph_test_rdn_from_dn(ph_group_name_from_dn, TEST_BASEDN, ok_group_dn,
+                        ok_group_rdn);
 }
 
 static void
@@ -108,21 +121,61 @@ test_rdn_key_mismatch(void **state)
 
     /* test RDN key mismatch */
     ret = ph_name_from_dn("oops=admin,cn=users,cn=accounts,dc=ipa,dc=test",
-                          DN_TYPE_USER, &rdn_val);
+                          DN_TYPE_USER, TEST_BASEDN, &rdn_val);
     assert_int_not_equal(ret, 0);
 
     ret = ph_group_name_from_dn("oops=admins,cn=groups,cn=accounts,dc=ipa,dc=test",
-                                DN_TYPE_USER, &rdn_val);
+                                DN_TYPE_USER, TEST_BASEDN, &rdn_val);
     assert_int_not_equal(ret, 0);
 
     /* No basedn */
-    ret = ph_name_from_dn("uid=admin,cn=users",
-                          DN_TYPE_USER, &rdn_val);
-    assert_int_not_equal(ret, 0);
+    ret = ph_name_from_dn("uid=admin,cn=users,cn=accounts",
+                          DN_TYPE_USER, TEST_BASEDN, &rdn_val);
+    assert_int_equal(ret, EINVAL);
+
+    /* Not matching basedn */
+    ret = ph_name_from_dn("uid=admin,cn=users,cn=accounts,"TEST_BASEDN2,
+                          DN_TYPE_USER, TEST_BASEDN, &rdn_val);
+    assert_int_equal(ret, EINVAL);
+
+    /* Too few computers in basedn */
+    ret = ph_name_from_dn("uid=admin,cn=users,cn=accounts,"TEST_BASEDN_short,
+                          DN_TYPE_USER, TEST_BASEDN, &rdn_val);
+    assert_int_equal(ret, EINVAL);
+
+    /* Too many components in basedn */
+    ret = ph_name_from_dn("uid=admin,cn=users,cn=accounts,"TEST_BASEDN_long,
+                          DN_TYPE_USER, TEST_BASEDN, &rdn_val);
+    assert_int_equal(ret, EINVAL);
+
+    /* basedn mismatch too short */
+    ret = ph_name_from_dn("uid=admin,cn=users,cn=accounts,"TEST_BASEDN3,
+                          DN_TYPE_USER, TEST_BASEDN, &rdn_val);
+    assert_int_equal(ret, EINVAL);
+
+    /* basedn mismatch - too long */
+    ret = ph_name_from_dn("uid=admin,cn=users,cn=accounts,"TEST_BASEDN4,
+                          DN_TYPE_USER, TEST_BASEDN, &rdn_val);
+    assert_int_equal(ret, EINVAL);
+
+    /* basedn mismatch - typo */
+    ret = ph_name_from_dn("uid=admin,cn=users,cn=accounts,"TEST_BASEDN5,
+                          DN_TYPE_USER, TEST_BASEDN, &rdn_val);
+    assert_int_equal(ret, EINVAL);
+
+    /* basedn mismatch - typo in attribute */
+    ret = ph_name_from_dn("uid=admin,cn=users,cn=accounts,"TEST_BASEDN6,
+                          DN_TYPE_USER, TEST_BASEDN, &rdn_val);
+    assert_int_equal(ret, EINVAL);
+
+    /* basedn NULL */
+    ret = ph_name_from_dn("uid=admin,cn=users,cn=accounts,"TEST_BASEDN,
+                          DN_TYPE_USER, NULL, &rdn_val);
+    assert_int_equal(ret, EINVAL);
 
     /* Missing required component */
     ret = ph_name_from_dn("uid=admin",
-                          DN_TYPE_USER, &rdn_val);
+                          DN_TYPE_USER, TEST_BASEDN, &rdn_val);
     assert_int_not_equal(ret, 0);
 }
 

@@ -133,7 +133,7 @@ test_create_eval_req_invalid(void **state)
 
     (void) state; /* unused */
 
-    ret = ph_create_hbac_eval_req(NULL, NULL, NULL, NULL);
+    ret = ph_create_hbac_eval_req(NULL, NULL, NULL, NULL, NULL);
     assert_int_equal(ret, EINVAL);
 }
 
@@ -168,6 +168,7 @@ static void test_create_eval_req_nogroups(void **state)
     ret = ph_create_hbac_eval_req(test_ctx->user,
                                   test_ctx->targethost,
                                   test_ctx->service,
+                                  TEST_BASEDN,
                                   &test_ctx->req);
     assert_int_equal(ret, 0);
 
@@ -249,6 +250,7 @@ static void test_create_eval_req_valid_groups(void **state)
     ret = ph_create_hbac_eval_req(test_ctx->user,
                                   test_ctx->targethost,
                                   test_ctx->service,
+                                  TEST_BASEDN,
                                   &test_ctx->req);
     assert_int_equal(ret, 0);
 
@@ -333,6 +335,7 @@ static void test_create_eval_req_skip_invalid_groups(void **state)
     ret = ph_create_hbac_eval_req(test_ctx->user,
                                   test_ctx->targethost,
                                   test_ctx->service,
+                                  TEST_BASEDN,
                                   &test_ctx->req);
     assert_int_equal(ret, 0);
 

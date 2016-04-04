@@ -26,10 +26,12 @@ enum member_el_type {
 
 int ph_group_name_from_dn(const char *dn,
                           enum member_el_type el_type,
+                          const char *basedn,
                           const char **_group_name);
 
 int ph_name_from_dn(const char *dn,
                     enum member_el_type el_type,
+                    const char *basedn,
                     const char **_name);
 
 const char *ph_member_el_type2str(const enum member_el_type el_type);
