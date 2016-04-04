@@ -465,7 +465,7 @@ ph_connect(struct pam_hbac_ctx *ctx)
         logger(ctx->pamh, LOG_ERR,
                "ldap_set_option failed [%d]: %s\n",
                ret, ldap_err2string(ret));
-        ldap_destroy(ld);
+        ldap_unbind_ext(ld, NULL, NULL);
         return EIO;
     }
 
@@ -474,7 +474,7 @@ ph_connect(struct pam_hbac_ctx *ctx)
         logger(ctx->pamh, LOG_ERR,
                "start_tls failed [%d]: %s\n",
                ret, ldap_err2string(ret));
-        ldap_destroy(ld);
+        ldap_unbind_ext(ld, NULL, NULL);
         return EIO;
     }
 
