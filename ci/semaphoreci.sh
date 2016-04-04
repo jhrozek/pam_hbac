@@ -53,6 +53,15 @@ pushd _build_test
 make
 make check
 make check-valgrind
+# Integration tests agains the public IPA demo instance
+make intgcheck VERBOSE=1 \
+               IPA_HOSTNAME="ipa.demo1.freeipa.org" \
+               IPA_DOMAIN="demo1.freeipa.org" \
+               ADMIN_PASSWORD=Secret123 \
+               INSECURE_TESTS=1 \
+               IPA_BASEDN="dc=demo1,dc=freeipa,dc=org" \
+               BIND_DN="uid=admin,cn=users,cn=accounts,dc=demo1,dc=freeipa,dc=org" \
+               BIND_PW="Secret123"
 popd
 
 export CFLAGS="-g -O2 -Wall"
