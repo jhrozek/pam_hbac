@@ -26,6 +26,9 @@
 #include <pwd.h>
 #include <grp.h>
 #include <unistd.h>
+#ifdef HAVE_STRINGS_H
+#include <strings.h>
+#endif
 
 #include "pam_hbac.h"
 #include "pam_hbac_entry.h"
