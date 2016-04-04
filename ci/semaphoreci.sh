@@ -32,6 +32,15 @@ make
 sudo make install
 popd
 
+# Build pam_wrapper..not in Ubuntu 14.04 at all
+git clone git://git.samba.org/pam_wrapper.git
+mkdir pam_wrapper/obj
+pushd pam_wrapper/obj
+cmake -DLIB_INSTALL_DIR:PATH=/usr/lib ..
+make
+sudo make install
+popd
+
 # Build pam_hbac
 export SRC_DIR=$PWD
 autoreconf -if
