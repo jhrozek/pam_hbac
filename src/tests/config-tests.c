@@ -169,7 +169,7 @@ int __wrap_gethostname(char *name, size_t len)
 {
     int n;
 
-    n = snprintf(name, len, test_hostname);
+    n = snprintf(name, len, "%s", test_hostname);
     if (n != strlen(test_hostname)) {
         errno = ENOMEM;
         return -1;
