@@ -78,10 +78,8 @@ parse_args(pam_handle_t *pamh,
         /* generic options */
         if (strcmp(*argv, PH_OPT_IGNORE_UNKNOWN_USER) == 0) {
             flags |= PAM_IGNORE_UNKNOWN_USER_ARG;
-            logger(pamh, LOG_DEBUG, "ignore_unknown_user found");
         } else if (strcmp(*argv, PH_OPT_DEBUG_MODE) == 0) {
             flags |= PAM_DEBUG_MODE;
-            logger(pamh, LOG_DEBUG, "'debug' option found");
         } else if (strncmp(*argv, PH_OPT_CONFIG, strlen(PH_OPT_CONFIG)) == 0) {
             if (*(*argv+strlen(PH_OPT_CONFIG)) == '\0') {
                 return EINVAL;
@@ -96,6 +94,18 @@ parse_args(pam_handle_t *pamh,
     *_config = config;
     *_flags = flags;
     return 0;
+}
+
+static void
+print_found_options(pam_handle_t *pamh, int flags)
+{
+    if (flags & PAM_IGNORE_UNKNOWN_USER_ARG) {
+        logger(pamh, LOG_DEBUG, "ignore_unknown_user found");
+    }
+
+    if (flags & PAM_DEBUG_MODE) {
+        logger(pamh, LOG_DEBUG, "debug option found");
+    }
 }
 
 static int
@@ -274,8 +284,6 @@ pam_hbac(enum pam_hbac_actions action, pam_handle_t *pamh,
     global_pam_handle = pamh;
     hbac_enable_debug(hbac_debug_messages);
 
-    logger(pamh, LOG_DEBUG, "Hello world!\n");
-
     /* Check supported actions */
     switch (action) {
         case PAM_HBAC_ACCOUNT:
@@ -294,6 +302,8 @@ pam_hbac(enum pam_hbac_actions action, pam_handle_t *pamh,
     }
 
     set_debug_mode(flags & PAM_DEBUG_MODE);
+
+    print_found_options(pamh, flags);
 
     pam_ret = pam_hbac_get_items(pamh, &pi, flags);
     if (pam_ret != PAM_SUCCESS) {
