@@ -24,9 +24,9 @@ parameters:
 For example:
     make intgcheck IPA_HOSTNAME="unidirect.ipa.test" \
                    IPA_DOMAIN="ipa.test" \
-                   IPA_BASEDN="dc=ipa,dc=test"
+                   IPA_BASEDN="dc=ipa,dc=test" \
                    ADMIN_PASSWORD="blablabla" \
-                   BIND_DN=uid=hbac,cn=sysaccounts,cn=etc,dc=ipa,dc=test \
-                   BIND_PW=Secret123 \
+                   BIND_DN="uid=hbac,cn=sysaccounts,cn=etc,dc=ipa,dc=test" \
+                   BIND_PW="Secret123" \
                    INSECURE_TESTS=1
 
