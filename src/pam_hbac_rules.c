@@ -26,7 +26,6 @@
 #include "pam_hbac_obj_int.h"
 #include "pam_hbac_dnparse.h"
 #include "pam_hbac_entry.h"
-#include "pam_hbac_compat.h"
 
 #include "libhbac/ipa_hbac.h"
 #include "config.h"

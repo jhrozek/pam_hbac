@@ -28,7 +28,6 @@
 #include <unistd.h>
 
 #include "pam_hbac.h"
-#include "pam_hbac_compat.h"
 #include "pam_hbac_entry.h"
 #include "pam_hbac_ldap.h"
 #include "pam_hbac_obj.h"

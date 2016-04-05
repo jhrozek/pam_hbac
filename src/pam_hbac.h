@@ -18,6 +18,8 @@
 #ifndef __PAM_HBAC_H__
 #define __PAM_HBAC_H__
 
+#include "pam_hbac_compat.h"
+
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -26,7 +28,6 @@
 #include <syslog.h>
 
 #include <ldap.h>
-#include <security/pam_modules.h>
 
 #include "libhbac/ipa_hbac.h"
 

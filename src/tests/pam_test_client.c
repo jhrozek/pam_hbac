@@ -27,7 +27,6 @@
 #include <unistd.h>
 #include <string.h>
 
-#include <security/pam_appl.h>
 #include "pam_hbac_compat.h"
 
 #define PAM_TEST_APPNAME    "pam_hbac_test"

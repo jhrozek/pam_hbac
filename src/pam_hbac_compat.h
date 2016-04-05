@@ -18,10 +18,15 @@
 #ifndef __PAM_HBAC_COMPAT_H__
 #define __PAM_HBAC_COMPAT_H__
 
-#include <security/pam_appl.h>
-
 #include "config.h"
 #include "portable/portable_system.h"
+
+#ifdef HAVE_SECURITY_PAM_APPL_H
+/* Some systems, like Solaris, require that even modules
+ * include pam_appl.h
+ */
+#include <security/pam_appl.h>
+#endif
 
 #ifdef HAVE_SECURITY__PAM_MACROS_H
 # include <security/_pam_macros.h>

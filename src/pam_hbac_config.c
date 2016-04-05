@@ -24,7 +24,6 @@
 #include <unistd.h>
 
 #include "pam_hbac.h"
-#include "pam_hbac_compat.h"
 #include "config.h"
 
 #define MAX_LINE    1024
