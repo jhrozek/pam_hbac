@@ -70,7 +70,7 @@ AC_DEFUN([AX_VALGRIND_CHECK],[
 	AS_IF([test "$enable_valgrind" = "yes" -a "$VALGRIND" = ""],[
 		AC_MSG_ERROR([Could not find valgrind; either install it or reconfigure with --disable-valgrind])
 	])
-	AS_IF([test "$enable_valgrind" != "no"],[enable_valgrind=yes])
+	AS_IF([test "$enable_valgrind" != "yes"],[enable_valgrind=no])
 
 	AM_CONDITIONAL([VALGRIND_ENABLED],[test "$enable_valgrind" = "yes"])
 	AC_SUBST([VALGRIND_ENABLED],[$enable_valgrind])
@@ -122,10 +122,6 @@ valgrind_helgrind_flags = --tool=helgrind $(VALGRIND_helgrind_FLAGS)
 valgrind_drd_flags = --tool=drd $(VALGRIND_drd_FLAGS)
 valgrind_sgcheck_flags = --tool=exp-sgcheck $(VALGRIND_sgcheck_FLAGS)
 
-valgrind_quiet = $(valgrind_quiet_$(V))
-valgrind_quiet_ = $(valgrind_quiet_$(AM_DEFAULT_VERBOSITY))
-valgrind_quiet_0 = --quiet
-
 # Support running with and without libtool.
 
 # Use recursive makes in order to ignore errors during check
@@ -171,6 +167,7 @@ MOSTLYCLEANFILES += $(valgrind_log_files)
 .PHONY: check-valgrind check-valgrind-tool
 '
 
+	AS_IF([test "$enable_valgrind" != "yes"],[VALGRIND_CHECK_RULES='.PHONY: check-valgrind check-valgrind-tool'])
 	AC_SUBST([VALGRIND_CHECK_RULES])
 	m4_ifdef([_AM_SUBST_NOTMAKE], [_AM_SUBST_NOTMAKE([VALGRIND_CHECK_RULES])])
 ])

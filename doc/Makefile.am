@@ -22,10 +22,10 @@ man_MANS = \
 	$(NULL)
 
 .8.txt.8:
-	$(A2X) -D $(builddir) --doctype manpage --format manpage $<
+	$(A2X) -D . --doctype manpage --format manpage $<
 
 .5.txt.5:
-	$(A2X) -D $(builddir) --doctype manpage --format manpage $<
+	$(A2X) -D . --doctype manpage --format manpage $<
 
 clean-local:
 	rm -f $(man_MANS)
