@@ -24,6 +24,7 @@
 #include <ldap.h>
 
 #include "pam_hbac_dnparse.h"
+#include "pam_hbac_compat.h"
 
 /* if val is NULL, only key is checked */
 static bool

@@ -48,6 +48,15 @@ pam_hbac_la_LDFLAGS = \
 		     -lpam \
 		     -module \
 		     -avoid-version
+
+if NEEDS_PORTABLE
+pam_hbac_la_SOURCES += \
+		src/portable/asprintf.c \
+		src/portable/snprintf.c \
+		src/portable/strndup.c \
+		$(NULL)
+endif
+
 if HAVE_GNU_LD
 pam_hbac_la_LDFLAGS += \
 		     -Wl,--version-script,$(srcdir)/src/pam_hbac.exports
@@ -64,6 +73,9 @@ dist_noinst_HEADERS = \
 		      src/libhbac/ipa_hbac.h \
 		      src/libhbac/sss_utf8.h \
 		      src/libhbac/sss_compat.h \
+		      src/portable/portable_macros.h \
+		      src/portable/portable_stdbool.h \
+		      src/portable/portable_system.h \
 		      src/tests/common_mock.h \
 		      src/tests/ph_tests.h \
 		      $(NULL)

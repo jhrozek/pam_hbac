@@ -16,6 +16,10 @@ AC_INIT([pam_hbac],
 AC_CONFIG_AUX_DIR([build])
 
 AM_INIT_AUTOMAKE([-Wall foreign subdir-objects])
+m4_ifdef([AC_USE_SYSTEM_EXTENSIONS],
+         [AC_USE_SYSTEM_EXTENSIONS],
+         [AC_GNU_SOURCE])
+
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 AM_PROG_CC_C_O
 AC_DISABLE_STATIC
@@ -27,6 +31,14 @@ m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES])
 
 AM_CONDITIONAL([HAVE_GCC], [test "$ac_cv_prog_gcc" = yes])
 AM_CONDITIONAL([HAVE_GNU_LD], [test "$lt_cv_prog_gnu_ld" = yes])
+
+# Portability checks
+AC_HEADER_STDBOOL
+AC_CHECK_TYPES([ssize_t], [], [],
+               [#include <sys/types.h>])
+AC_TYPE_LONG_LONG_INT
+AC_CHECK_FUNCS([asprintf vasprintf snprintf vsnprintf strndup], [], [needs_portable=1])
+AM_CONDITIONAL([NEEDS_PORTABLE], [test "x$needs_portable" != "x"])
 
 # Check if the compiler supports optional attributes
 CC_ATTRIBUTE_PRINTF
