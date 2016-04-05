@@ -11,12 +11,14 @@ Supported platforms
 ===================
 pam_hbac was tested on the following operating systems and releases:
   * Linux (RHEL-5 and newer)
-    * I tested RHEL-5 and newer Red Hat based distributions. Ubuntu is
-      used as a CI platform, but no functional testing was done there.
+    * The pam_hbac developers tested RHEL-5 and newer Red Hat based
+      distributions. Ubuntu is used as a CI platform, but no functional
+      testing was done there except integration tests.
+  * FreeBSD - tested on FreeBSD 10.2
 
 Building from source
 ====================
-To build it, make sure the dependencies are installed. Except the usual
+To build pam_hbac, make sure the dependencies are installed. Except the usual
 build dependencies such as `autotools`, `pkg-config` or a compiler, the only
 required packages are the LDAP and PAM development libraries and a UTF-8
 library. Currently `libunistring` and `glib` are supported as UTF-8 libraries,
