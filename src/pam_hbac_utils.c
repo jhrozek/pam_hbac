@@ -15,6 +15,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "config.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <errno.h>
@@ -24,6 +25,12 @@
 
 #include "pam_hbac.h"
 #include "pam_hbac_compat.h"
+
+#ifdef HAVE_THREAD_KEY_WORD
+static __thread bool debug_mode = true;
+#else
+static bool debug_mode = true;
+#endif
 
 void
 free_string_clist(const char **list)
@@ -83,11 +90,28 @@ null_cstring_array_size(const char *arr[])
     return nelem;
 }
 
+void set_debug_mode(bool v)
+{
+    debug_mode = v;
+}
+
 void logger(pam_handle_t *pamh, int level, const char *fmt, ...)
 {
     va_list ap;
 
     va_start(ap, fmt);
+
+    va_logger(pamh, level, fmt, ap);
+
+    va_end(ap);
+}
+
+void va_logger(pam_handle_t *pamh, int level, const char *fmt, va_list ap)
+{
+    /* If not in debug mode then do not be verbose. */
+    if (debug_mode == false && level > LOG_ERR) {
+        return;
+    }
 
 #ifdef DEBUG
     va_list apd;
@@ -108,7 +132,4 @@ void logger(pam_handle_t *pamh, int level, const char *fmt, ...)
 #endif
 
     pam_vsyslog(pamh, LOG_AUTHPRIV|level, fmt, ap);
-
-    va_end(ap);
 }
-

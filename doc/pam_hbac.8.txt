@@ -22,6 +22,9 @@ more details about the configuration file.
 if the user requesting access is not found. If this option is enabled, `pam_hbac`
 will return `PAM_IGNORE` instead, causing the PAM stack to ignore this module.
 
+* *debug* - by default, `pam_hbac` logs only messages with priority at least
+`LOG_ERR`. If this option is enabled log messages of all priorities are printed.
+
 MODULE TYPES PROVIDED
 ---------------------
 Only the *account* module type is supported.

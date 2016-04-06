@@ -189,6 +189,7 @@ read_config_line(pam_handle_t *pamh,
     const char *value = NULL;
     const char *l;
     int ret;
+    bool skip_line = false;
 
     l = line;
 
@@ -199,6 +200,7 @@ read_config_line(pam_handle_t *pamh,
 
     /* Skip comments and empty lines */
     if (*l == '#' || *l == '\0') {
+        skip_line = true;
         ret = EAGAIN;
         goto fail;
     }
@@ -237,8 +239,12 @@ read_config_line(pam_handle_t *pamh,
     return 0;
 
 fail:
-    logger(pamh, LOG_CRIT,
-           "cannot read config [%d]: %s\n", ret, strerror(ret));
+    if (skip_line) {
+        logger(pamh, LOG_DEBUG, "Empty line in config file\n");
+    } else {
+        logger(pamh, LOG_CRIT,
+               "cannot read config [%d]: %s\n", ret, strerror(ret));
+    }
     free_const(key);
     free_const(value);
     return ret;

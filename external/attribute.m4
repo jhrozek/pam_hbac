@@ -17,3 +17,22 @@ AC_DEFUN([CC_ATTRIBUTE_PRINTF], [
                 [whether compiler supports __attribute__((format))])
     fi
 ])
+
+AC_DEFUN([CC_THREAD_KW], [
+    AC_CACHE_CHECK([whether compiler supports __thread],
+                   ph_cv_thread_kw,
+                   [AC_COMPILE_IFELSE(
+                             [AC_LANG_SOURCE(
+                                 [__thread int var;]
+                             )],
+                             [ph_cv_thread_kw=yes],
+                             [
+                                AC_MSG_RESULT([no])
+                                AC_MSG_WARN([compiler does NOT support __thread])
+                             ])
+                    ])
+    if test x"$ph_cv_thread_kw" = xyes ; then
+    AC_DEFINE(HAVE_THREAD_KEY_WORD, 1,
+                [whether compiler supports __thread)])
+    fi
+])

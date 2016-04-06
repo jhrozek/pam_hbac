@@ -43,6 +43,9 @@ AM_CONDITIONAL([NEEDS_PORTABLE], [test "x$needs_portable" != "x"])
 # Check if the compiler supports optional attributes
 CC_ATTRIBUTE_PRINTF
 
+# Check if the compiler supports __thread key word
+CC_THREAD_KW
+
 #Check for PAM headers
 AC_CHECK_HEADERS([security/pam_appl.h])
 AC_CHECK_HEADERS([security/pam_modules.h],,,[
