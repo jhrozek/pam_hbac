@@ -38,9 +38,11 @@
 #define CHECK_AND_RETURN_PI_STRING(s) ((s != NULL && *s != '\0')? s : "(not available)")
 
 #define PAM_IGNORE_UNKNOWN_USER_ARG     0x0001
-#define PAM_DEBUG_MODE                 (0x0001 << 1)
+#define PAM_IGNORE_AUTHINFO_UNAVAIL    (0x0001 << 1)
+#define PAM_DEBUG_MODE                 (0x0001 << 2)
 
 #define PH_OPT_IGNORE_UNKNOWN_USER      "ignore_unknown_user"
+#define PH_OPT_IGNORE_AUTHINFO_UNAVAIL  "ignore_authinfo_unavail"
 #define PH_OPT_CONFIG                   "config="
 #define PH_OPT_DEBUG_MODE               "debug"
 
@@ -78,6 +80,8 @@ parse_args(pam_handle_t *pamh,
         /* generic options */
         if (strcmp(*argv, PH_OPT_IGNORE_UNKNOWN_USER) == 0) {
             flags |= PAM_IGNORE_UNKNOWN_USER_ARG;
+        } else if (strcmp(*argv, PH_OPT_IGNORE_AUTHINFO_UNAVAIL) == 0) {
+            flags |= PAM_IGNORE_AUTHINFO_UNAVAIL;
         } else if (strcmp(*argv, PH_OPT_DEBUG_MODE) == 0) {
             flags |= PAM_DEBUG_MODE;
         } else if (strncmp(*argv, PH_OPT_CONFIG, strlen(PH_OPT_CONFIG)) == 0) {
@@ -101,6 +105,10 @@ print_found_options(pam_handle_t *pamh, int flags)
 {
     if (flags & PAM_IGNORE_UNKNOWN_USER_ARG) {
         logger(pamh, LOG_DEBUG, "ignore_unknown_user found");
+    }
+
+    if (flags & PAM_IGNORE_AUTHINFO_UNAVAIL) {
+        logger(pamh, LOG_DEBUG, "ignore_authinfo_unavail found");
     }
 
     if (flags & PAM_DEBUG_MODE) {
@@ -328,7 +336,11 @@ pam_hbac(enum pam_hbac_actions action, pam_handle_t *pamh,
     if (ret != 0) {
         logger(pamh, LOG_NOTICE,
                "ph_connect returned error: %s", strerror(ret));
-        pam_ret = PAM_AUTHINFO_UNAVAIL;
+        if (flags & PAM_IGNORE_AUTHINFO_UNAVAIL) {
+            pam_ret = PAM_IGNORE;
+        } else {
+            pam_ret = PAM_AUTHINFO_UNAVAIL;
+        }
         goto done;
     }
     logger(pamh, LOG_DEBUG, "ph_connect: OK");
@@ -358,7 +370,11 @@ pam_hbac(enum pam_hbac_actions action, pam_handle_t *pamh,
     if (ret == ENOENT) {
         logger(pamh, LOG_NOTICE,
                "Did not find host %s denying access\n", ctx->pc->hostname);
-        pam_ret = PAM_PERM_DENIED;
+        if (flags & PAM_IGNORE_AUTHINFO_UNAVAIL) {
+            pam_ret = PAM_IGNORE;
+        } else {
+            pam_ret = PAM_PERM_DENIED;
+        }
         goto done;
     } else if (ret != 0) {
         logger(pamh, LOG_ERR,
