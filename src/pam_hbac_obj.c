@@ -153,7 +153,7 @@ ph_get_user(pam_handle_t *ph, const char *username)
 
     pu = get_user_int(username, bufsize, maxgroups);
     if (pu == NULL) {
-        logger(ph, LOG_ERR, "Cannot get the value of _SC_NGROUPS_MAX\n");
+        logger(ph, LOG_NOTICE, "Cannot find user %s\n", username);
         return NULL;
     }
 

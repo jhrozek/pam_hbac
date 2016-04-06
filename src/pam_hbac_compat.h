@@ -83,7 +83,7 @@ do {                             \
 #endif /* HOST_NAME_MAX */
 
 #define FALLBACK_GETGR_R_SIZE_MAX   1024
-#define FALLBACK_GETPW_R_SIZE_MAX   128
+#define FALLBACK_GETPW_R_SIZE_MAX   1024
 #define FALLBACK_NGROUPS_MAX        128
 
 #ifndef HAVE_ASPRINTF
