@@ -594,6 +594,16 @@ class PamHbacTestErrorConditions(PamHbacTestCase):
         """
         self.assertDenied("admin", "sshd", "no_such_host")
 
+    def test_ignore_authinfo_unavail(self):
+        """"
+        Failed up connection to host should return PAM_AUTHINFO_UNAVAIL
+        (Underlying authentication service). By adding pam_permit, this test
+        will return PAM_SUCCESS as a whole, otherwise it would return permission
+        denied.`
+        """
+        self.assertPamReturns("admin", "sshd", 0, host="no_such_host",
+                              pam_mod_opts=["ignore_authinfo_unavail"],
+                              additional_modules=[ { "pam_permit.so":"required"}])
 
 if __name__ == "__main__":
     unittest.main()
