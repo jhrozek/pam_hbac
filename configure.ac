@@ -8,6 +8,7 @@ m4_include([external/cwrap.m4])
 m4_include([external/a2x.m4])
 m4_include([external/ax_valgrind_check.m4])
 m4_include([external/attribute.m4])
+m4_include([external/posix_nss.m4])
 
 AC_INIT([pam_hbac],
         VERSION_NUMBER,
@@ -39,6 +40,10 @@ AC_CHECK_TYPES([ssize_t], [], [],
 AC_TYPE_LONG_LONG_INT
 AC_CHECK_FUNCS([asprintf vasprintf snprintf vsnprintf strndup], [], [needs_portable=1])
 AM_CONDITIONAL([NEEDS_PORTABLE], [test "x$needs_portable" != "x"])
+
+# Solaris and Linux NSS interface differs, check what we are compiling for
+AM_CHECK_POSIX_GETPWNAM
+AM_CHECK_POSIX_GETGRGID
 
 # Check if the compiler supports optional attributes
 CC_ATTRIBUTE_PRINTF

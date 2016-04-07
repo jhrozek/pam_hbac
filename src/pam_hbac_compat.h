@@ -118,4 +118,8 @@ do {                             \
 #define PH_SM_PROTO int
 #endif
 
+#ifndef _POSIX_PTHREAD_SEMANTICS
+# define _POSIX_PTHREAD_SEMANTICS 1
+#endif
+
 #endif /* __PAM_HBAC_COMPAT_H__ */

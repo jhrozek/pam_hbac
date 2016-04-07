@@ -17,6 +17,8 @@
 
 #define _GNU_SOURCE
 
+#include "config.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <ctype.h>
@@ -40,7 +42,9 @@
 static char *
 getgroupname(gid_t gid)
 {
+#if defined(HAVE_POSIX_GETGRGID_R)
     int ret;
+#endif
     char *buffer;
     int bufsize;
     struct group grp;
@@ -57,11 +61,21 @@ getgroupname(gid_t gid)
         return NULL;
     }
 
+#if defined(HAVE_POSIX_GETGRGID_R)
     ret = getgrgid_r(gid, &grp, buffer, bufsize, &result);
     if (ret != 0 || result == NULL) {
         free(buffer);
         return NULL;
     }
+#elif defined(HAVE_NONPOSIX_GETGRGID_R)
+    result = getgrgid_r(gid, &grp, buffer, bufsize);
+    if (result == NULL) {
+        free(buffer);
+        return NULL;
+    }
+#else
+#error No known getgrgid_r implementation found!
+#endif
 
     name = strdup(grp.gr_name);
     free(buffer);
@@ -114,10 +128,19 @@ get_user_int(const char *username, const size_t bufsize, const int maxgroups)
     struct passwd *result = NULL;
     int ngroups;
 
+#if defined(HAVE_POSIX_GETPWNAM_R)
     ret = getpwnam_r(username, &pwd, buffer, bufsize, &result);
     if (ret != 0 || result == NULL) {
         return NULL;
     }
+#elif defined(HAVE_NONPOSIX_GETPWNAM_R)
+    result = getpwnam_r(username, &pwd, buffer, bufsize);
+    if (result == NULL) {
+        return NULL;
+    }
+#else
+#error No known getpwnam_r implementation found!
+#endif
 
     ngroups = maxgroups;    /* don't modify input parameter */
     ret = getgrouplist(pwd.pw_name, pwd.pw_gid, gidlist, &ngroups);
