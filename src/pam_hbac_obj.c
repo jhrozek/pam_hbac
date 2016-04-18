@@ -118,6 +118,32 @@ get_user_names(struct passwd *pwd,
     return user;
 }
 
+static int
+get_user_groups(const char *name, gid_t primary_gid,
+                gid_t *groups, int *ngroups_ptr)
+{
+    int ret;
+#ifndef HAVE_GETGROUPLIST
+    int ngroups;
+#endif
+
+#if defined(HAVE_GETGROUPLIST)
+    ret = getgrouplist(name, primary_gid, groups, ngroups_ptr);
+#elif defined(HAVE__GETGROUPSBYMEMBER)
+
+    groups[0] = primary_gid;
+    ngroups = _getgroupsbymember(name, groups, *ngroups_ptr, 1);
+    if (ngroups != -1) {
+        ret = 0;
+        *ngroups_ptr = ngroups;
+    }
+#else
+#error No known get-groups-for-user implementation found
+#endif
+
+    return ret;
+}
+
 struct ph_user *
 get_user_int(const char *username, const size_t bufsize, const int maxgroups)
 {
@@ -143,7 +169,7 @@ get_user_int(const char *username, const size_t bufsize, const int maxgroups)
 #endif
 
     ngroups = maxgroups;    /* don't modify input parameter */
-    ret = getgrouplist(pwd.pw_name, pwd.pw_gid, gidlist, &ngroups);
+    ret = get_user_groups(pwd.pw_name, pwd.pw_gid, gidlist, &ngroups);
     if (ret == -1) {
         /* FIXME - resize on platforms where we allocate fewer groups? */
         return NULL;

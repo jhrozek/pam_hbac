@@ -44,6 +44,7 @@ AM_CONDITIONAL([NEEDS_PORTABLE], [test "x$needs_portable" != "x"])
 # Solaris and Linux NSS interface differs, check what we are compiling for
 AM_CHECK_POSIX_GETPWNAM
 AM_CHECK_POSIX_GETGRGID
+AC_CHECK_FUNCS(getgrouplist _getgroupsbymember)
 
 # Check if the compiler supports optional attributes
 CC_ATTRIBUTE_PRINTF

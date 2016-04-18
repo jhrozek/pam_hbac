@@ -118,8 +118,9 @@ do {                             \
 #define PH_SM_PROTO int
 #endif
 
-#ifndef _POSIX_PTHREAD_SEMANTICS
-# define _POSIX_PTHREAD_SEMANTICS 1
+#ifdef HAVE__GETGROUPSBYMEMBER
+/* This is a private Solaris function */
+extern int _getgroupsbymember(const char *, gid_t[], int, int);
 #endif
 
 #endif /* __PAM_HBAC_COMPAT_H__ */
