@@ -50,9 +50,9 @@ cd $SRC_DIR
 mkdir _build_test
 pushd _build_test
 ../configure --enable-valgrind
-make
-make check
-make check-valgrind
+make || exit 1
+make check || exit 2
+make check-valgrind || exit 3
 # Integration tests agains the public IPA demo instance
 make intgcheck VERBOSE=1 \
                IPA_HOSTNAME="ipa.demo1.freeipa.org" \
@@ -61,7 +61,7 @@ make intgcheck VERBOSE=1 \
                INSECURE_TESTS=1 \
                IPA_BASEDN="dc=demo1,dc=freeipa,dc=org" \
                BIND_DN="uid=admin,cn=users,cn=accounts,dc=demo1,dc=freeipa,dc=org" \
-               BIND_PW="Secret123"
+               BIND_PW="Secret123" || exit 5
 popd
 
 export CFLAGS="-g -O2 -Wall"
@@ -70,4 +70,4 @@ cd $SRC_DIR
 mkdir _build_dist
 cd _build_dist
 ../configure
-make distcheck
+make distcheck || exit 4
