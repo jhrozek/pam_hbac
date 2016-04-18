@@ -18,17 +18,23 @@ pam_hbac was tested on the following operating systems and releases:
 
 Building from source
 ====================
-To build pam_hbac, make sure the dependencies are installed. Except the usual
-build dependencies such as `autotools`, `pkg-config` or a compiler, the only
-required packages are the LDAP and PAM development libraries and a UTF-8
-library. Currently `libunistring` and `glib` are supported as UTF-8 libraries,
-with glib being the default.
+To build pam_hbac, make sure the dependencies are installed. Except the
+usual build dependencies such as `autotools`, `pkg-config` `gettext, or
+a compiler, the only required packages are the LDAP and PAM development
+libraries and a UTF-8 library. Currently `libunistring` and `glib` are
+supported as UTF-8 libraries, with glib being the default.
 
 In order to build man pages, the tool `a2x` is an optional build dependency.
 
 The Unit tests require the [cmocka](https://cmocka.org/) unit test
 framework as well as `nss_wrapper` and `pam_wrapper` tools from the
 [cwrap.org](https://cwrap.org/) project.
+
+If you're building from a git checkout, generate configure first:
+    $ autoreconf -if
+Then run the usual "configure, make, make install" commands. For platforms
+that we tested and support, there is a platform-dependent README.$platform
+in the doc/ subdirectory that includes suggested configure flags.
 
 Documentation
 =============
