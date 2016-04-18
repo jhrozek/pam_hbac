@@ -123,4 +123,9 @@ do {                             \
 extern int _getgroupsbymember(const char *, gid_t[], int, int);
 #endif
 
+#ifndef LOG_AUTHPRIV
+/* Solaris does not define LOG_AUTHPRIV */
+#define LOG_AUTHPRIV LOG_AUTH
+#endif
+
 #endif /* __PAM_HBAC_COMPAT_H__ */
