@@ -317,7 +317,7 @@ pam_hbac(enum pam_hbac_actions action, pam_handle_t *pamh,
     if (pam_ret != PAM_SUCCESS) {
         logger(pamh, LOG_ERR,
                "pam_hbac_get_items returned error: %s",
-               pam_strerror(pamh, ret));
+               pam_strerror(pamh, pam_ret));
         goto done;
     }
 

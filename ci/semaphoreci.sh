@@ -32,6 +32,15 @@ make
 sudo make install
 popd
 
+# Build pam_wrapper..not in Ubuntu 14.04 at all
+git clone git://git.samba.org/pam_wrapper.git
+mkdir pam_wrapper/obj
+pushd pam_wrapper/obj
+cmake -DLIB_INSTALL_DIR:PATH=/usr/lib ..
+make
+sudo make install
+popd
+
 # Build pam_hbac
 export SRC_DIR=$PWD
 autoreconf -if
@@ -41,9 +50,18 @@ cd $SRC_DIR
 mkdir _build_test
 pushd _build_test
 ../configure --enable-valgrind
-make
-make check
-make check-valgrind
+make || exit 1
+make check || exit 2
+make check-valgrind || exit 3
+# Integration tests agains the public IPA demo instance
+make intgcheck VERBOSE=1 \
+               IPA_HOSTNAME="ipa.demo1.freeipa.org" \
+               IPA_DOMAIN="demo1.freeipa.org" \
+               ADMIN_PASSWORD=Secret123 \
+               INSECURE_TESTS=1 \
+               IPA_BASEDN="dc=demo1,dc=freeipa,dc=org" \
+               BIND_DN="uid=admin,cn=users,cn=accounts,dc=demo1,dc=freeipa,dc=org" \
+               BIND_PW="Secret123" || exit 5
 popd
 
 export CFLAGS="-g -O2 -Wall"
@@ -52,4 +70,4 @@ cd $SRC_DIR
 mkdir _build_dist
 cd _build_dist
 ../configure
-make distcheck
+make distcheck || exit 4
