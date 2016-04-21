@@ -49,7 +49,18 @@ static struct pam_conv conv = {
     NULL
 };
 #else
-# error "Missing text based pam conversation function"
+static int dummy_pam_conv(int num_msg,
+                          const struct pam_message **msgm,
+                          struct pam_response **response,
+                          void *appdata_ptr)
+{
+    return PAM_SUCCESS;
+}
+
+static struct pam_conv conv = {
+    dummy_pam_conv,
+    NULL
+};
 #endif
 
 int main(int argc, char *argv[])
