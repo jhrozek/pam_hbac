@@ -569,7 +569,7 @@ class PamHbacTestErrorConditions(PamHbacTestCase):
         """
         self.assertPamReturns("no_such_user_ignore", "sshd", 0,
                               pam_mod_opts=["ignore_unknown_user"],
-                              additional_modules=[ { "pam_permit.so":"required"}])
+                              additional_modules=[{"pam_permit.so": "required"}])
 
     def test_root(self):
         """
@@ -578,8 +578,7 @@ class PamHbacTestErrorConditions(PamHbacTestCase):
         self.assertPamReturns("root", "sshd", 10)
         self.assertPamReturns("root", "sshd", 0,
                               pam_mod_opts=["ignore_unknown_user"],
-                              additional_modules=[ { "pam_permit.so":"required"}])
-
+                              additional_modules=[{"pam_permit.so": "required"}])
 
     def test_no_such_service(self):
         """"
@@ -603,7 +602,7 @@ class PamHbacTestErrorConditions(PamHbacTestCase):
         """
         self.assertPamReturns("admin", "sshd", 0, host="no_such_host",
                               pam_mod_opts=["ignore_authinfo_unavail"],
-                              additional_modules=[ { "pam_permit.so":"required"}])
+                              additional_modules=[{"pam_permit.so": "required"}])
 
 if __name__ == "__main__":
     unittest.main()
