@@ -1,0 +1,57 @@
+This file describes how to configure pam_hbac for access control on a
+Solaris machine.
+
+Please note that pam_hbac developers tested pam_hbac on Solaris 11. On a
+different Solaris distribution, some parts of the instructions (especially
+installing dependencies) might differ.
+
+Prerequisities
+==============
+Please make sure your Solaris client is able to resolve and authenticate
+the IPA or AD users. For example, for users coming from an AD trust:
+    $ id administrator@win.trust.test
+    $ su - administrator@win.trust.test
+A good starting point for this configuration is to read:
+    https://www.freeipa.org/page/ConfiguringUnixClients
+
+Building from source
+====================
+Please make sure all required dependencies are installed. On Solaris 11,
+this would be:
+    pkg install autoconf libtool pkg-config automake gcc asciidoc docbook
+
+On Solaris, the third-party PAM modules are normally located in
+/usr/lib/security. When building from source, you'll want to add:
+    --with-pammoddir=/usr/lib/security
+to the configure invocation. In addition, please specify the location where
+you want to read pam_hbac the config file from with --sysconfdir, like this:
+    --sysconfdir=/etc/
+Then pam_hbac will read its configuration from /etc/pam_hbac.conf.
+In addition, specify the correct manual pages directory for Solaris:
+    --mandir=/usr/share/man
+
+Finally, run the configure script:
+    $ ./configure \
+            --with-pammoddir=/usr/local/lib/ \
+            --mandir=/usr/share/man
+
+Configuration
+=============
+You need to configure the module itself, then include the module in the
+PAM stack. Please see the pam_hbac.conf(5) man page for the available
+configuration options.
+
+When the config file is created, put the following into /etc/pam.d/other
+or just the particular PAM service you would like to control access to:
+    account    required    pam_hbac.so    ignore_unknown_user
+
+Adding the option `ignore_unknown_user` is important on FreeBSD for the same
+reason Linux systems normally use `pam_localuser.so` - pam_hbac looks up
+accounts using NSS calls and a failure to look up a user would deny access,
+because no rules would apply. Additionally, pam_hbac returns PAM_UNKNOWN_USER
+for root, which might e impractical if you decide to put the module into
+the system-wide configuration.
+
+Before making any changes to the PAM stack, please make sure to have a root
+console open until you finish testing of pam_hbac setup, to make sure you
+don't lock yourself out of the system!
