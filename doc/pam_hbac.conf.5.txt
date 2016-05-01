@@ -45,7 +45,9 @@ CONFIGURATION OPTIONS
  Certificate Authorities that pam_hbac will recognize. If this option is not
  set, libldap defaults will be used. Most configurations won't need to set this
  option as you'll probably want to configure the CA that issued the IPA server
- certificate system-wide.
+ certificate system-wide. Please note that on some platforms (typically those
+ that lack OpenLDAP libraries such as Omnios), StartTLS is not executed and
+ thus this option has no effect.
     ** Example: CA_CERT = /etc/openldap/cacerts/ipa.crt
 
 CREATING A BIND USER

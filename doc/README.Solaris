@@ -19,6 +19,15 @@ Building from source
 Please make sure all required dependencies are installed. On Solaris 11,
 this would be:
     pkg install autoconf libtool pkg-config automake gcc asciidoc docbook
+on Omnios:
+    pkg install developer/build/autoconf \
+                developer/build/libtool \
+                developer/pkg-config \
+                developer/build/automake \
+                developer/gcc48 \
+                system/header \
+                developer/object-file \
+                developer/linker
 
 On Solaris, the third-party PAM modules are normally located in
 /usr/lib/security. When building from source, you'll want to add:
@@ -32,8 +41,21 @@ In addition, specify the correct manual pages directory for Solaris:
 
 Finally, run the configure script:
     $ ./configure \
-            --with-pammoddir=/usr/local/lib/ \
+            --with-pammoddir=/usr/lib/security \
             --mandir=/usr/share/man
+
+SSL/TLS
+=======
+The SSL/TLS configuration depends on what exact flavor and version of Solaris
+are you running. The modern Solaris releases, such as Solaris 11 already ship
+with OpenLDAP libraries, which allow the SSL_PATH option to point to a
+certificate file. The older Solaris releases and derivatives such as Omnios
+need to put the IPA certs to a NSS database and put the path to a directory that
+contains the NSS database as the value of the SSL_PATH option.
+
+You can tell whether your OS supports certificate files by checkig the configure
+output for the presence of the ldap_start_tls function. If this function is found,
+then the OpenLDAP libraries on your system support certificate files.
 
 Configuration
 =============
