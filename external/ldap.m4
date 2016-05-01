@@ -37,24 +37,18 @@ AC_DEFUN([AM_CHECK_OPENLDAP],
 
     if test "$with_ldap" = "yes"; then
         if test "$with_ldap_lber" = "yes" ; then
-            OPENLDAP_TEST_LIBS="lber"
             OPENLDAP_LIBS="${OPENLDAP_LIBS} -llber"
         fi
         if test "$with_ldap_two_four" = "yes" ; then
             OPENLDAP_LIBS="${OPENLDAP_LIBS} -lldap-2.4"
-            OPENLDAP_TEST_LIBS="${OPENLDAP_TEST_LIBS} ldap-2.4"
         fi
-        OPENLDAP_TEST_LIBS="${OPENLDAP_TEST_LIBS} ldap"
         OPENLDAP_LIBS="${OPENLDAP_LIBS} -lldap"
     else
-        AC_MSG_ERROR([OpenLDAP not found])
+        AC_MSG_ERROR([LDAP libraries not found])
     fi
 
-    dnl Check if we can initialize the program at least using the libs we found..
-    AC_SEARCH_LIBS(ldap_initialize,
-                   [$OPENLDAP_TEST_LIBS],
-                   [],
-                   AC_MSG_ERROR([No library provides ldap_initialize]))
+    LIBS="$LIBS $OPENLDAP_LIBS"
+    AC_CHECK_FUNCS([ldap_initialize ldap_start_tls ldap_str2dn ldap_dnfree ldapssl_client_init])
 
     CFLAGS=$SAVE_CFLAGS
     LIBS=$SAVE_LIBS

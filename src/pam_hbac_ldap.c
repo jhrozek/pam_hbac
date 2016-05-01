@@ -344,6 +344,7 @@ done:
     return ret;
 }
 
+#ifdef HAVE_LDAP_START_TLS
 static int
 start_tls(pam_handle_t *ph, LDAP *ldap, const char *ca_cert)
 {
@@ -439,6 +440,68 @@ done:
     }
     return lret;
 }
+#endif
+
+static int secure_preinit(pam_handle_t *ph, const char *ssl_path)
+{
+#ifdef HAVE_LDAPSSL_CLIENT_INIT
+    int ret;
+
+    /* http://www-archive.mozilla.org/directory/csdk-docs/ssl.htm says:
+     * """
+     *      Note that you need to initialize your client before initializing
+     *      the LDAP session. The process of initializing the client opens the
+     *      certificate database.
+     * """
+     */
+    ret = ldapssl_client_init(ssl_path, NULL);
+    if (ret != LDAP_SUCCESS) {
+        logger(ph, LOG_ERR, "ldapssl_client_init failed: [%s]\n",
+               ldap_err2string(ret));
+    }
+
+    return ret;
+#else
+    return LDAP_SUCCESS;
+#endif
+}
+
+#ifdef HAVE_LDAPSSL_CLIENT_INIT
+/* Taken from http://www-archive.mozilla.org/directory/csdk-docs/ssl.htm */
+static int start_ssl(pam_handle_t *ph, LDAP *ldap, const char *ca_cert)
+{
+    int ret;
+
+    /* Load SSL routines */
+    ret = ldapssl_install_routines(ldap);
+    if (ret != LDAP_SUCCESS) {
+        logger(ph, LOG_ERR, "ldapssl_install_routines failed: [%s]\n",
+               ldap_err2string(ret));
+        return ret;
+    }
+
+    /* Set up option in LDAP struct for using SSL */
+    ret = ldap_set_option(ldap, LDAP_OPT_SSL, LDAP_OPT_ON);
+    if (ret != LDAP_SUCCESS) {
+        logger(ph, LOG_ERR, "setting up SSL option failed: [%s]\n",
+               ldap_err2string(ret));
+        return ret;
+    }
+
+    return LDAP_SUCCESS;
+}
+#endif
+
+static int secure_connection(pam_handle_t *ph, LDAP *ldap, const char *ca_cert)
+{
+#if defined(HAVE_LDAP_START_TLS)
+    return start_tls(ph, ldap, ca_cert);
+#elif defined(HAVE_LDAPSSL_CLIENT_INIT)
+    return start_ssl(ph, ldap, ca_cert);
+#else
+    return LDAP_NOT_SUPPORTED;
+#endif
+}
 
 int
 ph_connect(struct pam_hbac_ctx *ctx)
@@ -452,7 +515,18 @@ ph_connect(struct pam_hbac_ctx *ctx)
         return EINVAL;
     }
 
-    ret = ldap_initialize(&ld, ctx->pc->uri);
+    /* Some LDAP implementations require parts of the SSL/TLS setup are done
+     * prior to initializing the LDAP handle
+     */
+    ret = secure_preinit(ctx->pamh, ctx->pc->ca_cert);
+    if (ret != LDAP_SUCCESS) {
+        logger(ctx->pamh, LOG_ERR,
+               "SSL/TLS pre-initialization failed [%d]: %s\n",
+               ret, ldap_err2string(ret));
+        return EIO;
+    }
+
+    ret = ph_ldap_initialize(&ld, ctx->pc->uri);
     if (ret != LDAP_SUCCESS) {
         logger(ctx->pamh, LOG_ERR,
                "ldap_initialize failed [%d]: %s\n",
@@ -469,8 +543,13 @@ ph_connect(struct pam_hbac_ctx *ctx)
         return EIO;
     }
 
-    ret = start_tls(ctx->pamh, ld, ctx->pc->ca_cert);
-    if (ret != LDAP_SUCCESS) {
+    ret = secure_connection(ctx->pamh, ld, ctx->pc->ca_cert);
+    if (ret == LDAP_NOT_SUPPORTED) {
+        logger(ctx->pamh,
+               LOG_NOTICE,
+               "This platform does not support TLS!\n");
+        /* Not fatal, continue */
+    } else if (ret != LDAP_SUCCESS) {
         logger(ctx->pamh, LOG_ERR,
                "start_tls failed [%d]: %s\n",
                ret, ldap_err2string(ret));
