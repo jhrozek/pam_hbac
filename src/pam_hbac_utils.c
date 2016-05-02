@@ -20,11 +20,9 @@
 #include <stdio.h>
 #include <errno.h>
 
-#include <security/pam_modules.h>
 #include <syslog.h>
 
 #include "pam_hbac.h"
-#include "pam_hbac_compat.h"
 
 #ifdef HAVE_THREAD_KEY_WORD
 static __thread bool debug_mode = true;

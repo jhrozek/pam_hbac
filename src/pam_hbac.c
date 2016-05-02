@@ -25,15 +25,11 @@
 #include <sys/types.h>
 #include <sys/time.h>
 
-#include <security/pam_modules.h>
-
 #include <ldap.h>
 
 #include "pam_hbac.h"
-#include "pam_hbac_compat.h"
 #include "pam_hbac_obj.h"
 #include "pam_hbac_ldap.h"
-#include "config.h"
 
 #define CHECK_AND_RETURN_PI_STRING(s) ((s != NULL && *s != '\0')? s : "(not available)")
 
@@ -471,7 +467,7 @@ done:
 
 /* --- public account management functions --- */
 
-PAM_EXTERN int
+PH_SM_PROTO
 pam_sm_acct_mgmt(pam_handle_t *pamh, int flags,
                  int argc, const char **argv)
 {

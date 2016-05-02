@@ -8,6 +8,8 @@ m4_include([external/cwrap.m4])
 m4_include([external/a2x.m4])
 m4_include([external/ax_valgrind_check.m4])
 m4_include([external/attribute.m4])
+m4_include([external/posix_nss.m4])
+m4_include([external/ldap.m4])
 
 AC_INIT([pam_hbac],
         VERSION_NUMBER,
@@ -39,6 +41,11 @@ AC_CHECK_TYPES([ssize_t], [], [],
 AC_TYPE_LONG_LONG_INT
 AC_CHECK_FUNCS([asprintf vasprintf snprintf vsnprintf strndup], [], [needs_portable=1])
 AM_CONDITIONAL([NEEDS_PORTABLE], [test "x$needs_portable" != "x"])
+
+# Solaris and Linux NSS interface differs, check what we are compiling for
+AM_CHECK_POSIX_GETPWNAM
+AM_CHECK_POSIX_GETGRGID
+AC_CHECK_FUNCS(getgrouplist _getgroupsbymember)
 
 # Check if the compiler supports optional attributes
 CC_ATTRIBUTE_PRINTF
@@ -80,15 +87,8 @@ AC_CHECK_FUNCS(pam_syslog pam_vsyslog)
 dnl restore LIBS
 LIBS="$save_LIBS"
 
-dnl check for LDAP libraries
-AC_CHECK_HEADERS([lber.h])
-AC_CHECK_HEADERS([ldap.h],
-                 [],
-                 AC_MSG_ERROR([could not locate <ldap.h>]),
-                 [ #if HAVE_LBER_H
-                   #include <lber.h>
-                   #endif
-                 ])
+dnl Check for OpenLDAP libraries
+AM_CHECK_OPENLDAP
 
 #Set the PAM module install path
 WITH_PAM_MOD_DIR

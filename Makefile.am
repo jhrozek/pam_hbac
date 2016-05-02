@@ -10,6 +10,7 @@ AM_CFLAGS += -Wall -Wshadow -Wstrict-prototypes -Wpointer-arith \
 	     -Wcast-qual -Wcast-align -Wwrite-strings \
 	     -Werror-implicit-function-declaration \
 	     $(GLIB2_CFLAGS) \
+	     $(OPENLDAP_CFLAGS) \
 	     $(NULL)
 endif
 PAM_MISC_LIBS=@PAM_MISC_LIBS@
@@ -43,8 +44,7 @@ pam_hbac_la_SOURCES = \
 
 pam_hbac_la_LDFLAGS = \
 		     $(UNICODE_LIBS) \
-		     -llber \
-		     -lldap \
+		     $(OPENLDAP_LIBS) \
 		     -lpam \
 		     -module \
 		     -avoid-version
@@ -165,8 +165,7 @@ entry_tests_CFLAGS = \
 	$(CMOCKA_CFLAGS) \
 	$(NULL)
 entry_tests_LDADD = \
-	-lldap \
-	-llber \
+	$(OPENLDAP_LIBS) \
 	$(CMOCKA_LIBS) \
 	$(NULL)
 
@@ -179,8 +178,7 @@ dnparse_tests_CFLAGS = \
 	$(CMOCKA_CFLAGS) \
 	$(NULL)
 dnparse_tests_LDADD = \
-	-lldap \
-	-llber \
+	$(OPENLDAP_LIBS) \
 	$(CMOCKA_LIBS) \
 	$(NULL)
 
@@ -201,9 +199,8 @@ eval_req_tests_CFLAGS = \
 	$(CMOCKA_CFLAGS) \
 	$(NULL)
 eval_req_tests_LDADD = \
-	-lldap \
-	-llber \
 	-lpam \
+	$(OPENLDAP_LIBS) \
 	$(CMOCKA_LIBS) \
 	$(NULL)
 
@@ -240,8 +237,7 @@ ldap_tests_LDFLAGS = \
 	-Wl,-wrap,ldap_install_tls \
 	$(NULL)
 ldap_tests_LDADD = \
-	-lldap \
-	-llber \
+	$(OPENLDAP_LIBS) \
 	-lpam \
 	$(CMOCKA_LIBS) \
 	$(NULL)
@@ -286,8 +282,7 @@ obj_tests_LDFLAGS = \
 	-Wl,-wrap,ph_search \
 	$(NULL)
 obj_tests_LDADD = \
-	-lldap \
-	-llber \
+	$(OPENLDAP_LIBS) \
 	-lpam \
 	$(CMOCKA_LIBS) \
 	$(NULL)
@@ -311,8 +306,7 @@ rules_tests_LDFLAGS = \
 	-Wl,-wrap,ph_search \
 	$(NULL)
 rules_tests_LDADD = \
-	-lldap \
-	-llber \
+	$(OPENLDAP_LIBS) \
 	-lpam \
 	$(CMOCKA_LIBS) \
 	$(UNICODE_LIBS) \

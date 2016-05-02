@@ -18,10 +18,15 @@
 #ifndef __PAM_HBAC_COMPAT_H__
 #define __PAM_HBAC_COMPAT_H__
 
-#include <security/pam_appl.h>
-
 #include "config.h"
 #include "portable/portable_system.h"
+
+#ifdef HAVE_SECURITY_PAM_APPL_H
+/* Some systems, like Solaris, require that even modules
+ * include pam_appl.h
+ */
+#include <security/pam_appl.h>
+#endif
 
 #ifdef HAVE_SECURITY__PAM_MACROS_H
 # include <security/_pam_macros.h>
@@ -104,6 +109,23 @@ do {                             \
 
 #ifndef HAVE_STRNDUP
 #define strndp portable_strndup
+#endif
+
+#ifdef PAM_EXTERN
+#define PH_SM_PROTO PAM_EXTERN int
+#else
+/* Solaris PAM does not have PAM_EXTERN */
+#define PH_SM_PROTO int
+#endif
+
+#ifdef HAVE__GETGROUPSBYMEMBER
+/* This is a private Solaris function */
+extern int _getgroupsbymember(const char *, gid_t[], int, int);
+#endif
+
+#ifndef LOG_AUTHPRIV
+/* Solaris does not define LOG_AUTHPRIV */
+#define LOG_AUTHPRIV LOG_AUTH
 #endif
 
 #endif /* __PAM_HBAC_COMPAT_H__ */
