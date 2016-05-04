@@ -4,7 +4,8 @@ FreeBSD machine.
 Disclaimer
 ==========
 Please note that recent FreeBSD versions ship with SSSD. You should only use
-pam_hbac if for some reason you can't use SSSD on your FreeBSD machine.
+pam_hbac if for some reason you can't use SSSD on your FreeBSD machine or if
+you use an SSSD version that doesn't ship with the "ipa" id_provider.
 
 Prerequisities
 ==============
@@ -16,10 +17,41 @@ A good starting point for this configuration is to run:
     $ ipa-advise config-freebsd-nss-pam-ldapd
 on an IPA server.
 
-On FreeBSD, the third-party PAM modules are normally located in
-/usr/local/lib. When building from source, you'll want to add:
+Building from source
+====================
+Please make sure all required dependencies are installed. On FreeBSD
+10.2-RELEASE, this would be:
+    # pkg install autoconf automake libtool gettext pkgconf \
+                  openldap-client glib
+
+If you want the manual pages to be generated during build, also install
+the following optional build dependency:
+    # pkg install asciidoc
+
+Then you'll be able to generate the configure script:
+    $ autoreconf -if
+
+The next step is to configure the build. On FreeBSD, the third-party PAM
+modules are normally located in /usr/local/lib. When building from source,
+you'll want to add:
     --with-pammoddir=/usr/local/lib/
-to the configure invocation.
+to the configure invocation. Finally, specify the correct manual pages
+directory for FreeBSD:
+    --mandir=/usr/local/man
+
+All in all, run the configure script:
+    $ ./configure \
+            --with-pammoddir=/usr/local/lib/ \
+            --mandir=/usr/local/man
+
+Once it finishes, compile pam_hbac
+    $ make
+
+And finally install it:
+    # make install
+
+With these settings, pam_hbac will read its configuration from
+/usr/local/etc/pam_hbac.conf.
 
 Configuration
 =============
@@ -29,13 +61,13 @@ configuration options.
 
 When the config file is created, put the following into /etc/pam.d/system
 or just the particular PAM service you would like secure:
-    account    required    pam_hbac.so    ignore_unknown_user
+    account    required    /usr/local/lib/pam_hbac.so    ignore_unknown_user
 
 Adding the option `ignore_unknown_user` is important on FreeBSD for the same
 reason Linux systems normally use `pam_localuser.so` - pam_hbac looks up
 accounts using NSS calls and failure to look up a user would deny access,
 because no rules would apply. Additionally, pam_hbac returns PAM_UNKNOWN_USER
-for root, which might e impractical if you decide to put the module into
+for root, which might be impractical if you decide to put the module into
 the system-wide configuration.
 
 Before making any changes to the PAM stack, please make sure to have a root
