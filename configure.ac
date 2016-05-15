@@ -77,6 +77,20 @@ AC_CHECK_LIB([pam_misc], [misc_conv],
     [PAM_MISC_LIBS="-lpam_misc"])
 AC_SUBST(PAM_MISC_LIBS)
 
+# dnl Linux and Solaris PAM implementations differ in const-ness
+AC_MSG_CHECKING([whether pam_get_item accepts const void])
+AC_TRY_COMPILE([#include <security/pam_modules.h>],
+ [const char *str; pam_get_item(0, 0, (const void **) &str);],
+  pam_getitem_const=yes,
+  pam_getitem_const=no)
+if test x"$pam_getitem_const" = xyes; then
+  AC_MSG_RESULT([yes])
+  AC_DEFINE(HAVE_PAM_GETITEM_CONST, 1,
+   [define to 1 if pam_get_item() takes const void **])
+else
+  AC_MSG_RESULT([no])
+fi
+
 dnl save LIBS to restore later
 save_LIBS="$LIBS"
 LIBS="$PAM_LIBS"
