@@ -373,7 +373,7 @@ class PamHbacTestCase(unittest.TestCase):
         confd['BASE'] = base_dn
         confd['BIND_DN'] = self.driver.bind_dn
         confd['BIND_PW'] = self.driver.bind_pw
-        confd['CA_CERT'] = self.driver.ca_cert
+        confd['SSL_PATH'] = self.driver.ca_cert
         confd['HOST_NAME'] = host
 
         self.config_file = self._config_write(config_path, confd)

@@ -66,7 +66,7 @@ check_config(pam_handle_t *pamh, struct pam_hbac_config *conf)
     error |= check_mandatory_opt(pamh, PAM_HBAC_CONFIG_SEARCH_BASE, conf->search_base);
     error |= check_mandatory_opt(pamh, PAM_HBAC_CONFIG_BIND_DN, conf->bind_dn);
     error |= check_mandatory_opt(pamh, PAM_HBAC_CONFIG_BIND_PW, conf->bind_pw);
-    error |= check_mandatory_opt(pamh, PAM_HBAC_CONFIG_CA_CERT, conf->ca_cert);
+    error |= check_mandatory_opt(pamh, PAM_HBAC_CONFIG_SSL_PATH, conf->ca_cert);
 
     if (error != 0) {
         return EINVAL;
@@ -226,7 +226,7 @@ read_config_line(pam_handle_t *pamh,
     } else if (strcasecmp(key, PAM_HBAC_CONFIG_HOST_NAME) == 0) {
         conf->hostname = discard_const(value);
         logger(pamh, LOG_DEBUG, "host name: %s", conf->hostname);
-    } else if (strcasecmp(key, PAM_HBAC_CONFIG_CA_CERT) == 0) {
+    } else if (strcasecmp(key, PAM_HBAC_CONFIG_SSL_PATH) == 0) {
         conf->ca_cert = discard_const(value);
         logger(pamh, LOG_DEBUG, "ca cert: %s", conf->ca_cert);
     } else {
