@@ -308,6 +308,7 @@ set_dummy_config(struct pam_hbac_config *conf)
     conf->bind_pw = BIND_PW;
     conf->bind_dn = BIND_DN;
     conf->uri     = LDAP_URI;
+    conf->secure  = true;
 }
 
 static void

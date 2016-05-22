@@ -148,7 +148,7 @@ typedef LDAPAVA** LDAPRDN;
 typedef LDAPRDN* LDAPDN;
 #endif
 
-int ph_ldap_initialize(LDAP **ld, const char *uri);
+int ph_ldap_initialize(LDAP **ld, const char *uri, bool secure);
 int ph_str2dn(const char *str, LDAPDN *dn);
 void ph_ldap_dnfree(LDAPDN dn);
 

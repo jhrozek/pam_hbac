@@ -219,7 +219,7 @@ static ssize_t uri_proto_prefix_len(const char *uri)
 /* ldap_initialize version for systems that only have ldap_init.
  * More or less stolen from nss-pam-ldapd
  */
-int ph_ldap_initialize(LDAP **ld, const char *uri)
+int ph_ldap_initialize(LDAP **ld, const char *uri, bool secure)
 {
 #if defined(HAVE_LDAP_INITIALIZE) && !defined(COMPAT_LDAP_UNIT_TESTS)
     return ldap_initialize(ld, uri);
@@ -245,7 +245,7 @@ int ph_ldap_initialize(LDAP **ld, const char *uri)
         return LDAP_INVALID_SYNTAX;
     }
 
-    *ld = ldap_init(hostname, LDAPS_PORT);
+    *ld = ldap_init(hostname, secure ? LDAPS_PORT : LDAP_PORT);
     if (*ld == NULL) {
         return LDAP_OPERATIONS_ERROR;
     }

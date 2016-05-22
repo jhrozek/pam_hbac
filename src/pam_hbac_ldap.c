@@ -346,7 +346,7 @@ done:
 
 #ifdef HAVE_LDAP_START_TLS
 static int
-start_tls(pam_handle_t *ph, LDAP *ldap, const char *ca_cert)
+start_tls(pam_handle_t *ph, LDAP *ldap, const char *ca_cert, bool secure)
 {
     int lret;
     int msgid;
@@ -355,6 +355,10 @@ start_tls(pam_handle_t *ph, LDAP *ldap, const char *ca_cert)
     char *diag_msg = NULL;
     int ldaperr;
     LDAPMessage *result = NULL;
+
+    if (secure == false) {
+        return LDAP_SUCCESS;
+    }
 
     if (ca_cert != NULL) {
         lret = ldap_set_option(NULL, LDAP_OPT_X_TLS_CACERTFILE, ca_cert);
@@ -442,10 +446,16 @@ done:
 }
 #endif
 
-static int secure_preinit(pam_handle_t *ph, const char *ssl_path)
+static int secure_preinit(pam_handle_t *ph,
+                          const char *ssl_path,
+                          bool secure)
 {
 #ifdef HAVE_LDAPSSL_CLIENT_INIT
     int ret;
+
+    if (secure == false) {
+        return LDAP_SUCCESS;
+    }
 
     /* http://www-archive.mozilla.org/directory/csdk-docs/ssl.htm says:
      * """
@@ -468,9 +478,16 @@ static int secure_preinit(pam_handle_t *ph, const char *ssl_path)
 
 #ifdef HAVE_LDAPSSL_CLIENT_INIT
 /* Taken from http://www-archive.mozilla.org/directory/csdk-docs/ssl.htm */
-static int start_ssl(pam_handle_t *ph, LDAP *ldap, const char *ca_cert)
+static int start_ssl(pam_handle_t *ph,
+                     LDAP *ldap,
+                     const char *ca_cert,
+                     bool secure)
 {
     int ret;
+
+    if (secure == false) {
+        return LDAP_SUCCESS;
+    }
 
     /* Load SSL routines */
     ret = ldapssl_install_routines(ldap);
@@ -492,12 +509,15 @@ static int start_ssl(pam_handle_t *ph, LDAP *ldap, const char *ca_cert)
 }
 #endif
 
-static int secure_connection(pam_handle_t *ph, LDAP *ldap, const char *ca_cert)
+static int secure_connection(pam_handle_t *ph,
+                             LDAP *ldap,
+                             const char *ca_cert,
+                             bool secure)
 {
 #if defined(HAVE_LDAP_START_TLS)
-    return start_tls(ph, ldap, ca_cert);
+    return start_tls(ph, ldap, ca_cert, secure);
 #elif defined(HAVE_LDAPSSL_CLIENT_INIT)
-    return start_ssl(ph, ldap, ca_cert);
+    return start_ssl(ph, ldap, ca_cert, secure);
 #else
     return LDAP_NOT_SUPPORTED;
 #endif
@@ -518,7 +538,7 @@ ph_connect(struct pam_hbac_ctx *ctx)
     /* Some LDAP implementations require parts of the SSL/TLS setup are done
      * prior to initializing the LDAP handle
      */
-    ret = secure_preinit(ctx->pamh, ctx->pc->ca_cert);
+    ret = secure_preinit(ctx->pamh, ctx->pc->ca_cert, ctx->pc->secure);
     if (ret != LDAP_SUCCESS) {
         logger(ctx->pamh, LOG_ERR,
                "SSL/TLS pre-initialization failed [%d]: %s\n",
@@ -526,7 +546,7 @@ ph_connect(struct pam_hbac_ctx *ctx)
         return EIO;
     }
 
-    ret = ph_ldap_initialize(&ld, ctx->pc->uri);
+    ret = ph_ldap_initialize(&ld, ctx->pc->uri, ctx->pc->secure);
     if (ret != LDAP_SUCCESS) {
         logger(ctx->pamh, LOG_ERR,
                "ldap_initialize failed [%d]: %s\n",
@@ -543,7 +563,7 @@ ph_connect(struct pam_hbac_ctx *ctx)
         return EIO;
     }
 
-    ret = secure_connection(ctx->pamh, ld, ctx->pc->ca_cert);
+    ret = secure_connection(ctx->pamh, ld, ctx->pc->ca_cert, ctx->pc->secure);
     if (ret == LDAP_NOT_SUPPORTED) {
         logger(ctx->pamh,
                LOG_NOTICE,
