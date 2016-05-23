@@ -90,6 +90,12 @@ default_hostname(char **_hostname)
     ret = gethostname(hostname, HOST_NAME_MAX);
     if (ret == -1) {
         ret = errno;
+        if (ret == 0) {
+            /* Prevent resource leak in case gethostname() failed but errno
+             * was set to 0. Probably not very useful, but silences Coverity
+             */
+            ret = EIO;
+        }
         goto done;
     }
 
