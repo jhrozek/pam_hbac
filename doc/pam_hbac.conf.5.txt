@@ -61,7 +61,7 @@ dn: uid=hbac,cn=sysaccounts,cn=etc,$DC
 objectClass: account
 objectClass: simplesecurityobject
 objectClass: top
-uid: sudo
+uid: hbac
 userPassword: $PASSWORD
 
 Replace the $PASSWORD value with the desired password of the bind user
