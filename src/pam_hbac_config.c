@@ -66,7 +66,6 @@ check_config(pam_handle_t *pamh, struct pam_hbac_config *conf)
     error |= check_mandatory_opt(pamh, PAM_HBAC_CONFIG_SEARCH_BASE, conf->search_base);
     error |= check_mandatory_opt(pamh, PAM_HBAC_CONFIG_BIND_DN, conf->bind_dn);
     error |= check_mandatory_opt(pamh, PAM_HBAC_CONFIG_BIND_PW, conf->bind_pw);
-    error |= check_mandatory_opt(pamh, PAM_HBAC_CONFIG_SSL_PATH, conf->ca_cert);
 
     if (error != 0) {
         return EINVAL;

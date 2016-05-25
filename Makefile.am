@@ -91,7 +91,6 @@ dist_noinst_DATA = \
 		      src/tests/configs/missing_base_opt.conf \
 		      src/tests/configs/missing_binddn_opt.conf \
 		      src/tests/configs/missing_bindpw_opt.conf \
-		      src/tests/configs/missing_cacert_opt.conf \
 		      src/tests/configs/missing_hostname.conf \
 		      src/tests/configs/missing_uri_opt.conf \
 		      src/tests/configs/trailing_empty_lines.conf \
