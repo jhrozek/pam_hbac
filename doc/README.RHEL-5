@@ -32,7 +32,13 @@ to /lib64/security (or /lib/security on a 32-bit system).
 When building from source, the location is specified using the --with-pammoddir
 configure option, so you'll want to add:
     --with-pammoddir=/lib64/security
-to the configure invocation.
+to the configure invocation. Because on RHEL, the config files are read from
+/etc/ directly, also add the sysconfdir:
+    --sysconfdir=/etc
+
+The resulting configure invocation should look like this:
+    ./configure --with-pammoddir=/lib64/security \
+                --sysconfdir=/etc/
 
 Configuration
 =============
