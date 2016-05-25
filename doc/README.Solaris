@@ -65,7 +65,7 @@ configuration options.
 
 When the config file is created, put the following into /etc/pam.d/other
 or just the particular PAM service you would like to control access to:
-    account    required    pam_hbac.so    ignore_unknown_user
+    account    required    pam_hbac.so    ignore_unknown_user ignore_authinfo_unavail
 
 Adding the option `ignore_unknown_user` is important on FreeBSD for the same
 reason Linux systems normally use `pam_localuser.so` - pam_hbac looks up
@@ -73,6 +73,10 @@ accounts using NSS calls and a failure to look up a user would deny access,
 because no rules would apply. Additionally, pam_hbac returns PAM_UNKNOWN_USER
 for root, which might e impractical if you decide to put the module into
 the system-wide configuration.
+
+Similarly, adding the `ignore_authinfo_unavail` option is handy in case
+the LDAP server is not reachable. In that case, pam_hbac would return
+PAM_IGNORE and proceed with the rest of the stack instead of a hard error.
 
 Before making any changes to the PAM stack, please make sure to have a root
 console open until you finish testing of pam_hbac setup, to make sure you
