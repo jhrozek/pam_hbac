@@ -50,7 +50,7 @@ static struct pam_conv conv = {
 };
 #else
 int dummy_pam_conv(int num_msg,
-                   const struct pam_message **msgm,
+                   struct pam_message **msgm,
                    struct pam_response **response,
                    void *appdata_ptr)
 {
