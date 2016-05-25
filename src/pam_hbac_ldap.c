@@ -33,22 +33,17 @@ internal_search(pam_handle_t *pamh,
                 LDAPMessage **_msg)
 {
     int ret;
-    struct timeval tv;
     LDAPMessage *msg;
-
-    ret = gettimeofday(&tv, NULL);
-    if (ret < 0) {
-        ret = errno;
-        goto done;
-    }
-    tv.tv_sec += timeout;
 
     logger(pamh, LOG_DEBUG,
            "Searching LDAP using filter [%s] base [%s] timeout [%d]\n",
            filter, search_base, timeout);
 
+    /* Explicitly don't specify timeout. The admin can set TIMELIMIT in
+     * ldap.conf instead */
     ret = ldap_search_ext_s(ld, search_base, LDAP_SCOPE_SUBTREE, filter,
-                            discard_const(attrs), 0, NULL, NULL, &tv, 0, &msg);
+                            discard_const(attrs),
+                            0, NULL, NULL, NULL, 0, &msg);
     if (ret == LDAP_NO_SUCH_OBJECT) {
         logger(pamh, LOG_NOTICE, "No such object\n");
         msg = NULL;
