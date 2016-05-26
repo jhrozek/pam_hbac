@@ -19,6 +19,15 @@ Building from source
 Please make sure all required dependencies are installed. On Solaris 11,
 this would be:
     pkg install autoconf libtool pkg-config automake gcc asciidoc docbook
+on Omnios:
+    pkg install developer/build/autoconf \
+                developer/build/libtool \
+                developer/pkg-config \
+                developer/build/automake \
+                developer/gcc48 \
+                system/header \
+                developer/object-file \
+                developer/linker
 
 On Solaris, the third-party PAM modules are normally located in
 /usr/lib/security. When building from source, you'll want to add:
@@ -32,8 +41,21 @@ In addition, specify the correct manual pages directory for Solaris:
 
 Finally, run the configure script:
     $ ./configure \
-            --with-pammoddir=/usr/local/lib/ \
+            --with-pammoddir=/usr/lib/security \
             --mandir=/usr/share/man
+
+SSL/TLS
+=======
+The SSL/TLS configuration depends on what exact flavor and version of Solaris
+are you running. The modern Solaris releases, such as Solaris 11 already ship
+with OpenLDAP libraries, which allow the SSL_PATH option to point to a
+certificate file. The older Solaris releases and derivatives such as Omnios
+need to put the IPA certs to a NSS database and put the path to a directory that
+contains the NSS database as the value of the SSL_PATH option.
+
+You can tell whether your OS supports certificate files by checkig the configure
+output for the presence of the ldap_start_tls function. If this function is found,
+then the OpenLDAP libraries on your system support certificate files.
 
 Configuration
 =============
@@ -43,7 +65,7 @@ configuration options.
 
 When the config file is created, put the following into /etc/pam.d/other
 or just the particular PAM service you would like to control access to:
-    account    required    pam_hbac.so    ignore_unknown_user
+    account    required    pam_hbac.so    ignore_unknown_user ignore_authinfo_unavail
 
 Adding the option `ignore_unknown_user` is important on FreeBSD for the same
 reason Linux systems normally use `pam_localuser.so` - pam_hbac looks up
@@ -51,6 +73,10 @@ accounts using NSS calls and a failure to look up a user would deny access,
 because no rules would apply. Additionally, pam_hbac returns PAM_UNKNOWN_USER
 for root, which might e impractical if you decide to put the module into
 the system-wide configuration.
+
+Similarly, adding the `ignore_authinfo_unavail` option is handy in case
+the LDAP server is not reachable. In that case, pam_hbac would return
+PAM_IGNORE and proceed with the rest of the stack instead of a hard error.
 
 Before making any changes to the PAM stack, please make sure to have a root
 console open until you finish testing of pam_hbac setup, to make sure you

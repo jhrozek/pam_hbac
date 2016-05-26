@@ -18,6 +18,8 @@
 #ifndef __PAM_HBAC_COMPAT_H__
 #define __PAM_HBAC_COMPAT_H__
 
+#include <ldap.h>
+
 #include "config.h"
 #include "portable/portable_system.h"
 
@@ -127,5 +129,27 @@ extern int _getgroupsbymember(const char *, gid_t[], int, int);
 /* Solaris does not define LOG_AUTHPRIV */
 #define LOG_AUTHPRIV LOG_AUTH
 #endif
+
+/* Old Solaris versions do not define the LDAP_OPT_SSL macro,
+ * let's just define it as nss_ldap does.
+ */
+#ifndef LDAP_OPT_SSL
+#define LDAP_OPT_SSL 0x0A
+#endif
+
+#if !defined(HAVE_LDAP_STR2DN) || defined(COMPAT_UNIT_TESTING)
+typedef struct ldap_ava {
+    struct berval la_attr;
+    struct berval la_value;
+    unsigned la_flags;
+} LDAPAVA;
+
+typedef LDAPAVA** LDAPRDN;
+typedef LDAPRDN* LDAPDN;
+#endif
+
+int ph_ldap_initialize(LDAP **ld, const char *uri, bool secure);
+int ph_str2dn(const char *str, LDAPDN *dn);
+void ph_ldap_dnfree(LDAPDN dn);
 
 #endif /* __PAM_HBAC_COMPAT_H__ */

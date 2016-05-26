@@ -105,7 +105,7 @@ basedn_matches(const char *basedn, LDAPDN dn_parts)
     size_t i = 0;
     int ret;
 
-    ret = ldap_str2dn(basedn, &basedn_parts, LDAP_DN_FORMAT_LDAPV3);
+    ret = ph_str2dn(basedn, &basedn_parts);
     if (ret != 0) {
         goto fail;
     }
@@ -126,11 +126,11 @@ basedn_matches(const char *basedn, LDAPDN dn_parts)
         goto fail;
     }
 
-    ldap_dnfree(basedn_parts);
+    ph_ldap_dnfree(basedn_parts);
     return true;
 
 fail:
-    ldap_dnfree(basedn_parts);
+    ph_ldap_dnfree(basedn_parts);
     return false;
 }
 
@@ -201,7 +201,7 @@ user_container_rdn(LDAPDN dn_parts,
         cn1, cn2, NULL
     };
 
-    return container_check_and_get_rdn(dn_parts, basedn, group_container,
+   return container_check_and_get_rdn(dn_parts, basedn, group_container,
                                        "uid", _rdn_val);
 }
 
@@ -289,7 +289,7 @@ ph_group_name_from_dn(const char *dn,
     LDAPDN dn_parts;
     int ret;
 
-    ret = ldap_str2dn(dn, &dn_parts, LDAP_DN_FORMAT_LDAPV3);
+    ret = ph_str2dn(dn, &dn_parts);
     if (ret != 0) {
         return EINVAL;
     }
@@ -309,7 +309,7 @@ ph_group_name_from_dn(const char *dn,
         break;
     }
 
-    ldap_dnfree(dn_parts);
+    ph_ldap_dnfree(dn_parts);
     return ret;
 }
 
@@ -322,7 +322,7 @@ ph_name_from_dn(const char *dn,
     LDAPDN dn_parts;
     int ret;
 
-    ret = ldap_str2dn(dn, &dn_parts, LDAP_DN_FORMAT_LDAPV3);
+    ret = ph_str2dn(dn, &dn_parts);
     if (ret != 0) {
         return EINVAL;
     }
@@ -342,7 +342,7 @@ ph_name_from_dn(const char *dn,
         break;
     }
 
-    ldap_dnfree(dn_parts);
+    ph_ldap_dnfree(dn_parts);
     return ret;
 }
 

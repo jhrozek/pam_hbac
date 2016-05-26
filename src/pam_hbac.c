@@ -112,17 +112,29 @@ print_found_options(pam_handle_t *pamh, int flags)
     }
 }
 
+static int get_pam_stritem(const pam_handle_t *pamh,
+                           int item_type,
+                           const char **str_item)
+{
+    return pam_get_item(pamh, item_type,
+#ifdef HAVE_PAM_GETITEM_CONST
+                        (const void **) str_item);
+#else
+                        (void **) discard_const(str_item));
+#endif
+}
+
 static int
 pam_hbac_get_items(pam_handle_t *pamh, struct pam_items *pi, int flags)
 {
     int ret;
 
-    ret = pam_get_item(pamh, PAM_SERVICE, (const void **) &(pi->pam_service));
+    ret = get_pam_stritem(pamh, PAM_SERVICE, &(pi->pam_service));
     if (ret != PAM_SUCCESS) return ret;
     if (pi->pam_service == NULL) pi->pam_service="";
     pi->pam_service_size = strlen(pi->pam_service) + 1;
 
-    ret = pam_get_item(pamh, PAM_USER, (const void **) &(pi->pam_user));
+    ret = get_pam_stritem(pamh, PAM_USER, &(pi->pam_user));
     if (ret != PAM_SUCCESS) return ret;
     if (pi->pam_user == NULL) {
         logger(pamh, LOG_ERR, "No user found, aborting.");
@@ -138,17 +150,17 @@ pam_hbac_get_items(pam_handle_t *pamh, struct pam_items *pi, int flags)
     }
     pi->pam_user_size = strlen(pi->pam_user) + 1;
 
-    ret = pam_get_item(pamh, PAM_TTY, (const void **) &(pi->pam_tty));
+    ret = get_pam_stritem(pamh, PAM_TTY, &(pi->pam_tty));
     if (ret != PAM_SUCCESS) return ret;
     if (pi->pam_tty == NULL) pi->pam_tty="";
     pi->pam_tty_size = strlen(pi->pam_tty) + 1;
 
-    ret = pam_get_item(pamh, PAM_RUSER, (const void **) &(pi->pam_ruser));
+    ret = get_pam_stritem(pamh, PAM_RUSER, &(pi->pam_ruser));
     if (ret != PAM_SUCCESS) return ret;
     if (pi->pam_ruser == NULL) pi->pam_ruser="";
     pi->pam_ruser_size = strlen(pi->pam_ruser) + 1;
 
-    ret = pam_get_item(pamh, PAM_RHOST, (const void **) &(pi->pam_rhost));
+    ret = get_pam_stritem(pamh, PAM_RHOST, &(pi->pam_rhost));
     if (ret != PAM_SUCCESS) return ret;
     if (pi->pam_rhost == NULL) pi->pam_rhost="";
     pi->pam_rhost_size = strlen(pi->pam_rhost) + 1;

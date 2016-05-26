@@ -66,7 +66,6 @@ check_config(pam_handle_t *pamh, struct pam_hbac_config *conf)
     error |= check_mandatory_opt(pamh, PAM_HBAC_CONFIG_SEARCH_BASE, conf->search_base);
     error |= check_mandatory_opt(pamh, PAM_HBAC_CONFIG_BIND_DN, conf->bind_dn);
     error |= check_mandatory_opt(pamh, PAM_HBAC_CONFIG_BIND_PW, conf->bind_pw);
-    error |= check_mandatory_opt(pamh, PAM_HBAC_CONFIG_CA_CERT, conf->ca_cert);
 
     if (error != 0) {
         return EINVAL;
@@ -90,6 +89,12 @@ default_hostname(char **_hostname)
     ret = gethostname(hostname, HOST_NAME_MAX);
     if (ret == -1) {
         ret = errno;
+        if (ret == 0) {
+            /* Prevent resource leak in case gethostname() failed but errno
+             * was set to 0. Probably not very useful, but silences Coverity
+             */
+            ret = EIO;
+        }
         goto done;
     }
 
@@ -111,20 +116,15 @@ default_config(pam_handle_t *pamh, struct pam_hbac_config *conf)
 {
     int ret;
 
-    if (conf->hostname == NULL) {
-        ret = default_hostname(&conf->hostname);
-        if (ret != 0) {
-            logger(pamh, LOG_ERR, "Failed to set default hostname [%d]: %s\n",
-                   ret, strerror(ret));
-            return ret;
-        }
-
+    ret = default_hostname(&conf->hostname);
+    if (ret != 0) {
+        logger(pamh, LOG_ERR, "Failed to set default hostname [%d]: %s\n",
+                ret, strerror(ret));
+        return ret;
     }
 
-    if (conf->timeout == 0) {
-        conf->timeout = PAM_HBAC_DEFAULT_TIMEOUT;
-    }
-
+    conf->timeout = PAM_HBAC_DEFAULT_TIMEOUT;
+    conf->secure = true;
     return 0;
 }
 
@@ -179,6 +179,21 @@ get_key_value(pam_handle_t *pamh,
     return 0;
 }
 
+static bool get_bool(const char *value, bool dfl)
+{
+    if (value == NULL) {
+        return dfl;
+    }
+
+    if (strcasecmp(value, PAM_HBAC_TRUE_VALUE) == 0) {
+        return true;
+    } else if (strcasecmp(value, PAM_HBAC_FALSE_VALUE) == 0) {
+        return false;
+    }
+
+    return dfl;
+}
+
 static int
 read_config_line(pam_handle_t *pamh,
                  const char *line,
@@ -226,9 +241,14 @@ read_config_line(pam_handle_t *pamh,
     } else if (strcasecmp(key, PAM_HBAC_CONFIG_HOST_NAME) == 0) {
         conf->hostname = discard_const(value);
         logger(pamh, LOG_DEBUG, "host name: %s", conf->hostname);
-    } else if (strcasecmp(key, PAM_HBAC_CONFIG_CA_CERT) == 0) {
+    } else if (strcasecmp(key, PAM_HBAC_CONFIG_SSL_PATH) == 0) {
         conf->ca_cert = discard_const(value);
         logger(pamh, LOG_DEBUG, "ca cert: %s", conf->ca_cert);
+    } else if (strcasecmp(key, PAM_HBAC_CONFIG_SECURE) == 0) {
+        conf->secure = get_bool(value, conf->secure);
+        logger(pamh, LOG_DEBUG,
+               "use TLS/SSL: %s", conf->secure ? "yes" : "no");
+        free_const(value);
     } else {
         /* Skip unknown key/values */
         free_const(value);
@@ -280,6 +300,11 @@ ph_read_config(pam_handle_t *pamh,
         goto done;
     }
 
+    ret = default_config(pamh, conf);
+    if (ret != 0) {
+        goto done;
+    }
+
     while (fgets(line, sizeof(line), fp) != NULL) {
         /* Try to parse a line */
         ret = read_config_line(pamh, line, conf);
@@ -294,12 +319,6 @@ ph_read_config(pam_handle_t *pamh,
     }
 
     ret = check_config(pamh, conf);
-    if (ret != 0) {
-        goto done;
-    }
-
-    /* Set all values that were not set explicitly */
-    ret = default_config(pamh, conf);
     if (ret != 0) {
         goto done;
     }

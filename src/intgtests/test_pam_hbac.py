@@ -17,13 +17,16 @@ class IpaClientlessTestDriver(object):
     def __init__(self,
                  hostname, domain, password,
                  bind_dn, bind_pw,
-                 username='admin', insecure=False):
+                 username='admin',
+                 start_ssl=True,
+                 insecure=False):
         self.hostname = hostname
         self.domain = domain
         self.password = password
         self.username = username
         self.bind_dn = bind_dn
         self.bind_pw = bind_pw
+        self.start_ssl = start_ssl
         self.referer = "https://" + self.hostname + "/ipa"
 
         self.cj = CookieJar()
@@ -270,10 +273,11 @@ class PamHbacTestCase(unittest.TestCase):
 
     def assertPamReturns(self, user, service, rc,
                          host=None, pam_mod_opts=None,
-                         additional_modules=None):
+                         additional_modules=None,
+                         start_ssl=True):
         if host is None:
             host = self.client_hostname
-        self._config_setup(host)
+        self._config_setup(host, start_ssl)
 
         svc_file = self._write_pam_svc_file(service,
                                             self.ph_abspath,
@@ -286,19 +290,19 @@ class PamHbacTestCase(unittest.TestCase):
         finally:
             os.unlink(svc_file.name)
 
-    def assertPamReturnsForHost(self, user, service, rc, host=None):
+    def assertPamReturnsForHost(self, user, service, rc, host=None, start_ssl=True):
         if host is not None:
             os.environ["HOST_NAME"] = host
         try:
-            self.assertPamReturns(user, service, rc, host)
+            self.assertPamReturns(user, service, rc, host, start_ssl=start_ssl)
         finally:
             os.environ["HOST_NAME"] = self.client_hostname
 
-    def assertAllowed(self, user, service, host=None):
-        self.assertPamReturnsForHost(user, service, 0, host)
+    def assertAllowed(self, user, service, host=None, start_ssl=True):
+        self.assertPamReturnsForHost(user, service, 0, host, start_ssl)
 
-    def assertDenied(self, user, service, host=None):
-        self.assertPamReturnsForHost(user, service, 6, host)
+    def assertDenied(self, user, service, host=None, start_ssl=True):
+        self.assertPamReturnsForHost(user, service, 6, host, start_ssl)
 
     def _run_pwrap_test(self, tc, user, service):
         res = pypamtest.run_pamtest(user, service, [tc])
@@ -333,6 +337,7 @@ class PamHbacTestCase(unittest.TestCase):
                                               admin_password,
                                               bind_dn,
                                               bind_pw,
+                                              start_ssl=True,
                                               insecure=True)
 
     def _pwrap_setup(self):
@@ -357,7 +362,7 @@ class PamHbacTestCase(unittest.TestCase):
         f.flush()
         return f
 
-    def _config_setup(self, host):
+    def _config_setup(self, host, start_ssl):
         self.config_file = None
 
         config_path = os.getenv("PAM_HBAC_CONFIG_PATH")
@@ -373,8 +378,10 @@ class PamHbacTestCase(unittest.TestCase):
         confd['BASE'] = base_dn
         confd['BIND_DN'] = self.driver.bind_dn
         confd['BIND_PW'] = self.driver.bind_pw
-        confd['CA_CERT'] = self.driver.ca_cert
+        confd['SSL_PATH'] = self.driver.ca_cert
         confd['HOST_NAME'] = host
+        if start_ssl is False:
+            confd['SECURE'] = 'FALSE'
 
         self.config_file = self._config_write(config_path, confd)
 
@@ -443,9 +450,19 @@ class PamHbacTestAllowAll(PamHbacTestCase):
         self.allow_all.add_all_cats()
         self.assertAllowed("admin", "sshd")
 
+    def test_allow_all_no_ssl(self):
+        self.allow_all.enable()
+        self.allow_all.add_all_cats()
+        self.assertAllowed("admin", "sshd", start_ssl=False)
+
     def test_allow_all_disabled(self):
         self.allow_all.disable()
         self.assertDenied("admin", "sshd")
+        self.allow_all.enable()
+
+    def test_allow_all_disabled_no_ssl(self):
+        self.allow_all.disable()
+        self.assertDenied("admin", "sshd", start_ssl=False)
         self.allow_all.enable()
 
 

@@ -148,7 +148,6 @@ void test_missing_opts(void **state)
     const char *files[] = {
         TEST_CONF_DIR"/src/tests/configs/missing_uri_opt.conf",
         TEST_CONF_DIR"/src/tests/configs/missing_base_opt.conf",
-        TEST_CONF_DIR"/src/tests/configs/missing_cacert_opt.conf",
         TEST_CONF_DIR"/src/tests/configs/missing_binddn_opt.conf",
         TEST_CONF_DIR"/src/tests/configs/missing_bindpw_opt.conf",
         NULL

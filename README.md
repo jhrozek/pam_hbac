@@ -15,7 +15,7 @@ pam_hbac was tested on the following operating systems and releases:
       distributions. Ubuntu is used as a CI platform, but no functional
       testing was done there except integration tests.
   * FreeBSD - tested with FreeBSD 10.2
-  * Solaris - tested with Solaris 11
+  * Solaris - tested with Solaris 11 and Omnios
 
 Building from source
 ====================

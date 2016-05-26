@@ -41,12 +41,13 @@ CONFIGURATION OPTIONS
  machine has registered with the IPA server
     ** Example: HOST_NAME = client.ipa.domain.test
 
- * CA_CERT - Specifies the file that contains certificates for all of the
- Certificate Authorities that pam_hbac will recognize. If this option is not
- set, libldap defaults will be used. Most configurations won't need to set this
- option as you'll probably want to configure the CA that issued the IPA server
- certificate system-wide.
-    ** Example: CA_CERT = /etc/openldap/cacerts/ipa.crt
+ * SSL_PATH - Specifies the location of certificates for the Certificate
+ Authorities that pam_hbac will recognize. On most systems (all that ship with
+ OpenLDAP libraries), this is a path to a certificate file. On some systems,
+ like Omnios or older Solaris releases that do not ship OpenLDAP libraries,
+ this must be a path to a directory containing the NSS database that contains
+ the certificate. If this option is not set, libldap defaults will be used.
+    ** Example (certificate file): SSL_PATH = /etc/openldap/cacerts/ipa.crt
 
 CREATING A BIND USER
 --------------------
@@ -60,7 +61,7 @@ dn: uid=hbac,cn=sysaccounts,cn=etc,$DC
 objectClass: account
 objectClass: simplesecurityobject
 objectClass: top
-uid: sudo
+uid: hbac
 userPassword: $PASSWORD
 
 Replace the $PASSWORD value with the desired password of the bind user
@@ -70,6 +71,13 @@ and $DC with the base DN of your IPA server. Then add this LDIF to the IPA serve
 ldapadd -ZZ -H ldap://$IPA_HOSTNAME -D"cn=Directory Manager" -W < hbac_sysuser.ldif
 
 You will be asked for the Directory Manager password.
+
+PLATFORM-SPECIFIC DOCUMENTATION
+-------------------------------
+In addition to the man pages that contain information that applies to any OS,
+pam_hbac also ships documentation specific to certain platforms. Those docs
+can be found either in shipped in the docdir on your OS or online at
+https://github.com/jhrozek/pam_hbac/tree/master/doc
 
 SEE ALSO
 --------

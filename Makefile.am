@@ -37,6 +37,7 @@ pam_hbac_la_SOURCES = \
 		     src/pam_hbac_ldap.c \
 		     src/pam_hbac_eval_req.c \
 		     src/pam_hbac_dnparse.c \
+		     src/pam_hbac_ldap_compat.c \
 		     src/pam_hbac_utils.c \
 		     src/libhbac/hbac_evaluator.c \
 		     src/libhbac/sss_utf8.c \
@@ -90,7 +91,6 @@ dist_noinst_DATA = \
 		      src/tests/configs/missing_base_opt.conf \
 		      src/tests/configs/missing_binddn_opt.conf \
 		      src/tests/configs/missing_bindpw_opt.conf \
-		      src/tests/configs/missing_cacert_opt.conf \
 		      src/tests/configs/missing_hostname.conf \
 		      src/tests/configs/missing_uri_opt.conf \
 		      src/tests/configs/trailing_empty_lines.conf \
@@ -172,12 +172,29 @@ entry_tests_LDADD = \
 dnparse_tests_SOURCES = \
 	src/tests/dnparse_tests.c \
 	src/pam_hbac_dnparse.c \
+	src/pam_hbac_ldap_compat.c \
 	$(NULL)
 dnparse_tests_CFLAGS = \
 	$(AM_CFLAGS) \
 	$(CMOCKA_CFLAGS) \
 	$(NULL)
 dnparse_tests_LDADD = \
+	$(OPENLDAP_LIBS) \
+	$(CMOCKA_LIBS) \
+	$(NULL)
+
+dnparse_compat_tests_SOURCES = \
+	src/tests/dnparse_tests.c \
+	src/pam_hbac_dnparse.c \
+	src/pam_hbac_ldap_compat.c \
+	$(NULL)
+dnparse_compat_tests_CFLAGS = \
+	$(AM_CFLAGS) \
+	$(CMOCKA_CFLAGS) \
+	-DCOMPAT_LDAP_UNIT_TESTS \
+	-DLDAP_DEPRECATED \
+	$(NULL)
+dnparse_compat_tests_LDADD = \
 	$(OPENLDAP_LIBS) \
 	$(CMOCKA_LIBS) \
 	$(NULL)
@@ -193,6 +210,7 @@ eval_req_tests_SOURCES = \
 	src/pam_hbac_dnparse.c \
 	src/pam_hbac_utils.c \
 	src/pam_hbac_ldap.c \
+	src/pam_hbac_ldap_compat.c \
 	$(NULL)
 eval_req_tests_CFLAGS = \
 	$(AM_CFLAGS) \
@@ -209,6 +227,8 @@ ldap_tests_SOURCES = \
 	src/pam_hbac_ldap.c \
 	src/pam_hbac_entry.c \
 	src/pam_hbac_utils.c \
+	src/pam_hbac_dnparse.c \
+	src/pam_hbac_ldap_compat.c \
 	$(NULL)
 ldap_tests_CFLAGS = \
 	$(AM_CFLAGS) \
@@ -254,6 +274,7 @@ secret_tests_SOURCES = \
 	src/libhbac/hbac_evaluator.c \
 	src/libhbac/sss_utf8.c \
 	src/tests/secret_tests.c \
+	src/pam_hbac_ldap_compat.c \
 	$(NULL)
 secret_tests_CFLAGS = \
 	$(AM_CFLAGS) \
@@ -273,6 +294,7 @@ obj_tests_SOURCES = \
 	src/pam_hbac_entry.c \
 	src/pam_hbac_utils.c \
 	src/pam_hbac_ldap.c \
+	src/pam_hbac_ldap_compat.c \
 	$(NULL)
 obj_tests_CFLAGS = \
 	$(AM_CFLAGS) \
@@ -297,6 +319,7 @@ rules_tests_SOURCES = \
 	src/pam_hbac_dnparse.c \
 	src/libhbac/hbac_evaluator.c \
 	src/libhbac/sss_utf8.c \
+	src/pam_hbac_ldap_compat.c \
 	$(NULL)
 rules_tests_CFLAGS = \
 	$(AM_CFLAGS) \
@@ -318,6 +341,7 @@ if HAVE_CMOCKA
 	utils-tests \
 	entry-tests \
 	dnparse-tests \
+	dnparse-compat-tests \
 	eval_req-tests \
 	ldap-tests \
 	obj-tests \

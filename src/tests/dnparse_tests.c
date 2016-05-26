@@ -71,7 +71,7 @@ static void ph_test_rdn_from_dn(rdn_getter_fn getter,
 }
 
 static const char *ok_entry_dn[] = {
-    "uid=admin,cn=users,cn=accounts,dc=ipa,dc=test",
+    " uid = admin , cn = users ,cn=accounts,dc=ipa,dc=test",
     "fqdn=server.ipa.test,cn=computers,cn=accounts,dc=ipa,dc=test",
     "cn=login,cn=hbacservices,cn=hbac,dc=ipa,dc=test",
 };
