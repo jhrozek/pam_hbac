@@ -5,7 +5,7 @@
 %endif
 
 Name:           pam_hbac
-Version:	0.1
+Version:	1.0
 Release:	1%{?dist}
 Summary:	A PAM module that evaluates HBAC rules stored on an IPA server
 
@@ -16,7 +16,7 @@ BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root
 
 License:	GPLv3+
 URL:		https://github.com/jhrozek/pam_hbac
-Source0:	pam_hbac-0.1.tar.gz
+Source0:	https://github.com/jhrozek/pam_hbac/archive/1.0.tar.gz
 
 BuildRequires:	pam-devel
 BuildRequires:	openldap-devel
@@ -45,6 +45,7 @@ for environments that can't use SSSD for some reason.
 
 
 %build
+autoreconf -if
 %configure --libdir=/%{security_parent_dir} \
            --with-pammoddir=/%{security_parent_dir}/security \
            ${null}
