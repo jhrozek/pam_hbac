@@ -18,6 +18,13 @@ License:	GPLv3+
 URL:		https://github.com/jhrozek/pam_hbac
 Source0:	https://github.com/jhrozek/pam_hbac/archive/1.0.tar.gz
 
+BuildRequires:	autoconf
+BuildRequires:	automake
+BuildRequires:	libtool
+BuildRequires:	m4
+BuildRequires:	pkgconfig
+
+BuildRequires:	gettext-devel
 BuildRequires:	pam-devel
 BuildRequires:	openldap-devel
 BuildRequires:	glib2-devel
@@ -64,7 +71,12 @@ rm -f $RPM_BUILD_ROOT/%{security_parent_dir}/security/*.la
 %{security_parent_dir}/security/pam_hbac.so
 %{_mandir}/man5/pam_hbac.conf.5*
 %{_mandir}/man8/pam_hbac.8*
-
+%dir %{_datadir}/doc/pam_hbac
+%{_datadir}/doc/pam_hbac/COPYING
+%{_datadir}/doc/pam_hbac/README.FreeBSD
+%{_datadir}/doc/pam_hbac/README.RHEL-5
+%{_datadir}/doc/pam_hbac/README.RHEL-6
+%{_datadir}/doc/pam_hbac/README.md
 
 %changelog
 * Sat Feb 27 2016 Jakub Hrozek <jakub.hrozek@posteo.se> - 0.1-1
