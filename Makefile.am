@@ -112,6 +112,7 @@ dist_doc_DATA = \
 		doc/README.FreeBSD \
 		doc/README.RHEL-5 \
 		doc/README.RHEL-6 \
+		doc/README.Solaris \
 		$(NULL)
 
 ### Unit tests
