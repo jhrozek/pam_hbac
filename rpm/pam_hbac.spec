@@ -74,10 +74,14 @@ rm -f $RPM_BUILD_ROOT/%{security_parent_dir}/security/*.la
 %dir %{_datadir}/doc/pam_hbac
 %{_datadir}/doc/pam_hbac/COPYING
 %{_datadir}/doc/pam_hbac/README.FreeBSD
+%{_datadir}/doc/pam_hbac/README.Solaris
 %{_datadir}/doc/pam_hbac/README.RHEL-5
 %{_datadir}/doc/pam_hbac/README.RHEL-6
 %{_datadir}/doc/pam_hbac/README.md
 
 %changelog
+* Thu May 26 2016 Jakub Hrozek <jakub.hrozek@posteo.se> - 1.0-1
+- Package 1.0
+
 * Sat Feb 27 2016 Jakub Hrozek <jakub.hrozek@posteo.se> - 0.1-1
 - Initial upstream packaging
