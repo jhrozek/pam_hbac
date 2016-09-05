@@ -371,18 +371,12 @@ pam_hbac(enum pam_hbac_actions action, pam_handle_t *pamh,
     }
     logger(pamh, LOG_DEBUG, "ph_get_user: OK");
 
-    /* Search hosts for fqdn = hostname. FIXME - Make the hostname configurable in the
-     * future.
-     */
+    /* Search hosts for fqdn = hostname (automatic or set from config file) */
     ret = ph_get_host(ctx, ctx->pc->hostname, &targethost);
     if (ret == ENOENT) {
         logger(pamh, LOG_NOTICE,
                "Did not find host %s denying access\n", ctx->pc->hostname);
-        if (flags & PAM_IGNORE_AUTHINFO_UNAVAIL) {
-            pam_ret = PAM_IGNORE;
-        } else {
-            pam_ret = PAM_PERM_DENIED;
-        }
+        pam_ret = PAM_PERM_DENIED;
         goto done;
     } else if (ret != 0) {
         logger(pamh, LOG_ERR,
