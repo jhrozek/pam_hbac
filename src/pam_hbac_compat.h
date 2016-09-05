@@ -110,7 +110,7 @@ do {                             \
 #endif
 
 #ifndef HAVE_STRNDUP
-#define strndp portable_strndup
+#define strndup portable_strndup
 #endif
 
 #ifdef PAM_EXTERN
