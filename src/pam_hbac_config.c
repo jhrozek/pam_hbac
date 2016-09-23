@@ -281,13 +281,20 @@ ph_read_config(pam_handle_t *pamh,
 
     logger(pamh, LOG_DEBUG, "config file: %s", config_file);
 
+#ifdef HPUX
+    errno = 666;       // for some reason when invoked through pam in HPUX, fopen doesn't set errno on error
+#else
     errno = 0;
+#endif
+
     fp = fopen(config_file, "r");
+
     if (fp == NULL) {
         /* According to PAM Documentation, such an error in a config file
          * SHOULD be logged at LOG_ALERT level
          */
         ret = errno;
+
         logger(pamh, LOG_ALERT,
                "pam_hbac: cannot open config file %s [%d]: %s\n",
                config_file, ret, strerror(ret));

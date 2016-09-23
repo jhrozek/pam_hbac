@@ -129,5 +129,13 @@ void va_logger(pam_handle_t *pamh, int level, const char *fmt, va_list ap)
     va_end(apd);
 #endif
 
+#ifdef vsyslog
     pam_vsyslog(pamh, LOG_AUTHPRIV|level, fmt, ap);
+#else              // tried to make it generic in case vsyslog doesn't exist, tested on hpux only
+    char *params = malloc(sizeof(char) * 1024);
+    vsnprintf(params, 1024, fmt , ap);
+    syslog(LOG_AUTHPRIV|level, params, NULL);
+    free(params);
+#endif
+
 }
