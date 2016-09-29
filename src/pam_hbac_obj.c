@@ -16,6 +16,10 @@
 */
 
 #define _GNU_SOURCE
+/* to avoid not compiling on hpux */
+#ifndef __size_t
+  #define __size_t size_t
+#endif
 
 #include "config.h"
 
@@ -60,6 +64,11 @@ getgroupname(gid_t gid)
     if (buffer == NULL) {
         return NULL;
     }
+
+/* to avoid not compiling on hpux */
+#ifndef getgrgid_r
+  extern int getgrgid_r(gid_t, struct group *, char *, size_t, struct group**);
+#endif
 
 #if defined(HAVE_POSIX_GETGRGID_R)
     ret = getgrgid_r(gid, &grp, buffer, bufsize, &result);
@@ -138,7 +147,8 @@ get_user_groups(const char *name, gid_t primary_gid,
         *ngroups_ptr = ngroups;
     }
 #else
-#error No known get-groups-for-user implementation found
+    /* for systems lacking the above functions, tested on hpux only */
+    ret = ph_getgrouplist_fallback(name, primary_gid, groups, ngroups_ptr);
 #endif
 
     return ret;
@@ -153,6 +163,11 @@ get_user_int(const char *username, const size_t bufsize, const int maxgroups)
     struct passwd pwd;
     struct passwd *result = NULL;
     int ngroups;
+
+/* to avoid not compiling on hpux */
+#ifndef getpwnam_r
+  extern int getpwnam_r(const char *, struct passwd *, char *, __size_t, struct passwd **);
+#endif
 
 #if defined(HAVE_POSIX_GETPWNAM_R)
     ret = getpwnam_r(username, &pwd, buffer, bufsize, &result);
@@ -378,4 +393,33 @@ ph_get_svc(struct pam_hbac_ctx *ctx,
     *_svc = services[0];
     ph_entry_array_shallow_free(services);
     return 0;
+}
+
+static int
+ph_getgrouplist_fallback(const char *name, gid_t primary_gid,
+                         gid_t *groups, int *ngroups_ptr)
+{
+   struct group *gr;
+   int i, j = 1, k;
+
+   gr = getgrgid(primary_gid);
+   groups[0] = primary_gid;
+
+   while ((gr = getgrent()) != NULL)
+     for (i = 0; gr->gr_mem[i] != NULL; i++)
+       if (strcmp(gr->gr_mem[i], name) == 0) {
+         bool gidexists = false;
+         for (k = 0; k < j; k++) {
+           if (groups[k] == gr->gr_gid) {
+             gidexists = true;
+             break;
+           }
+         }
+         if (gidexists == false)
+           groups[j++] = gr->gr_gid;
+       }
+
+  endgrent();
+  *ngroups_ptr = j;
+  return j;
 }

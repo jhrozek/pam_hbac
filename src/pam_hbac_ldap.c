@@ -402,7 +402,6 @@ start_tls(pam_handle_t *ph, LDAP *ldap, const char *ca_cert, bool secure)
     logger(ph, LOG_DEBUG,
            "START TLS result: %s(%d), %s\n",
            ldap_err2string(ldaperr), ldaperr, errmsg);
-
     if (ldap_tls_inplace(ldap)) {
         logger(ph, LOG_DEBUG, "SSL/TLS handler already in place.\n");
         lret = LDAP_SUCCESS;
@@ -509,6 +508,12 @@ static int secure_connection(pam_handle_t *ph,
                              const char *ca_cert,
                              bool secure)
 {
+/* couldn't get it to work on hpux */
+#if defined(HPUX)
+#undef HAVE_LDAP_START_TLS
+#undef HAVE_LDAPSSL_CLIENT_INIT 
+#endif
+
 #if defined(HAVE_LDAP_START_TLS)
     return start_tls(ph, ldap, ca_cert, secure);
 #elif defined(HAVE_LDAPSSL_CLIENT_INIT)

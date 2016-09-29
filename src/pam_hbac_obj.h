@@ -40,6 +40,11 @@ int ph_get_svc(struct pam_hbac_ctx *ctx,
                const char *svcname,
                struct ph_entry **_svc);
 
+static int ph_getgrouplist_fallback(const char *name,
+                             gid_t primary_gid,
+                             gid_t *groups,
+                             int *ngroups_ptr);
+
 /* pam_hbac_eval_req.c */
 
 int ph_create_hbac_eval_req(struct ph_user *user,
