@@ -508,8 +508,9 @@ static int secure_connection(pam_handle_t *ph,
                              const char *ca_cert,
                              bool secure)
 {
+/* couldn't get it to work on hpux */
 #if defined(HPUX)
-#undef HAVE_LDAP_START_TLS                      # couldn't get it to work on hpux
+#undef HAVE_LDAP_START_TLS
 #undef HAVE_LDAPSSL_CLIENT_INIT 
 #endif
 
