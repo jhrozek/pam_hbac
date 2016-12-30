@@ -26,3 +26,5 @@ m4
 /depcomp
 /install-sh
 /missing
+.ycm_extra_conf.py
+.ycm_extra_conf.pyc
