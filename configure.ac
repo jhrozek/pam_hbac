@@ -120,6 +120,15 @@ else
 fi
 AC_SUBST(UNICODE_LIBS)
 
+# SSL can be disabled on some platforms that might not support it
+AC_ARG_ENABLE([ssl],
+              AS_HELP_STRING([--disable-ssl], [Disable SSL for LDAP connection]),
+              [enable_ssl=$enableval],
+              [enable_ssl="yes"])
+if test "x$enable_ssl" = "xno"; then
+  AC_DEFINE(DISABLE_SSL, 1, [define to 1 if SSL is supposed to be completely disabled])
+fi
+
 # Optional build dependencies - man pages generation
 CHECK_ASCIIDOC_TOOLS
 AM_CONDITIONAL([HAVE_MANPAGES], [test "x$A2X" != "x"])
