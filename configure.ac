@@ -109,7 +109,7 @@ save_LIBS="$LIBS"
 LIBS="$PAM_LIBS"
 
 dnl Check for optional PAM fnuctions
-AC_CHECK_FUNCS(pam_syslog pam_vsyslog)
+AC_CHECK_FUNCS(vsyslog pam_syslog pam_vsyslog)
 
 dnl restore LIBS
 LIBS="$save_LIBS"
