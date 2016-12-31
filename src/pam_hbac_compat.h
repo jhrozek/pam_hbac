@@ -85,6 +85,11 @@ do {                             \
 # define PAM_BAD_ITEM PAM_USER_UNKNOWN
 #endif /* PAM_BAD_ITEM */
 
+/* HP-UX might not define __size_t outside C++ headers */
+#ifndef __size_t
+  #define __size_t size_t
+#endif
+
 #ifndef HOST_NAME_MAX
 #define HOST_NAME_MAX 255
 #endif /* HOST_NAME_MAX */
