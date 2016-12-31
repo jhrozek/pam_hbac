@@ -16,6 +16,7 @@ AC_INIT([pam_hbac],
         [jakub.hrozek@posteo.se])
 
 AC_CONFIG_AUX_DIR([build])
+AC_CANONICAL_SYSTEM
 
 AM_INIT_AUTOMAKE([-Wall foreign subdir-objects])
 m4_ifdef([AC_USE_SYSTEM_EXTENSIONS],
@@ -41,6 +42,18 @@ AC_CHECK_TYPES([ssize_t], [], [],
 AC_TYPE_LONG_LONG_INT
 AC_CHECK_FUNCS([asprintf vasprintf snprintf vsnprintf strndup], [], [needs_portable=1])
 AM_CONDITIONAL([NEEDS_PORTABLE], [test "x$needs_portable" != "x"])
+
+# Some platforms need additional defines for reentrant NSS functions
+case ["$target_os"] in
+      *hpux*) need_reentrant_nss=yes ;;
+      *hp-ux*) need_reentrant_nss=yes ;;
+esac
+
+NSS_CFLAGS=""
+if test x"$need_reentrant_nss" = xyes; then
+        NSS_CFLAGS="$NSS_CFLAGS -D_REENTRANT"
+fi
+AC_SUBST(NSS_CFLAGS)
 
 # Solaris and Linux NSS interface differs, check what we are compiling for
 AM_CHECK_POSIX_GETPWNAM
