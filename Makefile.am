@@ -112,6 +112,7 @@ dist_noinst_SCRIPTS = \
 dist_doc_DATA = \
 		COPYING \
 		README.md \
+		doc/README.HPUX \
 		doc/README.FreeBSD \
 		doc/README.RHEL-5 \
 		doc/README.RHEL-6 \
