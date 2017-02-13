@@ -39,6 +39,43 @@
 #include "pam_hbac_obj_int.h"
 #include "config.h"
 
+#if !defined(HAVE_GETGROUPLIST) && !defined(HAVE__GETGROUPSBYMEMBER)
+static int
+ph_getgrouplist_fallback(const char *name, gid_t primary_gid,
+                         gid_t *groups, int *ngroups_ptr)
+{
+    struct group *gr;
+    int i, j;
+    int ngroups;
+
+    groups[0] = primary_gid;
+    ngroups = 1;                /* primary group already included */
+
+    setgrent();
+    while ((gr = getgrent()) != NULL) {
+        for (i = 0; gr->gr_mem[i] != NULL; i++) {
+            if (strcmp(gr->gr_mem[i], name) == 0) {
+                bool gidexists = false;
+                for (j = 0; j < ngroups; j++) {
+                    if (groups[j] == gr->gr_gid) {
+                        gidexists = true;
+                        break;
+                    }
+                }
+
+                if (gidexists == false) {
+                    groups[ngroups++] = gr->gr_gid;
+                }
+            }
+        }
+    }
+    endgrent();
+
+    *ngroups_ptr = ngroups;
+    return ngroups;
+}
+#endif
+
 static char *
 getgroupname(gid_t gid)
 {
@@ -123,13 +160,11 @@ get_user_groups(const char *name, gid_t primary_gid,
                 gid_t *groups, int *ngroups_ptr)
 {
     int ret;
-#ifndef HAVE_GETGROUPLIST
-    int ngroups;
-#endif
 
 #if defined(HAVE_GETGROUPLIST)
     ret = getgrouplist(name, primary_gid, groups, ngroups_ptr);
 #elif defined(HAVE__GETGROUPSBYMEMBER)
+    int ngroups;
 
     groups[0] = primary_gid;
     ngroups = _getgroupsbymember(name, groups, *ngroups_ptr, 1);
@@ -138,7 +173,8 @@ get_user_groups(const char *name, gid_t primary_gid,
         *ngroups_ptr = ngroups;
     }
 #else
-#error No known get-groups-for-user implementation found
+    /* for systems lacking the above functions, tested on hpux only */
+    ret = ph_getgrouplist_fallback(name, primary_gid, groups, ngroups_ptr);
 #endif
 
     return ret;

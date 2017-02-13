@@ -509,7 +509,9 @@ static int secure_connection(pam_handle_t *ph,
                              const char *ca_cert,
                              bool secure)
 {
-#if defined(HAVE_LDAP_START_TLS)
+#if defined(DISABLE_SSL)
+    return LDAP_NOT_SUPPORTED;
+#elif defined(HAVE_LDAP_START_TLS)
     return start_tls(ph, ldap, ca_cert, secure);
 #elif defined(HAVE_LDAPSSL_CLIENT_INIT)
     return start_ssl(ph, ldap, ca_cert, secure);

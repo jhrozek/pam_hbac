@@ -1,0 +1,68 @@
+This file describes how to configure pam_hbac for access control on a
+HPUX machine.
+
+Only tested on HPUX 11.31 (ia64).
+
+Prerequisities
+==============
+Please make sure your HPUX client is able to resolve and authenticate
+the IPA or AD users. For example, for users coming from an AD trust:
+    $ id administrator@win.trust.test
+    $ su - administrator@win.trust.test
+A good starting point for this configuration is to read:
+    https://www.freeipa.org/page/ConfiguringUnixClients
+
+Building from source
+====================
+The build environment used to build the module was obtained from the HP-UX
+Porting and Archive Centre (http://hpux.connect.org.uk/).
+It is recommended to use their download and install utility 'depothelper'
+(http://hpux.connect.org.uk/hppd/hpux/Sysadmin/depothelper-2.00/) which allows
+to install the required packages and their dependencies. On HPUX 11.31, this
+would be:
+    depothelper gcc autoconf libtool pkgconfig automake openldap
+
+This build environment has 32 bit libraries, the built pam module will also be
+32 bit. HP-UX's default sshd binary is 64 bit and will generate an error
+trying to load the module. Fortunately the default sshd installation comes
+with both 32 and 64 bit sshd binaries, so you will have to point the default
+sshd to the 32 bit binary:
+    /opt/ssh/sbin/sshd -> /opt/ssh/hpux32/sbin/sshd
+
+When building for HP-UX, use the following invocation:
+    $ LDFLAGS="-L/usr/local/lib/hpux32/" ./configure \
+            --with-pammoddir=/usr/lib/security/hpux32 \
+            --mandir=/usr/share/man \
+            --sysconfdir=/etc \
+            --disable-ssl
+
+SSL/TLS
+=======
+So far SSL/TLS is not working so do not use ldaps in the URI otherwise the
+module will get ignored and access allowed. When building the module, disable
+the SSL support by including the "--disable-ssl" configuration option.
+
+Configuration
+=============
+You need to configure the module itself, then include the module in the
+PAM stack. Please see the pam_hbac.conf(5) man page for the available
+configuration options.
+
+This has only been tested with the sshd service.
+When the config file is created, put the following into /etc/pam.conf:
+    sshd     account required       pam_hbac.so ignore_unknown_user ignore_authinfo_unavail
+
+Adding the option `ignore_unknown_user` is important on HP-UX for the same
+reason Linux systems normally use `pam_localuser.so` - pam_hbac looks up
+accounts using NSS calls and a failure to look up a user would deny access,
+because no rules would apply. Additionally, pam_hbac returns PAM_UNKNOWN_USER
+for root, which might e impractical if you decide to put the module into
+the system-wide configuration.
+
+Similarly, adding the `ignore_authinfo_unavail` option is handy in case
+the LDAP server is not reachable. In that case, pam_hbac would return
+PAM_IGNORE and proceed with the rest of the stack instead of a hard error.
+
+Before making any changes to the PAM stack, please make sure to have a root
+console open until you finish testing of pam_hbac setup, to make sure you
+don't lock yourself out of the system!

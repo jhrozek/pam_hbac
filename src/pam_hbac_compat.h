@@ -71,6 +71,14 @@ do {                             \
 # include <security/openpam.h>
 #endif /* HAVE_SECURITY_OPENPAM_H */
 
+#ifndef HAVE_VSYSLOG
+#define vsyslog(priority, fmt, vargs) do { \
+    char _vsyslog_msg[1024];                                    \
+    vsnprintf(_vsyslog_msg, sizeof(_vsyslog_msg), fmt, vargs);  \
+    syslog(level, "%s", _vsyslog_msg);                          \
+} while(0);
+#endif /* HAVE_VSYSLOG */
+
 #ifndef HAVE_PAM_VSYSLOG
 #define pam_vsyslog(pamh, priority, fmt, vargs) \
     vsyslog((priority), (fmt), (vargs))
@@ -84,6 +92,11 @@ do {                             \
 #ifndef PAM_BAD_ITEM
 # define PAM_BAD_ITEM PAM_USER_UNKNOWN
 #endif /* PAM_BAD_ITEM */
+
+/* HP-UX might not define __size_t outside C++ headers */
+#ifndef __size_t
+  #define __size_t size_t
+#endif
 
 #ifndef HOST_NAME_MAX
 #define HOST_NAME_MAX 255

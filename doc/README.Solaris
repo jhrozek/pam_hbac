@@ -67,7 +67,7 @@ When the config file is created, put the following into /etc/pam.d/other
 or just the particular PAM service you would like to control access to:
     account    required    pam_hbac.so    ignore_unknown_user ignore_authinfo_unavail
 
-Adding the option `ignore_unknown_user` is important on FreeBSD for the same
+Adding the option `ignore_unknown_user` is important on Solaris for the same
 reason Linux systems normally use `pam_localuser.so` - pam_hbac looks up
 accounts using NSS calls and a failure to look up a user would deny access,
 because no rules would apply. Additionally, pam_hbac returns PAM_UNKNOWN_USER

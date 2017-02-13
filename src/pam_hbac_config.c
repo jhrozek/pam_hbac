@@ -284,10 +284,19 @@ ph_read_config(pam_handle_t *pamh,
     errno = 0;
     fp = fopen(config_file, "r");
     if (fp == NULL) {
+        /* On some platforms, like HPUX, fopen doesn't set
+         * errno on error. Fall back to EIO in that case as
+         * error with errno == 0 is strange anyway
+         */
+        if (errno == 0) {
+            errno = EIO;
+        }
+
         /* According to PAM Documentation, such an error in a config file
          * SHOULD be logged at LOG_ALERT level
          */
         ret = errno;
+
         logger(pamh, LOG_ALERT,
                "pam_hbac: cannot open config file %s [%d]: %s\n",
                config_file, ret, strerror(ret));

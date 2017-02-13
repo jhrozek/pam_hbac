@@ -4,6 +4,8 @@ docdir = ${datadir}/doc/${PACKAGE}
 
 UNICODE_LIBS=@UNICODE_LIBS@
 
+NSS_CFLAGS=@NSS_CFLAGS@
+
 AM_CFLAGS =
 if HAVE_GCC
 AM_CFLAGS += -Wall -Wshadow -Wstrict-prototypes -Wpointer-arith \
@@ -24,6 +26,7 @@ AM_CPPFLAGS = \
 	      -Wall \
 	      -I$(srcdir)/src \
 	      -I. \
+	      $(NSS_CFLAGS) \
 	      -DPAM_HBAC_CONF_DIR=\"$(pam_hbac_conf_dir)\"
 
 ### PAM-HBAC
@@ -109,6 +112,7 @@ dist_noinst_SCRIPTS = \
 dist_doc_DATA = \
 		COPYING \
 		README.md \
+		doc/README.HPUX \
 		doc/README.FreeBSD \
 		doc/README.RHEL-5 \
 		doc/README.RHEL-6 \
