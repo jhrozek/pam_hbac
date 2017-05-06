@@ -445,7 +445,7 @@ static int secure_preinit(pam_handle_t *ph,
                           const char *ssl_path,
                           bool secure)
 {
-#ifdef HAVE_LDAPSSL_CLIENT_INIT
+#if defined(HAVE_LDAPSSL_CLIENT_INIT) && !defined(HAVE_LDAP_START_TLS)
     int ret;
 
     if (secure == false) {
@@ -471,7 +471,7 @@ static int secure_preinit(pam_handle_t *ph,
 #endif
 }
 
-#ifdef HAVE_LDAPSSL_CLIENT_INIT
+#if defined(HAVE_LDAPSSL_CLIENT_INIT) && !defined(HAVE_LDAP_START_TLS)
 /* Taken from http://www-archive.mozilla.org/directory/csdk-docs/ssl.htm */
 static int start_ssl(pam_handle_t *ph,
                      LDAP *ldap,
