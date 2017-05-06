@@ -30,7 +30,6 @@ class IpaClientlessTestDriver(object):
         self.referer = "https://" + self.hostname + "/ipa"
 
         self.cj = CookieJar()
-        self.ssl_ctx = self._ssl_ctx(insecure)
 
     def _auth(self, lazy=True):
         if lazy is True and len(self.cj) > 0:
@@ -48,8 +47,7 @@ class IpaClientlessTestDriver(object):
         encoded_args = urllib.urlencode(query_args)
 
         result = urllib2.urlopen(request,
-                                 encoded_args,
-                                 context=self.ssl_ctx)
+                                 encoded_args)
         if result.getcode() == 200:
             self.cj.extract_cookies(result, request)
         return result.getcode()
@@ -75,8 +73,7 @@ class IpaClientlessTestDriver(object):
 
         self.cj.add_cookie_header(request)
         result = urllib2.urlopen(request,
-                                 jdata,
-                                 context=self.ssl_ctx)
+                                 jdata)
         return result.getcode()
 
     def fetch_cert(self, dest):
