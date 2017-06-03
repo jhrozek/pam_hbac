@@ -32,3 +32,15 @@ AC_DEFUN([WITH_PAM_MOD_DIR],
     fi
     AC_SUBST(pammoddir)
   ])
+
+AC_DEFUN([ENABLE_MAN_PAGE_VALIDATION],
+  [ AC_ARG_ENABLE([manpage-validation],
+                  [AC_HELP_STRING([--enable-manpage-validation],
+                                  [validate man pages when building them(default=yes)]
+                                 )
+                  ],
+                  [validate_manpages=$enableval],
+                  [validate_manpages=yes]
+                 )
+    AM_CONDITIONAL([VALIDATE_MANPAGES], test x"$validate_manpages" = x"yes")
+  ])

@@ -146,6 +146,9 @@ fi
 CHECK_ASCIIDOC_TOOLS
 AM_CONDITIONAL([HAVE_MANPAGES], [test "x$A2X" != "x"])
 
+# On some systems, the man pages don't validate due to an old XSL stylesheet
+ENABLE_MAN_PAGE_VALIDATION
+
 # Optional build dependencies - Unit tests
 AM_CHECK_CMOCKA
 AM_CHECK_NSS_WRAPPER
