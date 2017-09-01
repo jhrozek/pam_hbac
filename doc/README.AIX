@@ -1,0 +1,65 @@
+This file describes how to configure pam_hbac for access control on a
+AIX machine.
+
+Only tested on AIX 7.1 TL4.
+
+Prerequisities
+==============
+Please make sure your AIX client is able to resolve and authenticate
+the IPA or AD users. For example, for users coming from an AD trust:
+    $ id administrator@win.trust.test
+    $ su - administrator@win.trust.test
+A good starting point for this configuration is to read:
+    https://www.freeipa.org/page/ConfiguringUnixClients
+
+Building from source
+====================
+The build environment used to build the module was obtained from the AIX Toolbox
+for Linux Applications (https://www-03.ibm.com/systems/power/software/aix/linux/toolbox/alpha.html).
+It is recommended to use the yum.sh script provided at the top of their webpage,
+it will install the RPM package manager and provide the yum utility
+(https://ftp.software.ibm.com/aix/freeSoftware/aixtoolbox/ezinstall/ppc/yum.sh) that
+will ensure all dependencies are installed.
+Please make sure all required dependencies are installed. On AIX 7.1 TL4, this
+would be:
+    autoconf-2.69-1 automake-1.15-1 gcc-6.3.0-1 gcc-cpp-6.3.0-1 gettext-0.19.7-1 \
+    glib2-2.48.0-1 libtool-2.4.6-2 m4-1.4.13-1 openldap-2.4.40-2 pkg-config-0.19-6
+
+This build does not have manpages. In AIX the utility a2x does something other than
+converting asciidoc. It must be either removed from the PATH variable or you
+need to explicitly add the --disable-man-pages option to the configure
+invocation, otherwise the build will fail.
+When building for AIX, use the following invocation:
+    $ export M4=/usr/linux/bin/m4
+    $ autoreconf -if
+    $ LDFLAGS="-L/usr/lib" LIBS="-lpthread" ./configure --sysconfdir=/etc/security/ldap \
+            --with-pammoddir=/usr/lib/security --disable-man-pages
+
+SSL/TLS
+=======
+SSL is working, SSL_PATH points to a certificate file.
+
+Configuration
+=============
+You need to configure the module itself, then include the module in the
+PAM stack. Please see the pam_hbac.conf(5) man page for the available
+configuration options.
+
+This has only been tested with the sshd service.
+When the config file is created, put the following into /etc/pam.conf:
+    sshd     account required       pam_hbac.so ignore_unknown_user ignore_authinfo_unavail
+
+Adding the option `ignore_unknown_user` is important on AIX for the same
+reason Linux systems normally use `pam_localuser.so` - pam_hbac looks up
+accounts using NSS calls and a failure to look up a user would deny access,
+because no rules would apply. Additionally, pam_hbac returns PAM_UNKNOWN_USER
+for root, which might be impractical if you decide to put the module into
+the system-wide configuration.
+
+Similarly, adding the `ignore_authinfo_unavail` option is handy in case
+the LDAP server is not reachable. In that case, pam_hbac would return
+PAM_IGNORE and proceed with the rest of the stack instead of a hard error.
+
+Before making any changes to the PAM stack, please make sure to have a root
+console open until you finish testing of pam_hbac setup, to make sure you
+don't lock yourself out of the system!
