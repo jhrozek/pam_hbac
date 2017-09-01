@@ -39,7 +39,7 @@
 #include "pam_hbac_obj_int.h"
 #include "config.h"
 
-#if !defined(HAVE_GETGROUPLIST) && !defined(HAVE__GETGROUPSBYMEMBER)
+#if !defined(HAVE_GETGROUPLIST) && !defined(HAVE__GETGROUPSBYMEMBER) && !defined(HAVE_GETGRSET)
 static int
 ph_getgrouplist_fallback(const char *name, gid_t primary_gid,
                          gid_t *groups, int *ngroups_ptr)
@@ -168,6 +168,27 @@ get_user_groups(const char *name, gid_t primary_gid,
 
     groups[0] = primary_gid;
     ngroups = _getgroupsbymember(name, groups, *ngroups_ptr, 1);
+    if (ngroups != -1) {
+        ret = 0;
+        *ngroups_ptr = ngroups;
+    }
+#elif defined(HAVE_GETGRSET)
+    int ngroups;
+    long max_group_len;
+    char *gid_list_s, *gid_s;
+
+    ngroups = 0;
+    max_group_len = sysconf(_SC_LOGIN_NAME_MAX);
+
+    /* string containing comma separated list of gids the user belongs to */
+    gid_list_s = malloc(sizeof(char)*max_group_len*NGROUPS_MAX);
+    gid_list_s = getgrset(name);
+
+    gid_s = malloc(sizeof(char)*max_group_len);
+    while ((gid_s = strsep(&gid_list_s,",")) != NULL) {
+        groups[ngroups++] = atoi(gid_s);
+    }
+
     if (ngroups != -1) {
         ret = 0;
         *ngroups_ptr = ngroups;

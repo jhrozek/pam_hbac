@@ -17,6 +17,7 @@ pam_hbac was tested on the following operating systems and releases:
   * FreeBSD - tested with FreeBSD 10.2
   * Solaris - tested with Solaris 11 and Omnios. Some users run pam_hbac on Solaris 10 as well.
   * HPUX - tested with HPUX 11.31 - no SSL/TLS yet
+  * AIX - tested with AIX 7.1 TL4
 
 Building from source
 ====================

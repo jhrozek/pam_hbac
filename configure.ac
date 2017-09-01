@@ -58,7 +58,7 @@ AC_SUBST(NSS_CFLAGS)
 # Solaris and Linux NSS interface differs, check what we are compiling for
 AM_CHECK_POSIX_GETPWNAM
 AM_CHECK_POSIX_GETGRGID
-AC_CHECK_FUNCS(getgrouplist _getgroupsbymember)
+AC_CHECK_FUNCS(getgrouplist _getgroupsbymember getgrset)
 
 # Check if the compiler supports optional attributes
 CC_ATTRIBUTE_PRINTF
