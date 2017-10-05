@@ -181,18 +181,25 @@ get_user_groups(const char *name, gid_t primary_gid,
     max_group_len = sysconf(_SC_LOGIN_NAME_MAX);
 
     /* string containing comma separated list of gids the user belongs to */
-    gid_list_s = malloc(sizeof(char)*max_group_len*NGROUPS_MAX);
     gid_list_s = getgrset(name);
+    if (gid_list_s == NULL) {
+        return EIO;
+    }
 
     gid_s = malloc(sizeof(char)*max_group_len);
-    while ((gid_s = strsep(&gid_list_s,",")) != NULL) {
+    if (gid_s == NULL) {
+        free(gid_list_s);
+        return ENOMEM;
+    }
+
+    while ((gid_s = strsep(&gid_list_s, ",")) != NULL) {
         groups[ngroups++] = atoi(gid_s);
     }
 
-    if (ngroups != -1) {
-        ret = 0;
-        *ngroups_ptr = ngroups;
-    }
+    ret = 0;
+    *ngroups_ptr = ngroups;
+
+    free(gid_list_s);
 #else
     /* for systems lacking the above functions, tested on hpux only */
     ret = ph_getgrouplist_fallback(name, primary_gid, groups, ngroups_ptr);
