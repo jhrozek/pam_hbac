@@ -32,3 +32,12 @@ AC_DEFUN([WITH_PAM_MOD_DIR],
     fi
     AC_SUBST(pammoddir)
   ])
+
+dnl Man pages generation can be disabled on platforms where the a2x binary is not usable
+AC_DEFUN([ENABLE_MAN_PAGES],
+  [ AC_ARG_ENABLE([man-pages],
+                  AS_HELP_STRING([--disable-man-pages], [Do not build man pages]),
+                  [enable_man_pages=$enableval],
+                  [enable_man_pages="yes"])
+    AM_CONDITIONAL([BUILD_MAN_PAGES], test x"$enable_man_pages" = x"yes")
+  ])

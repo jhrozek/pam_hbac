@@ -143,6 +143,7 @@ if test "x$enable_ssl" = "xno"; then
 fi
 
 # Optional build dependencies - man pages generation
+ENABLE_MAN_PAGES
 CHECK_ASCIIDOC_TOOLS
 AM_CONDITIONAL([HAVE_MANPAGES], [test "x$A2X" != "x"])
 
