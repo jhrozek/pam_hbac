@@ -7,6 +7,7 @@ EXTRA_DIST = \
 	$(NULL)
 
 
+if BUILD_MAN_PAGES
 if HAVE_MANPAGES
 ### Man pages
 SUFFIXES = .5.txt .5 .8.txt .8
@@ -29,4 +30,5 @@ man_MANS = \
 
 clean-local:
 	rm -f $(man_MANS)
-endif
+endif # HAVE_MANPAGES
+endif # BUILD_MAN_PAGES
