@@ -111,6 +111,24 @@ done:
     return ret;
 }
 
+static void
+warn_unqualified_hostname(pam_handle_t *pamh, const char *hostname)
+{
+    char *dot;
+
+    if (hostname == NULL) {
+        logger(pamh, LOG_NOTICE, "Hostname %s is not set, make sure HOST_NAME is set\n");
+        return;
+    }
+
+    dot = strchr(hostname, '.');
+    if (dot != NULL) {
+        return;
+    }
+
+    logger(pamh, LOG_NOTICE, "Hostname %s is not qualified, make sure HOST_NAME is set\n");
+}
+
 static int
 default_config(pam_handle_t *pamh, struct pam_hbac_config *conf)
 {
@@ -118,10 +136,11 @@ default_config(pam_handle_t *pamh, struct pam_hbac_config *conf)
 
     ret = default_hostname(&conf->hostname);
     if (ret != 0) {
-        logger(pamh, LOG_ERR, "Failed to set default hostname [%d]: %s\n",
+        logger(pamh, LOG_ERR, "Failed to get default hostname [%d]: %s\n",
                 ret, strerror(ret));
         return ret;
     }
+    warn_unqualified_hostname(pamh, conf->hostname);
 
     conf->timeout = PAM_HBAC_DEFAULT_TIMEOUT;
     conf->secure = true;
