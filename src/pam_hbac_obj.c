@@ -124,8 +124,9 @@ get_user_names(struct passwd *pwd,
                gid_t *gidlist,
                size_t ngroups)
 {
-    struct ph_user *user;
-    size_t i;
+    struct ph_user *user = NULL;
+    size_t gid_i = 0;
+    size_t name_i = 0;
 
     user = malloc(sizeof(struct ph_user));
     if (user == NULL) {
@@ -144,12 +145,12 @@ get_user_names(struct passwd *pwd,
         return NULL;
     }
 
-    for (i = 0; i < ngroups; i++) {
-        user->group_names[i] = getgroupname(gidlist[i]);
-        if (user->group_names[i] == NULL) {
-            ph_free_user(user);
-            return NULL;
+    for (gid_i = 0; gid_i < ngroups; gid_i++) {
+        user->group_names[name_i] = getgroupname(gidlist[gid_i]);
+        if (user->group_names[name_i] == NULL) {
+            continue;
         }
+        name_i++;
     }
 
     return user;

@@ -307,6 +307,7 @@ obj_tests_CFLAGS = \
 	$(NULL)
 obj_tests_LDFLAGS = \
 	-Wl,-wrap,ph_search \
+	-Wl,-wrap,getgrgid_r \
 	$(NULL)
 obj_tests_LDADD = \
 	$(OPENLDAP_LIBS) \

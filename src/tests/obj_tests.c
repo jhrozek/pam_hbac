@@ -23,6 +23,8 @@
 #include <cmocka.h>
 #include <stdarg.h>
 #include <ldap.h>
+#include <sys/types.h>
+#include <grp.h>
 
 #include "pam_hbac.h"
 #include "pam_hbac_entry.h"
@@ -76,6 +78,33 @@ test_ph_get_user_sup_groups(void **state)
     assert_string_equal(u->group_names[1], "gr1");
     assert_string_equal(u->group_names[2], "gr2");
     assert_null(u->group_names[3]);
+
+    ph_free_user(u);
+}
+
+static void
+test_ph_get_user_unresolvable_gid(void **state)
+{
+    struct ph_user *u;
+    size_t ngroups;
+
+    (void) state; /* unused */
+
+    setenv("PH_OBJ_TEST_WRAP_GETGRGID_NOTFOUND", "1", 1);
+    u = ph_get_user(NULL, "sup_groups");
+    unsetenv("PH_OBJ_TEST_WRAP_GETGRGID_NOTFOUND");
+    assert_non_null(u);
+
+    assert_non_null(u->name);
+    assert_string_equal(u->name, "sup_groups");
+
+    assert_non_null(u->group_names);
+    ngroups = null_string_array_size(u->group_names);
+    assert_int_equal(ngroups, 2);
+
+    assert_string_equal(u->group_names[0], "sup_groups");
+    assert_string_equal(u->group_names[1], "gr2");
+    assert_null(u->group_names[2]);
 
     ph_free_user(u);
 }
@@ -181,6 +210,27 @@ __wrap_ph_search(pam_handle_t *pamh,
 
     *_entry_list = entry_list;
     return rv;
+}
+
+int
+__real_getgrgid_r(gid_t gid, struct group *grp,
+                  char *buf, size_t buflen, struct group **result);
+
+int
+__wrap_getgrgid_r(gid_t gid, struct group *grp,
+                  char *buf, size_t buflen, struct group **result)
+{
+   if (getenv("PH_OBJ_TEST_WRAP_GETGRGID_NOTFOUND") == NULL) {
+       return __real_getgrgid_r(gid, grp, buf, buflen, result);
+   }
+
+   /* If a special env variable is set, the GID 1213 is not resolvable */
+   if (gid != 1213) {
+       return __real_getgrgid_r(gid, grp, buf, buflen, result);
+   }
+
+   *result = NULL;
+   return 0;
 }
 
 static void
@@ -326,6 +376,7 @@ main(void)
     const struct CMUnitTest tests[] = {
         cmocka_unit_test(test_ph_get_user_no_sup_groups),
         cmocka_unit_test(test_ph_get_user_sup_groups),
+        cmocka_unit_test(test_ph_get_user_unresolvable_gid),
         cmocka_unit_test(test_ph_get_user_unknown),
         cmocka_unit_test(test_ph_host),
         cmocka_unit_test(test_ph_host_multiple),
