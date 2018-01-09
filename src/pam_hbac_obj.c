@@ -120,7 +120,8 @@ getgroupname(gid_t gid)
 }
 
 struct ph_user *
-get_user_names(struct passwd *pwd,
+get_user_names(pam_handle_t *ph,
+               struct passwd *pwd,
                gid_t *gidlist,
                size_t ngroups)
 {
@@ -148,6 +149,9 @@ get_user_names(struct passwd *pwd,
     for (gid_i = 0; gid_i < ngroups; gid_i++) {
         user->group_names[name_i] = getgroupname(gidlist[gid_i]);
         if (user->group_names[name_i] == NULL) {
+            logger(ph, LOG_NOTICE,
+                   "Cannot find name for group %lu\n",
+                   (unsigned long) gidlist[gid_i]);
             continue;
         }
         name_i++;
@@ -157,17 +161,22 @@ get_user_names(struct passwd *pwd,
 }
 
 static int
-get_user_groups(const char *name, gid_t primary_gid,
-                gid_t *groups, int *ngroups_ptr)
+get_user_groups(pam_handle_t *ph,
+                const char *name,
+                gid_t primary_gid,
+                gid_t *groups,
+                int *ngroups_ptr)
 {
     int ret;
 
 #if defined(HAVE_GETGROUPLIST)
+    logger(ph, LOG_DEBUG, "running getgrouplist for %s\n", name);
     ret = getgrouplist(name, primary_gid, groups, ngroups_ptr);
 #elif defined(HAVE__GETGROUPSBYMEMBER)
     int ngroups;
 
     groups[0] = primary_gid;
+    logger(ph, LOG_DEBUG, "running _getgroupsbymember for %s\n", name);
     ngroups = _getgroupsbymember(name, groups, *ngroups_ptr, 1);
     if (ngroups != -1) {
         ret = 0;
@@ -182,6 +191,7 @@ get_user_groups(const char *name, gid_t primary_gid,
     max_group_len = sysconf(_SC_LOGIN_NAME_MAX);
 
     /* string containing comma separated list of gids the user belongs to */
+    logger(ph, LOG_DEBUG, "running getgrset for %s\n", name);
     gid_list_s = getgrset(name);
     if (gid_list_s == NULL) {
         return EIO;
@@ -206,11 +216,15 @@ get_user_groups(const char *name, gid_t primary_gid,
     ret = ph_getgrouplist_fallback(name, primary_gid, groups, ngroups_ptr);
 #endif
 
+    logger(ph, LOG_NOTICE, "returning %d\n", ret);
     return ret;
 }
 
 struct ph_user *
-get_user_int(const char *username, const size_t bufsize, const int maxgroups)
+get_user_int(pam_handle_t *ph,
+             const char *username,
+             const size_t bufsize,
+             const int maxgroups)
 {
     char buffer[bufsize];
     gid_t gidlist[maxgroups];
@@ -222,11 +236,13 @@ get_user_int(const char *username, const size_t bufsize, const int maxgroups)
 #if defined(HAVE_POSIX_GETPWNAM_R)
     ret = getpwnam_r(username, &pwd, buffer, bufsize, &result);
     if (ret != 0 || result == NULL) {
+        logger(ph, LOG_NOTICE, "getpwnam_r failed for %s\n", username);
         return NULL;
     }
 #elif defined(HAVE_NONPOSIX_GETPWNAM_R)
     result = getpwnam_r(username, &pwd, buffer, bufsize);
     if (result == NULL) {
+        logger(ph, LOG_NOTICE, "getpwnam_r failed for %s\n", username);
         return NULL;
     }
 #else
@@ -234,13 +250,13 @@ get_user_int(const char *username, const size_t bufsize, const int maxgroups)
 #endif
 
     ngroups = maxgroups;    /* don't modify input parameter */
-    ret = get_user_groups(pwd.pw_name, pwd.pw_gid, gidlist, &ngroups);
+    ret = get_user_groups(ph, pwd.pw_name, pwd.pw_gid, gidlist, &ngroups);
     if (ret == -1) {
         /* FIXME - resize on platforms where we allocate fewer groups? */
         return NULL;
     }
 
-    return get_user_names(&pwd, gidlist, ngroups);
+    return get_user_names(ph, &pwd, gidlist, ngroups);
 }
 
 struct ph_user *
@@ -267,7 +283,7 @@ ph_get_user(pam_handle_t *ph, const char *username)
         return NULL;
     }
 
-    pu = get_user_int(username, bufsize, maxgroups);
+    pu = get_user_int(ph, username, bufsize, maxgroups);
     if (pu == NULL) {
         logger(ph, LOG_NOTICE, "Cannot find user %s\n", username);
         return NULL;
