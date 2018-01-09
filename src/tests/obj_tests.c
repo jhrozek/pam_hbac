@@ -307,6 +307,21 @@ test_ph_host_no_fqdn(void **state)
 }
 
 static void
+test_ph_host_name_empty(void **state)
+{
+    int ret;
+    struct pam_hbac_ctx ph_ctx;
+    const char *hostname = "";
+    struct ph_entry *host = NULL;
+
+    memset(&ph_ctx, 0, sizeof(ph_ctx));
+
+    ret = ph_get_host(&ph_ctx, hostname, &host);
+    assert_int_equal(ret, ENOENT);
+    assert_null(host);
+}
+
+static void
 test_ph_svc(void **state)
 {
     int ret;
@@ -382,6 +397,7 @@ main(void)
         cmocka_unit_test(test_ph_host_multiple),
         cmocka_unit_test(test_ph_host_srch_fail),
         cmocka_unit_test(test_ph_host_no_fqdn),
+        cmocka_unit_test(test_ph_host_name_empty),
         cmocka_unit_test(test_ph_svc),
         cmocka_unit_test(test_ph_svc_multiple),
         cmocka_unit_test(test_ph_svc_srch_fail),
