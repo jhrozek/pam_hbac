@@ -314,6 +314,11 @@ ph_get_host(struct pam_hbac_ctx *ctx,
         return EINVAL;
     }
 
+    if (strlen(hostname) == 0) {
+        logger(ctx->pamh, LOG_NOTICE, "Host name is empty\n");
+        return ENOENT;
+    }
+
     ret = asprintf(&host_filter, "%s=%s",
                    ph_host_attrs[PH_MAP_HOST_FQDN], hostname);
     if (ret < 0) {
