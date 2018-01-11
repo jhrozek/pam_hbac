@@ -61,7 +61,7 @@ using this service for any users or groups that you want allow access to
 clients running pam_hbac as well.
 
 Please see
-[doc/ipa/sch-ipa.txt](https://git.fedorahosted.org/cgit/slapi-nis.git/tree/doc/ipa/sch-ipa.txt)
+[doc/ipa/sch-ipa.txt](https://pagure.io/slapi-nis/blob/master/f/doc/ipa/sch-ipa.txt)
 from the slapi-nis' tree for more information on how the compat tree works.
 
 Contribute
