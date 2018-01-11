@@ -5,7 +5,7 @@
 %endif
 
 Name:           pam_hbac
-Version:	1.0
+Version:	1.2
 Release:	1%{?dist}
 Summary:	A PAM module that evaluates HBAC rules stored on an IPA server
 
@@ -16,7 +16,7 @@ BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root
 
 License:	GPLv3+
 URL:		https://github.com/jhrozek/pam_hbac
-Source0:	https://github.com/jhrozek/pam_hbac/archive/1.0.tar.gz
+Source0:	https://github.com/jhrozek/pam_hbac/archive/1.2.tar.gz
 
 BuildRequires:	autoconf
 BuildRequires:	automake
@@ -73,6 +73,8 @@ rm -f $RPM_BUILD_ROOT/%{security_parent_dir}/security/*.la
 %{_mandir}/man8/pam_hbac.8*
 %dir %{_datadir}/doc/pam_hbac
 %{_datadir}/doc/pam_hbac/COPYING
+%{_datadir}/doc/pam_hbac/README.AIX
+%{_datadir}/doc/pam_hbac/README.HPUX
 %{_datadir}/doc/pam_hbac/README.FreeBSD
 %{_datadir}/doc/pam_hbac/README.Solaris
 %{_datadir}/doc/pam_hbac/README.RHEL-5
@@ -80,6 +82,9 @@ rm -f $RPM_BUILD_ROOT/%{security_parent_dir}/security/*.la
 %{_datadir}/doc/pam_hbac/README.md
 
 %changelog
+* Thu Jan 11 2018 Jakub Hrozek <jakub.hrozek@posteo.se> - 1.2-1
+- Package 1.2
+
 * Thu May 26 2016 Jakub Hrozek <jakub.hrozek@posteo.se> - 1.0-1
 - Package 1.0
 
