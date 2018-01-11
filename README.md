@@ -33,11 +33,10 @@ The unit tests require the [cmocka](https://cmocka.org/) unit test
 framework as well as `nss_wrapper` and `pam_wrapper` tools from the
 [cwrap.org](https://cwrap.org/) project.
 
-If you're building from a git checkout, generate configure first:
-    $ autoreconf -if
-Then run the usual "configure, make, make install" commands. For platforms
-that we tested and support, there is a platform-dependent README.$platform
-in the doc/ subdirectory that includes suggested configure flags.
+If you're building from a git checkout, generate configure first with `autoreconf -if`.
+Then run the usual `configure, make, make install` commands. For platforms
+that we tested and support, there is a platform-dependent `README.$platform`
+in the `doc/` subdirectory that includes suggested configure flags.
 
 Documentation
 =============
@@ -69,7 +68,7 @@ Contribute
 ==========
 Please open a ticket if you encounter a bug or send a pull request with
 a contribution. For questions, you can use the [freeipa-users mailing
-list](http://www.redhat.com/mailman/listinfo/freeipa-users).
+list](https://lists.fedorahosted.org/admin/lists/freeipa-users.lists.fedorahosted.org/).
 
 Build Status
 ------------
