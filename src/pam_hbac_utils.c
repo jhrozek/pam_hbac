@@ -94,6 +94,9 @@ void set_debug_mode(bool v)
 }
 
 void logger(pam_handle_t *pamh, int level, const char *fmt, ...)
+    PH_ATTRIBUTE_PRINTF(3, 4);
+
+void logger(pam_handle_t *pamh, int level, const char *fmt, ...)
 {
     va_list ap;
 

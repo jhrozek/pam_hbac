@@ -39,6 +39,12 @@
 
 #define free_const(ptr) free(discard_const(ptr))
 
+#ifdef HAVE_FUNCTION_ATTRIBUTE_FORMAT
+#define PH_ATTRIBUTE_PRINTF(a1, a2) __attribute__((format (printf, a1, a2)))
+#else
+#define PH_ATTRIBUTE_PRINTF(a1, a2)
+#endif
+
 /* config file */
 #ifndef PAM_HBAC_CONFIG_FILE_NAME
 #define PAM_HBAC_CONFIG_FILE_NAME      "pam_hbac.conf"
