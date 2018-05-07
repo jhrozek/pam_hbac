@@ -41,8 +41,9 @@ AC_DEFUN([AM_CHECK_OPENLDAP],
         fi
         if test "$with_ldap_two_four" = "yes" ; then
             OPENLDAP_LIBS="${OPENLDAP_LIBS} -lldap-2.4"
+        else
+            OPENLDAP_LIBS="${OPENLDAP_LIBS} -lldap"
         fi
-        OPENLDAP_LIBS="${OPENLDAP_LIBS} -lldap"
     else
         AC_MSG_ERROR([LDAP libraries not found])
     fi
