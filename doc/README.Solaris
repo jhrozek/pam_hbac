@@ -14,6 +14,9 @@ the IPA or AD users. For example, for users coming from an AD trust:
 A good starting point for this configuration is to read:
     https://www.freeipa.org/page/ConfiguringUnixClients
 
+When using Domain Resolution Order, it is recommended to be on at least
+SRU 29 (0.175.3.29.0.1.0), otherwise users cannot login.
+
 Building from source
 ====================
 Please make sure all required dependencies are installed. On Solaris 11,
